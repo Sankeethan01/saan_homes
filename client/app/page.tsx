@@ -95,7 +95,7 @@ export default function Home() {
               whileInView={{ opacity: 1 }}
               className="text-gray-600 text-lg"
             >
-              We provide comprehensive construction and real estate solutions tailored to your needs!
+              We provide comprehensive construction and real estate solutions tailored to your needs!!
             </motion.p>
           </motion.div>
           
