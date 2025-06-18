@@ -35,7 +35,7 @@ const Navbar = () => {
             transition={{ duration: 0.5 }}
             className="flex-shrink-0"
           >
-            <Link href="/" className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-red-700">
+            <Link href="/" className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-red-600 to-blue-8git 00">
               SAAN HOMES
             </Link>
           </motion.div>
@@ -62,7 +62,7 @@ const Navbar = () => {
           </div>
 
           <div className="md:hidden">
-            <button className="text-gray-800">
+            <button className="text-gray-800" aria-label="Open menu">
               <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
               </svg>
