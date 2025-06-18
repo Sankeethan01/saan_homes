@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
+import Image from 'next/image';
 
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -36,7 +37,7 @@ const Navbar = () => {
             className="flex-shrink-0"
           >
             <Link href="/" className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-red-600 to-blue-8git 00">
-              SAAN HOMES
+              <Image src="/assets/logo.jpg" alt="Logo" width={100} height={0} className="inline-block mr-2" />
             </Link>
           </motion.div>
 
