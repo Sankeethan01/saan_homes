@@ -5,8 +5,8 @@ import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { RiHome5Line, RiSearchLine, RiFilter3Line, RiCalendarLine, RiTimeLine, RiMessage2Line, RiNotification3Line, RiHistoryLine, RiUser3Line, RiTruckLine, RiFileList2Line, RiMapPin2Line, RiPhoneLine, RiMailLine, RiCustomerService2Line } from 'react-icons/ri';
-import ChatBot from '@/app/components/ChatBot';
-import HomeIcon from '@/app/components/Home_Icon';
+import ChatBot from '@/app/components/Portfolio/Rentals/ChatBot';
+import HomeIcon from '@/app/components/Portfolio/Home_Icon';
 
 
 interface Equipment {

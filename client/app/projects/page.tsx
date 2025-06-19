@@ -5,8 +5,8 @@ import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { RiHome5Line, RiBuilding4Line, RiTimeLine, RiCheckLine, RiCalendarLine, RiTeamLine, RiMapPinLine, RiArrowRightLine, RiHomeSmileLine, RiPaletteLine, RiLeafLine } from 'react-icons/ri';
-import Footer from '../components/Footer';
-import HomeIcon from '../components/Home_Icon';
+import Footer from '../components/Portfolio/Footer';
+import HomeIcon from '../components/Portfolio/Home_Icon';
 
 interface Project {
   id: number;

@@ -7,8 +7,8 @@ import Link from 'next/link';
 import Calendar from 'react-calendar';
 import { RiHome5Line, RiCalendarLine, RiTimeLine, RiCheckLine, RiArrowLeftLine, RiMailLine, RiPhoneLine, RiUserLine } from 'react-icons/ri';
 import 'react-calendar/dist/Calendar.css';
-import ChatBot from '@/app/components/ChatBot';
-import HomeIcon from '@/app/components/Home_Icon';
+import ChatBot from '@/app/components/Portfolio/Rentals/ChatBot';
+import HomeIcon from '@/app/components/Portfolio/Home_Icon';
 
 type ValuePiece = Date | null;
 type Value = ValuePiece | [ValuePiece, ValuePiece];

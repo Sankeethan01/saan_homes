@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import Link from 'next/link';
 import Image from 'next/image';
 
-const Navbar = () => {
+const NavbarPortfolio = () => {
   const [isScrolled, setIsScrolled] = useState(false);
 
   useEffect(() => {
@@ -75,4 +75,4 @@ const Navbar = () => {
   );
 };
 
-export default Navbar; 
+export default NavbarPortfolio; 
