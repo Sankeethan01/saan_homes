@@ -1,7 +1,7 @@
 from django.contrib.auth import get_user_model
-from rest_framework import viewsets, permissions
+from rest_framework import viewsets, generics, permissions
 from rest_framework.filters import OrderingFilter, SearchFilter
-from .serializers import UserSerializer
+from .serializers import RegistrationSerializer, UserSerializer
 
 User = get_user_model()
 
@@ -44,3 +44,12 @@ class UserViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return self.Response(serializer.data, status=self.status.HTTP_200_OK)
+    
+
+class RegistrationView(generics.CreateAPIView):
+    """
+    POST here to register as PUBLIC user.
+    """
+    serializer_class = RegistrationSerializer
+    permission_classes = [permissions.AllowAny]
+
