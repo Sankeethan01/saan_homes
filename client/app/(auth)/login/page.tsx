@@ -1,146 +1,174 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { motion } from 'framer-motion';
-import React from 'react';
-
-const gradientAnimation = {
-  background: {
-    background: [
-      'linear-gradient(135deg, #2563eb 0%, #f43f5e 100%)',
-      'linear-gradient(135deg, #f43f5e 0%, #2563eb 100%)',
-      'linear-gradient(135deg, #2563eb 0%, #f43f5e 100%)',
-    ],
-    transition: {
-      duration: 8,
-      repeat: Infinity,
-      ease: 'linear',
-    },
-  },
-};
-
-const containerVariants = {
-  hidden: { opacity: 0, y: 40 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.8, when: 'beforeChildren', staggerChildren: 0.15 } },
-};
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.6 } },
-};
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import toast, { Toaster } from "react-hot-toast";
 
 export default function Login() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const router = useRouter();
+  const [formData, setFormData] = useState({
+    username: "",
+    password: "",
+  });
+  const [isLoading, setIsLoading] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Implement login logic
-    console.log('Login attempt with:', { email, password });
+    if (!formData.username || !formData.password) {
+      toast.error("Please fill in all fields");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      // 1) Obtain tokens
+      const loginRes = await fetch(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/token/`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(formData),
+        }
+      );
+      const loginData = await loginRes.json();
+
+      if (!loginRes.ok) {
+        toast.error(loginData.detail || "Invalid credentials");
+        setIsLoading(false);
+        return;
+      }
+
+      const access = loginData.access;
+      const refresh = loginData.refresh;
+
+      // 2) Verify role by fetching the profile
+      const profileRes = await fetch(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/userAccounts/users/me/`,
+        {
+          headers: { Authorization: `Bearer ${access}` },
+        }
+      );
+      if (!profileRes.ok) {
+        toast.error("Could not verify user profile");
+        setIsLoading(false);
+        return;
+      }
+      const profile = await profileRes.json();
+
+      if (profile.role !== "PUBLIC") {
+        toast.error("Only public users may log in here");
+        setIsLoading(false);
+        return;
+      }
+
+      // 3) Save tokens under consistent keys
+      const storage = rememberMe ? localStorage : sessionStorage;
+      storage.setItem("access_token", access);
+      storage.setItem("refresh_token", refresh);
+
+      toast.success("Login successful!");
+      setTimeout(() => {
+        router.push("/dashboard/me");
+      }, 500);
+    } catch (err) {
+      console.error(err);
+      toast.error("Login failed. Try again.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-700 via-red-400 to-blue-900 relative overflow-hidden">
-      {/* Floating/Parallax Orbs */}
-      <motion.div
-        className="absolute top-[-100px] left-[-100px] w-[350px] h-[350px] bg-blue-500 rounded-full filter blur-3xl opacity-30 z-0"
-        animate={{
-          y: [0, 30, 0, -20, 0],
-          x: [0, 20, 40, 20, 0],
-        }}
-        transition={{ duration: 12, repeat: Infinity, ease: 'easeInOut' }}
-      />
-      <motion.div
-        className="absolute bottom-[-120px] right-[-120px] w-[300px] h-[300px] bg-red-500 rounded-full filter blur-3xl opacity-30 z-0"
-        animate={{
-          y: [0, -25, 0, 25, 0],
-          x: [0, -20, -40, -20, 0],
-        }}
-        transition={{ duration: 14, repeat: Infinity, ease: 'easeInOut' }}
-      />
-      <motion.div
-        className="flex w-full max-w-4xl shadow-2xl rounded-3xl overflow-hidden bg-white/10 backdrop-blur-lg"
-        variants={containerVariants}
-        initial="hidden"
-        animate="visible"
-      >
-        {/* Left Side with animated gradient */}
-        <motion.div
-          className="hidden md:flex flex-col items-center justify-center w-1/2 p-10 relative"
-          variants={itemVariants}
-          animate="visible"
-          initial="hidden"
-          style={{ minHeight: '500px' }}
-        >
-          <motion.div
-            className="absolute inset-0 rounded-3xl"
-            variants={itemVariants}
-            initial="hidden"
-            style={{ zIndex: 1 }}
-            transition={{ duration: 8, repeat: Infinity, ease: 'linear' }}
-            animate={gradientAnimation.background}
-          />
-          <div className="absolute inset-0 bg-black/20 rounded-3xl z-10" />
-          <div className="relative z-20 flex flex-col items-center">
-            <motion.div className="bg-white/30 rounded-full p-6 mb-6 shadow-lg backdrop-blur-xl" variants={itemVariants}>
-              <svg width="60" height="60" fill="none" viewBox="0 0 60 60"><circle cx="30" cy="30" r="28" fill="#fff" fillOpacity="0.2"/><circle cx="30" cy="30" r="18" fill="#fff" fillOpacity="0.4"/></svg>
-            </motion.div>
-            <motion.h2 className="text-white text-2xl font-bold mb-2 drop-shadow-lg" variants={itemVariants}>Welcome Back!</motion.h2>
-            <motion.p className="text-white/80 text-center max-w-xs" variants={itemVariants}>Join the community and explore new opportunities.</motion.p>
-          </div>
-        </motion.div>
-        {/* Right Side (Login Form) */}
-        <motion.div
-          className="w-full md:w-1/2 flex flex-col justify-center items-center p-8 bg-white/80 backdrop-blur-2xl"
-          variants={itemVariants}
-        >
-          <motion.form
-            onSubmit={handleSubmit}
-            className="w-full max-w-sm space-y-6"
-            variants={containerVariants}
-            initial="hidden"
-            animate="visible"
-          >
-            <motion.h2 className="text-2xl font-bold text-gray-900 mb-2 text-center" variants={itemVariants}>Sign in to your account</motion.h2>
-            <motion.div className="space-y-4" variants={itemVariants}>
-              <motion.input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Email"
-                className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none bg-white/80"
-                required
-                variants={itemVariants}
-              />
-              <motion.input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Password"
-                className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none bg-white/80"
-                required
-                variants={itemVariants}
-              />
-            </motion.div>
-            <motion.div className="flex justify-between items-center text-sm" variants={itemVariants}>
-              <span></span>
-              <a href="#" className="text-blue-600 hover:underline">Forgot password?</a>
-            </motion.div>
-            <motion.button
-              type="submit"
-              className="w-full bg-gradient-to-r from-blue-600 to-red-500 text-white py-3 rounded-lg font-semibold shadow-md hover:from-blue-700 hover:to-red-600 transition"
-              variants={itemVariants}
-              whileHover={{ scale: 1.04 }}
-              whileTap={{ scale: 0.98 }}
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-lg shadow-md">
+        <div>
+          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+            Sign in to your account
+          </h2>
+          <p className="mt-2 text-center text-sm text-gray-600">
+            Or{" "}
+            <Link
+              href="/register"
+              className="font-medium text-blue-600 hover:text-blue-500"
             >
-              Continue
-            </motion.button>
-            <div className="text-center text-sm text-gray-500 mt-4">
-              Don&apos;t have an account? <a href="#" className="text-blue-600 hover:underline">Sign up</a>
+              create a new account
+            </Link>
+          </p>
+        </div>
+        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+          <div className="rounded-md shadow-sm space-y-4">
+            <div>
+              <label htmlFor="username" className="sr-only">
+                Username
+              </label>
+              <input
+                id="username"
+                name="username"
+                type="text"
+                required
+                className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                placeholder="Username"
+                value={formData.username}
+                onChange={handleChange}
+              />
             </div>
-          </motion.form>
-        </motion.div>
-      </motion.div>
+            <div>
+              <label htmlFor="password" className="sr-only">
+                Password
+              </label>
+              <input
+                id="password"
+                name="password"
+                type="password"
+                required
+                className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                placeholder="Password"
+                value={formData.password}
+                onChange={handleChange}
+              />
+            </div>
+          </div>
+          <div className="flex items-center">
+            <input
+              id="rememberMe"
+              name="rememberMe"
+              type="checkbox"
+              checked={rememberMe}
+              onChange={(e) => setRememberMe(e.target.checked)}
+              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+            />
+            <label
+              htmlFor="rememberMe"
+              className="ml-2 block text-sm text-gray-900"
+            >
+              Remember me
+            </label>
+          </div>
+
+          <div>
+            <button
+              type="submit"
+              disabled={isLoading}
+              className={`group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white ${
+                isLoading ? "bg-blue-400" : "bg-blue-600 hover:bg-blue-700"
+              } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500`}
+            >
+              {isLoading ? "Signing in..." : "Sign in"}
+            </button>
+          </div>
+        </form>
+      </div>
+      <Toaster position="top-right" />
     </div>
   );
 }
