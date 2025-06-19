@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { RiHome5Line } from 'react-icons/ri';
 
-export default function HomeIcon() {
+export default function HomeIconPortfolio() {
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.5 }}

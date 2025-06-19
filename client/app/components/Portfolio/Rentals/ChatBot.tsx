@@ -11,7 +11,7 @@ interface Message {
   timestamp: Date;
 }
 
-export default function ChatBot() {
+export default function ChatBotRentalsPortfolio() {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
     {
