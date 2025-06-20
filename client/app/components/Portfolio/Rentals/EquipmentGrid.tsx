@@ -3,8 +3,7 @@
 import { motion } from 'framer-motion';
 import { useState } from 'react';
 import Image from 'next/image';
-import Link from 'next/link';
-import { RiHome5Line, RiSearchLine, RiFilter3Line, RiCalendarLine, RiTimeLine, RiMessage2Line, RiUser3Line, RiHomeSmileLine, RiPaletteLine, RiLeafLine, RiToolsLine } from 'react-icons/ri';
+import { useRouter } from 'next/navigation';
 
 
 
@@ -36,7 +35,7 @@ const equipmentList: Equipment[] = [
     id: 1,
     name: 'CAT 320 Excavator',
     category: 'Excavators',
-    image: '/rentals/excavator-1.jpg',
+    image: 'https://images.pexels.com/photos/95687/pexels-photo-95687.jpeg',
     dailyRate: 450,
     weeklyRate: 2800,
     monthlyRate: 9000,
@@ -53,7 +52,7 @@ const equipmentList: Equipment[] = [
     id: 2,
     name: 'Komatsu D61 Bulldozer',
     category: 'Bulldozers',
-    image: '/rentals/bulldozer-1.jpg',
+    image: 'https://images.pexels.com/photos/24245324/pexels-photo-24245324.jpeg',
     dailyRate: 600,
     weeklyRate: 3500,
     monthlyRate: 12000,
@@ -70,7 +69,7 @@ const equipmentList: Equipment[] = [
     id: 3,
     name: 'Liebherr LTM 1100 Crane',
     category: 'Cranes',
-    image: '/rentals/crane-1.jpg',
+    image: 'https://images.pexels.com/photos/3192669/pexels-photo-3192669.jpeg',
     dailyRate: 1200,
     weeklyRate: 7000,
     monthlyRate: 25000,
@@ -87,7 +86,7 @@ const equipmentList: Equipment[] = [
     id: 4,
     name: 'Volvo L120H Wheel Loader',
     category: 'Loaders',
-    image: '/rentals/loader-1.jpg',
+    image: 'https://images.pexels.com/photos/27306413/pexels-photo-27306413.jpeg',
     dailyRate: 550,
     weeklyRate: 3200,
     monthlyRate: 11000,
@@ -104,7 +103,7 @@ const equipmentList: Equipment[] = [
     id: 5,
     name: 'Mack Granite Dump Truck',
     category: 'Trucks',
-    image: '/rentals/truck-1.jpg',
+    image: 'https://images.pexels.com/photos/13734379/pexels-photo-13734379.jpeg',
     dailyRate: 400,
     weeklyRate: 2400,
     monthlyRate: 8500,
@@ -121,7 +120,7 @@ const equipmentList: Equipment[] = [
     id: 6,
     name: 'Putzmeister BSF 38-5 Concrete Pump',
     category: 'Concrete Equipment',
-    image: '/rentals/concrete-pump-1.jpg',
+    image: 'https://images.pexels.com/photos/29735764/pexels-photo-29735764.jpeg',
     dailyRate: 800,
     weeklyRate: 4800,
     monthlyRate: 16000,
@@ -138,7 +137,7 @@ const equipmentList: Equipment[] = [
     id: 7,
     name: 'JCB 3CX Backhoe Loader',
     category: 'Loaders',
-    image: '/rentals/backhoe-1.jpg',
+    image: 'https://images.pexels.com/photos/29411123/pexels-photo-29411123.jpeg',
     dailyRate: 350,
     weeklyRate: 2000,
     monthlyRate: 7000,
@@ -155,7 +154,7 @@ const equipmentList: Equipment[] = [
     id: 8,
     name: 'Bobcat S650 Skid Steer',
     category: 'Loaders',
-    image: '/rentals/skidsteer-1.jpg',
+    image: 'https://images.pexels.com/photos/25559744/pexels-photo-25559744.jpeg',
     dailyRate: 250,
     weeklyRate: 1400,
     monthlyRate: 4800,
@@ -173,6 +172,7 @@ const equipmentList: Equipment[] = [
 const EquipmentGridRentalsPortfolio = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All Equipment');
+  const router = useRouter();
 
   const filteredEquipment = equipmentList.filter(item =>
     (selectedCategory === 'All Equipment' || item.category === selectedCategory) &&
@@ -186,6 +186,7 @@ const EquipmentGridRentalsPortfolio = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {filteredEquipment.map((equipment) => (
               <motion.div
+              onClick={() => router.push('/equipments/' + equipment.id)}
                 key={equipment.id}
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
