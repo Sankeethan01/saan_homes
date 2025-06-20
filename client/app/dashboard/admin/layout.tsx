@@ -30,7 +30,7 @@ const sidebarItems = [
   {
     name: 'Equipment_Rental',
     icon: RiToolsLine,
-    path: '/dashboard/admin/equipment',
+    path: '/dashboard/admin/equipments',
   },
   {
     name: 'Portfolio',
