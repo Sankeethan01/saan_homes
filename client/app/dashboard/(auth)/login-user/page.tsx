@@ -4,9 +4,11 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import toast, { Toaster } from "react-hot-toast";
+import { useAuthStore } from "@/app/stores/useAuthStore";
 
 export default function Login() {
   const router = useRouter();
+  const setToken = useAuthStore((s) => s.setToken); 
   const [formData, setFormData] = useState({
     username: "",
     password: "",
@@ -49,7 +51,6 @@ export default function Login() {
       }
 
       const access = loginData.access;
-      const refresh = loginData.refresh;
 
       // 2) Verify role by fetching the profile
       const profileRes = await fetch(
@@ -72,9 +73,7 @@ export default function Login() {
       }
 
       // 3) Save tokens under consistent keys
-      const storage = rememberMe ? localStorage : sessionStorage;
-      storage.setItem("access_token", access);
-      storage.setItem("refresh_token", refresh);
+      setToken(access);
 
       toast.success("Login successful!");
       setTimeout(() => {
@@ -86,6 +85,13 @@ export default function Login() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleRememberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const isChecked = e.target.checked;
+    setRememberMe(isChecked);
+    // Set the preference in localStorage immediately
+    localStorage.setItem("auth-remember", isChecked.toString());
   };
 
   return (
@@ -144,7 +150,7 @@ export default function Login() {
               name="rememberMe"
               type="checkbox"
               checked={rememberMe}
-              onChange={(e) => setRememberMe(e.target.checked)}
+              onChange={handleRememberChange}
               className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
             />
             <label

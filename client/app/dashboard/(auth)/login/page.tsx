@@ -1,19 +1,90 @@
 'use client';
 
+import { useAuthStore } from '@/app/stores/useAuthStore';
 import { motion } from 'framer-motion';
+import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import toast from 'react-hot-toast';
 
 type UserRole = 'admin' | 'supervisor';
 
 export default function Login() {
+  const router = useRouter();
   const [selectedRole, setSelectedRole] = useState<UserRole>('admin');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const setToken = useAuthStore((s) => s.setToken);
+  const [formData, setFormData] = useState({
+    username: "",
+    password: "",
+  });
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Implement login logic
-    console.log('Login attempt with:', { role: selectedRole, email, password });
+    if (!formData.username || !formData.password) {
+      toast.error("Please fill in all fields");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const loginRes = await fetch(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/token/`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(formData),
+        }
+      );
+      const loginData = await loginRes.json();
+
+      if (!loginRes.ok) {
+        toast.error(loginData.detail || "Invalid credentials");
+        setIsLoading(false);
+        return;
+      }
+
+      const access = loginData.access;
+      setToken(access);
+
+      const profileRes = await fetch(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/userAccounts/users/me/`,
+        {
+          headers: { Authorization: `Bearer ${access}` },
+        }
+      );
+      if (!profileRes.ok) {
+        toast.error("Could not verify user profile");
+        setToken(null);
+        setIsLoading(false);
+        return;
+      }
+      const profile = await profileRes.json();
+      const uiSelectedRole = selectedRole.toUpperCase();
+
+      if (profile.role === "ADMIN" && uiSelectedRole === "ADMIN") {
+        toast.success("Admin login successful!");
+        router.push("/dashboard/admin");
+      } else if (profile.role === "SUPERVISOR" && uiSelectedRole === "SUPERVISOR") {
+        toast.success("Supervisor login successful!");
+        router.push("/dashboard/supervisor");
+      } else {
+        toast.error(`These credentials do not correspond to the '${selectedRole}' role.`);
+        setToken(null);
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Login failed. Try again.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -73,15 +144,16 @@ export default function Login() {
             transition={{ delay: 0.5 }}
           >
             <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-              Email Address
+              Username
             </label>
             <input
-              type="email"
-              id="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              type="text"
+              id="username"
+              name="username"
+              value={formData.username}
+              onChange={handleChange}
               className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-              placeholder={`Enter ${selectedRole === 'admin' ? 'admin' : 'supervisor'} email`}
+              placeholder={`Enter ${selectedRole === 'admin' ? 'admin' : 'supervisor'} username`}
               required
             />
           </motion.div>
@@ -97,8 +169,9 @@ export default function Login() {
             <input
               type="password"
               id="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              name="password"
+              value={formData.password}
+              onChange={handleChange}
               className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
               placeholder="Enter your password"
               required
@@ -112,6 +185,7 @@ export default function Login() {
             className="pt-4"
           >
             <button
+            disabled={isLoading}
               type="submit"
               className="w-full bg-gradient-to-r from-blue-600 to-red-700 text-white py-2 px-4 rounded-md hover:opacity-90 transition-opacity focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
             >
