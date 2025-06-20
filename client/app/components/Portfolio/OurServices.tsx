@@ -9,12 +9,12 @@ const fadeInUp = {
 
 const OurServicesPortfolio = () => {
   return (
-     <section id="services" className="py-24" style={{ background: 'radial-gradient(ellipse at 20% 40%, #f3f8ff 60%, #f8fafc 100%), radial-gradient(ellipse at 80% 60%, #ffe5ec 0%, #f8fafc 100%)' }}>
+     <section id="services" className="py-17" style={{ background: 'radial-gradient(ellipse at 20% 40%, #f3f8ff 60%, #f8fafc 100%), radial-gradient(ellipse at 80% 60%, #ffe5ec 0%, #f8fafc 100%)' }}>
         <div className="container mx-auto px-4">
           <motion.div className="text-center max-w-3xl mx-auto mb-16">
             <motion.h2 
               {...fadeInUp}
-              className="text-4xl md:text-5xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-red-700"
+              className="text-4xl md:text-5xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-blue-700 to-red-600"
             >
               Our Services
             </motion.h2>

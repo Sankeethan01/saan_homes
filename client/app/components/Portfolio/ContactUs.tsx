@@ -8,11 +8,11 @@ const fadeInUp = {
 
 const ContactUsPortfolio = () => {
   return (
-     <section id="contact" className="py-20 bg-white">
+     <section id="contact" className="py-17 " style={{ background: 'radial-gradient(ellipse at 80% 20%, #e0e7ff 0%, #f8fafc 100%)' }}>
         <div className="container mx-auto px-4">
           <motion.h2 
             {...fadeInUp}
-            className="text-4xl font-bold text-center mb-12"
+            className="text-4xl md:text-5xl text-center font-bold mb-10 bg-clip-text text-transparent bg-gradient-to-r from-blue-700 to-red-600"
           >
             Contact Us
           </motion.h2>
@@ -26,21 +26,21 @@ const ContactUsPortfolio = () => {
                 <input
                   type="text"
                   placeholder="Your Name"
-                  className="w-full px-4 py-3 rounded-2xl border border-white/40 bg-white/80 backdrop-blur-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-3 rounded-2xl border border-gray-400 bg-white/80 backdrop-blur-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
               <div>
                 <input
                   type="email"
                   placeholder="Your Email"
-                  className="w-full px-4 py-3 rounded-2xl border border-white/40 bg-white/80 backdrop-blur-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-3 rounded-2xl border border-gray-400 bg-white/80 backdrop-blur-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
               <div>
                 <textarea
                   placeholder="Your Message"
                   rows={4}
-                  className="w-full px-4 py-3 rounded-2xl border border-white/40 bg-white/80 backdrop-blur-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-3 rounded-2xl border border-gray-400 bg-white/80 backdrop-blur-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 ></textarea>
               </div>
               <motion.button

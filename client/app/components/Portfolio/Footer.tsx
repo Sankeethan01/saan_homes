@@ -11,8 +11,8 @@ export default function Footer() {
           {/* Brand Section */}
           <div className="space-y-4">
             <h2 className="text-2xl font-bold">
-              <span className="text-blue-500">SAAN</span>
-              <span className="text-purple-400"> HOMES</span>
+              <span className="text-blue-700">SAAN</span>
+              <span className="text-red-800"> HOMES</span>
             </h2>
             <p className="text-gray-400">
               Building dreams into reality with innovation and excellence.
@@ -97,7 +97,7 @@ export default function Footer() {
         </div>
 
         {/* Copyright Section */}
-        <div className="border-t border-gray-800 mt-12 pt-8 text-center text-gray-400">
+        <div className="border-t border-gray-800 mt-10 py-8  text-center text-gray-400">
           <p>© 2025 SAAN HOMES. All rights reserved.</p>
         </div>
       </div>

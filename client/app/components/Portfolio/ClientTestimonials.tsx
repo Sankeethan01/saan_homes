@@ -8,11 +8,11 @@ const fadeInUp = {
 
 const ClientTestimonialsPortfolio = () => {
   return (
-     <section id="testimonials" className="py-20" style={{ background: 'radial-gradient(ellipse at 80% 20%, #e0e7ff 0%, #f8fafc 100%)' }}>
+     <section id="testimonials" className="py-17" style={{ background: 'radial-gradient(ellipse at 80% 20%,rgb(255, 255, 255) 0%,rgb(253, 253, 253) 100%)' }}>
         <div className="container mx-auto px-4">
           <motion.h2 
             {...fadeInUp}
-            className="text-4xl font-bold text-center mb-12"
+            className="text-4xl md:text-5xl text-center font-bold mb-12 bg-clip-text text-transparent bg-gradient-to-r from-blue-700 to-red-600"
           >
             Client Testimonials
           </motion.h2>

@@ -9,11 +9,11 @@ const fadeInUp = {
 
 const EquipmentRentalsPortfolio = () => {
   return (
-     <section id="rentals" className="py-24 bg-white">
-        <div className="container mx-auto px-4">
+     <section id="rentals" className="py-10 bg-white" style={{ background: 'radial-gradient(ellipse at 80% 20%, #e0e7ff 0%, #f8fafc 100%)' }}>
+        <div className="container mx-auto px-1">
           <motion.h2 
             {...fadeInUp}
-            className="text-4xl font-bold text-center mb-12"
+            className="text-4xl md:text-5xl text-center font-bold mb-10 bg-clip-text text-transparent bg-gradient-to-r from-blue-700 to-red-600"
           >
             Equipment Rentals
           </motion.h2>
@@ -31,7 +31,7 @@ const EquipmentRentalsPortfolio = () => {
                 initial={{ opacity: 0, scale: 0.8 }}
                 whileInView={{ opacity: 1, scale: 1 }}
                 transition={{ delay: index * 0.1 }}
-                className="p-6 rounded-3xl bg-white/80 backdrop-blur-md border border-white/40 hover:bg-white/90 transition-colors"
+                className="p-6 rounded-3xl shadow-xl bg-white/80 backdrop-blur-md border border-white/40 hover:bg-white/90 transition-colors"
               >
                 <h3 className="text-xl font-semibold mb-2">{equipment}</h3>
                 <p className="text-gray-600">Available for daily, weekly, or monthly rental.</p>
