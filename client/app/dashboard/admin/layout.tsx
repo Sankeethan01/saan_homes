@@ -76,36 +76,48 @@ export default function AdminLayout({
   const token = useAuthStore((s) => s.token);
   const hasHydrated = useAuthStore((s) => s._hasHydrated);
 
-  useEffect(() => {
-    if (!hasHydrated) {
-        return;
-    }
+useEffect(() => {
+  if (!hasHydrated) return;
 
-    if (!token) {
+  if (!token) {
+    console.log("No token in store → redirecting");
+    setLoading(false);
+    router.replace("/dashboard/login");
+    return;
+  }
+
+  const url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/userAccounts/users/me/`;
+  console.log("🔍 fetching user at", url);
+
+  fetch(url, { headers: { Authorization: `Bearer ${token}` } })
+    .then(async res => {
+      console.log("👀 user fetch status:", res.status);
+      if (!res.ok) {
+        console.log("❌ fetch failed, clearing token and redirecting");
+        useAuthStore.getState().setToken(null);
         router.replace("/dashboard/login");
         return;
-    }
-
-    fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/userAccounts/users/me/`,
-        {
-            headers: { Authorization: `Bearer ${token}` },
-        }
-    )
-    .then(async (res) => {
-        if (!res.ok) {
-            useAuthStore.getState().setToken(null);
-            return router.replace("/dashboard/login");
-        }
-        const data: User = await res.json();
-        if (data.role !== "ADMIN") {
-            return router.replace("/dashboard/login");
-        }
-        setUser(data);
+      }
+      const data: User = await res.json();
+      console.log("✅ fetched user:", data);
+      // role check (you already know this is "ADMIN")
+      if (data.role.toLowerCase() !== "admin") {
+        console.log("🚫 not an admin → redirecting");
+        router.replace("/dashboard/login");
+        return;
+      }
+      setUser(data);
     })
-    .catch(() => router.replace("/dashboard/login"))
-    .finally(() => setLoading(false));
-}, [token, router, hasHydrated]);
+    .catch(err => {
+      console.error("⚠️ fetch error:", err);
+      router.replace("/dashboard/login");
+    })
+    .finally(() => {
+      setLoading(false);
+    });
+}, [token, hasHydrated, router]);
+
+
 
 if (loading || !hasHydrated) {
     return (

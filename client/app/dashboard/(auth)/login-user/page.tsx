@@ -6,7 +6,7 @@ import Link from "next/link";
 import toast, { Toaster } from "react-hot-toast";
 import { useAuthStore } from "@/app/stores/useAuthStore";
 
-export default function Login() {
+export default function UserLogin() {
   const router = useRouter();
   const setToken = useAuthStore((s) => s.setToken); 
   const [formData, setFormData] = useState({
