@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, ReactNode } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   RiDashboardLine, 
@@ -11,8 +11,10 @@ import {
   RiUserSettingsLine,
   RiArrowDownSLine,
   RiMenuFoldLine,
-  RiMenuUnfoldLine
+  RiMenuUnfoldLine,
+  RiLogoutBoxRLine
 } from 'react-icons/ri';
+import { useAuthStore } from '@/app/stores/useAuthStore';
 
 interface NavItem {
   title: string;
@@ -49,19 +51,74 @@ const navItems: NavItem[] = [
   }
 ];
 
+interface User {
+    id: string;
+    username: string;
+    email: string;
+    first_name: string;
+    last_name: string;
+    role: "ADMIN" | "SUPERVISOR" | "PUBLIC";
+}
+
 export default function SupervisorLayout({
   children
 }: {
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [expandedItem, setExpandedItem] = useState<string | null>(null);
   const pathname = usePathname();
+  const router = useRouter();
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+  const token = useAuthStore((s) => s.token);
+  const hasHydrated = useAuthStore((s) => s._hasHydrated);
+
+  useEffect(() => {
+    if (!hasHydrated) {
+        return;
+    }
+
+    if (!token) {
+        router.replace("/dashboard/login");
+        return;
+    }
+
+    fetch(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/userAccounts/users/me/`,
+        {
+            headers: { Authorization: `Bearer ${token}` },
+        }
+    )
+    .then(async (res) => {
+        if (!res.ok) {
+            useAuthStore.getState().setToken(null);
+            return router.replace("/dashboard/login");
+        }
+        const data: User = await res.json();
+        if (data.role !== "SUPERVISOR") {
+            return router.replace("/dashboard/login");
+        }
+        setUser(data);
+    })
+    .catch(() => router.replace("/dashboard/login"))
+    .finally(() => setLoading(false));
+}, [token, router, hasHydrated]);
 
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
 
   const isActive = (path: string) => pathname === path;
-  const isSubActive = (path: string) => pathname.startsWith(path);
+
+  if (loading || !hasHydrated) {
+    return (
+        <div className="min-h-screen flex items-center justify-center bg-gray-50">
+            <div className="text-center">
+                <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                <p className="text-gray-600 text-lg">Loading Supervisor Dashboard...</p>
+            </div>
+        </div>
+    );
+}
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
@@ -71,6 +128,7 @@ export default function SupervisorLayout({
         animate={{ width: isSidebarOpen ? 280 : 80 }}
         className="bg-white border-r border-gray-200 flex flex-col"
       >
+        <div className='flex-grow'>
         {/* Logo and Toggle */}
         <div className="h-16 border-b border-gray-200 flex items-center justify-between px-4">
           {isSidebarOpen && (
@@ -160,23 +218,30 @@ export default function SupervisorLayout({
             </div>
           ))}
         </nav>
-
-        {/* User Profile Preview */}
-        {isSidebarOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="border-t border-gray-200 p-4"
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-gray-200" />
-              <div className="flex-1">
-                <h3 className="text-sm font-medium text-gray-800">John Doe</h3>
-                <p className="text-xs text-gray-500">Supervisor</p>
-              </div>
-            </div>
-          </motion.div>
-        )}
+        </div>
+        
+        {/* User Profile Preview & Logout */}
+        <div className="border-t border-gray-200 p-4">
+            {isSidebarOpen && (
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="flex items-center gap-3 mb-4"
+                >
+                    <div className="w-10 h-10 rounded-full bg-gray-200" />
+                    <div className="flex-1">
+                        <h3 className="text-sm font-medium text-gray-800">{user?.first_name} {user?.last_name}</h3>
+                        <p className="text-xs text-gray-500">Supervisor</p>
+                    </div>
+                </motion.div>
+            )}
+            <Link href="/dashboard/(auth)/logout" className="w-full">
+                <div className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors text-red-600 hover:bg-red-50 ${!isSidebarOpen && 'justify-center'}`}>
+                    <RiLogoutBoxRLine className="text-xl" />
+                    {isSidebarOpen && <span>Logout</span>}
+                </div>
+            </Link>
+        </div>
       </motion.aside>
 
       {/* Main Content */}
