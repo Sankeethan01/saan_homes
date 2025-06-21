@@ -15,7 +15,6 @@ export default function UserLogin() {
     password: "",
   });
   const [isLoading, setIsLoading] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -77,7 +76,8 @@ export default function UserLogin() {
       setToken(access);
 
       // 4) Set a cookie in browser also
-      const cookieOptions = `path=/; secure; sameSite=strict; max-age=${60 * 60}`;
+      const isProduction = process.env.NODE_ENV === 'production';
+      const cookieOptions = `path=/; sameSite=strict; max-age=3600${isProduction ? '; secure' : ''}`;
       document.cookie = `access_token=${access}; ${cookieOptions}`;
       document.cookie = `user_role=${profile.role}; ${cookieOptions}`;
 
@@ -91,13 +91,6 @@ export default function UserLogin() {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const handleRememberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const isChecked = e.target.checked;
-    setRememberMe(isChecked);
-    // Set the preference in localStorage immediately
-    localStorage.setItem("auth-remember", isChecked.toString());
   };
 
   return (
@@ -149,22 +142,6 @@ export default function UserLogin() {
                 onChange={handleChange}
               />
             </div>
-          </div>
-          <div className="flex items-center">
-            <input
-              id="rememberMe"
-              name="rememberMe"
-              type="checkbox"
-              checked={rememberMe}
-              onChange={handleRememberChange}
-              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-            />
-            <label
-              htmlFor="rememberMe"
-              className="ml-2 block text-sm text-gray-900"
-            >
-              Remember me
-            </label>
           </div>
 
           <div>

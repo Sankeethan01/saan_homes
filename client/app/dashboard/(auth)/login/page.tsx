@@ -71,13 +71,15 @@ export default function Login() {
 
       if (profile.role === "ADMIN" && uiSelectedRole === "ADMIN") {
         toast.success("Admin login successful!");
-        const cookieOptions = `path=/; secure; sameSite=strict; max-age=${60 * 60 * 24}`;
+        const isProduction = process.env.NODE_ENV === 'production';
+        const cookieOptions = `path=/; sameSite=strict; max-age=3600${isProduction ? '; secure' : ''}`;
         document.cookie = `access_token=${access}; ${cookieOptions}`;
         document.cookie = `user_role=${profile.role}; ${cookieOptions}`;
         router.push("/dashboard/admin");
       } else if (profile.role === "SUPERVISOR" && uiSelectedRole === "SUPERVISOR") {
         toast.success("Supervisor login successful!");
-        const cookieOptions = `path=/; secure; sameSite=strict; max-age=${60 * 60 * 24}`;
+        const isProduction = process.env.NODE_ENV === 'production';
+        const cookieOptions = `path=/; sameSite=strict; max-age=3600${isProduction ? '; secure' : ''}`;
         document.cookie = `access_token=${access}; ${cookieOptions}`;
         document.cookie = `user_role=${profile.role}; ${cookieOptions}`;
         router.push("/dashboard/supervisor");
