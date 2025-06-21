@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "SAAN HOMES - Building Dreams, One Home at a Time",
+  title: "SAAN HOMES - Building Dreams, One Home at a Time.",
   description: "SAAN HOMES - Building Dreams, One Home at a Time",
 };
 
