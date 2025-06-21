@@ -38,7 +38,6 @@ export default function DashboardLayout({
     const [isSidebarCollapsed, setSidebarCollapsed] = useState(false);
     const [theme, setTheme] = useState('light');
 
-    const token = useAuthStore((s) => s.token);
     const hasHydrated = useAuthStore((s) => s._hasHydrated);
 
     useEffect(() => {
@@ -47,35 +46,39 @@ export default function DashboardLayout({
     }, []);
     
     useEffect(() => {
-        if (!hasHydrated) {
-            return;
+        if (hasHydrated) {
+            const currentToken = useAuthStore.getState().token;
+            if (!currentToken) {
+                router.replace("/dashboard/login-user");
+            } else {
+                fetch(
+                    `${process.env.NEXT_PUBLIC_API_BASE_URL}/userAccounts/users/me/`,
+                    {
+                        headers: { Authorization: `Bearer ${currentToken}` },
+                    }
+                )
+                .then(async (res) => {
+                    if (!res.ok) {
+                        useAuthStore.getState().clear();
+                        router.replace("/dashboard/login-user");
+                        return;
+                    }
+                    const data: User = await res.json();
+                    if (data.role !== "PUBLIC") {
+                        useAuthStore.getState().clear();
+                        router.replace("/dashboard/login-user");
+                        return;
+                    }
+                    setUser(data);
+                })
+                .catch(() => {
+                    useAuthStore.getState().clear();
+                    router.replace("/dashboard/login-user");
+                })
+                .finally(() => setLoading(false));
+            }
         }
-
-        if (!token) {
-            router.replace("/dashboard/login-user");
-            return;
-        }
-
-        fetch(
-            `${process.env.NEXT_PUBLIC_API_BASE_URL}/userAccounts/users/me/`,
-            {
-                headers: { Authorization: `Bearer ${token}` },
-            }
-        )
-        .then(async (res) => {
-            if (!res.ok) {
-                useAuthStore.getState().setToken(null);
-                return router.replace("/dashboard/login-user");
-            }
-            const data: User = await res.json();
-            if (data.role !== "PUBLIC") {
-                return router.replace("/dashboard/login-user");
-            }
-            setUser(data);
-        })
-        .catch(() => router.replace("/dashboard/login-user"))
-        .finally(() => setLoading(false));
-    }, [token, router, hasHydrated]);
+    }, [hasHydrated, router]);
 
     const handleThemeToggle = () => {
         const newTheme = theme === 'light' ? 'dark' : 'light';

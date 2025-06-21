@@ -1,3 +1,4 @@
+// app/dashboard/(auth)/login-user
 "use client";
 
 import { useState } from "react";
@@ -74,6 +75,11 @@ export default function UserLogin() {
 
       // 3) Save tokens under consistent keys
       setToken(access);
+
+      // 4) Set a cookie in browser also
+      const cookieOptions = `path=/; secure; sameSite=strict; max-age=${60 * 60}`;
+      document.cookie = `access_token=${access}; ${cookieOptions}`;
+      document.cookie = `user_role=${profile.role}; ${cookieOptions}`;
 
       toast.success("Login successful!");
       setTimeout(() => {

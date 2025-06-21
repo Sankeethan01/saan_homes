@@ -235,7 +235,7 @@ export default function SupervisorLayout({
                     </div>
                 </motion.div>
             )}
-            <Link href="/dashboard/(auth)/logout" className="w-full">
+            <Link href="/dashboard/logout" className="w-full">
                 <div className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors text-red-600 hover:bg-red-50 ${!isSidebarOpen && 'justify-center'}`}>
                     <RiLogoutBoxRLine className="text-xl" />
                     {isSidebarOpen && <span>Logout</span>}

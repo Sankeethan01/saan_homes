@@ -198,7 +198,7 @@ if (loading || !hasHydrated) {
               </div>
             </div>
           )}
-          <Link href="/dashboard/(auth)/logout" passHref>
+          <Link href="/dashboard/logout" passHref>
             <div className={`flex items-center px-4 py-3 transition-colors duration-200 text-red-600 hover:bg-red-50 ${isCollapsed ? 'justify-center' : ''}`}>
               <RiLogoutBoxRLine className="w-5 h-5" />
               <span className={`ml-3 whitespace-nowrap ${isCollapsed ? 'opacity-0 hidden' : 'opacity-100'} transition-opacity duration-300`}>
