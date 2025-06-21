@@ -9,7 +9,7 @@ const fadeInUp = {
 
 const FeaturedProjectsPortfolio = () => {
   return (
-     <section id="projects" className="py-24 bg-white">
+     <section id="projects" className="py-17 bg-white">
         <div className="container mx-auto px-4">
           <motion.div className="text-center max-w-3xl mx-auto mb-16">
             <motion.h2 
