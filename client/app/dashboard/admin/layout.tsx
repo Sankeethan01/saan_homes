@@ -15,7 +15,6 @@ import {
   RiLogoutBoxRLine
 } from 'react-icons/ri';
 import { useAuthStore } from '@/app/stores/useAuthStore';
-import AuthWrapper from '@/app/components/auth/AuthWrapper';
 
 const sidebarItems = [
   {
@@ -122,7 +121,6 @@ export default function AdminLayout({
   }
 
   return (
-    <AuthWrapper>
       <div className="flex h-screen bg-gray-50">
         {/* Sidebar */}
         <motion.div
@@ -220,6 +218,5 @@ export default function AdminLayout({
           <main className="p-6">{children}</main>
         </div>
       </div>
-    </AuthWrapper>
   );
 }

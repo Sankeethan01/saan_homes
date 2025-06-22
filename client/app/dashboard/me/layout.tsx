@@ -12,8 +12,7 @@ import {
 import { useEffect, useState, ReactNode, createContext, useContext } from 'react';
 import { useAuthStore } from '@/app/stores/useAuthStore';
 import Image from 'next/image';
-import './dashboard.css'; // Import the scoped CSS
-import AuthWrapper from '@/app/components/auth/AuthWrapper';
+import './dashboard.css'; 
 
 interface User {
     id: string;
@@ -112,7 +111,6 @@ export default function DashboardLayout({
     }
 
     return (
-        <AuthWrapper>
             <ThemeContext.Provider value={themeValue}>
                 <div className={`dashboard-scope ${theme} min-h-screen flex text-[var(--text-color)]`}>
                     {/* Sidebar */}
@@ -209,6 +207,5 @@ export default function DashboardLayout({
                     </div>
                 </div>
             </ThemeContext.Provider>
-        </AuthWrapper>
     );
 }

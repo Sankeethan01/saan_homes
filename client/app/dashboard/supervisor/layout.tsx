@@ -15,7 +15,6 @@ import {
   RiLogoutBoxRLine
 } from 'react-icons/ri';
 import { useAuthStore } from '@/app/stores/useAuthStore';
-import AuthWrapper from '@/app/components/auth/AuthWrapper';
 
 interface NavItem {
   title: string;
@@ -118,7 +117,6 @@ export default function SupervisorLayout({
   }
 
   return (
-    <AuthWrapper>
       <div className="min-h-screen bg-gray-50 flex">
         {/* Sidebar */}
         <motion.aside
@@ -247,6 +245,5 @@ export default function SupervisorLayout({
           <div className="container mx-auto px-6 py-8">{children}</div>
         </main>
       </div>
-    </AuthWrapper>
   );
 }
