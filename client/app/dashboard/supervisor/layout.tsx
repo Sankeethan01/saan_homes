@@ -46,7 +46,7 @@ const navItems: NavItem[] = [
   },
   {
     title: 'Update Profile',
-    path: '/dashboard/supervisor/update_profile',
+    path: '/dashboard/supervisor/profile',
     icon: <RiUserSettingsLine className="text-xl" />
   }
 ];
