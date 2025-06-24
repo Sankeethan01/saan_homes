@@ -23,7 +23,7 @@ const FeaturedProjectsPortfolio = () => {
               whileInView={{ opacity: 1 }}
               className="text-gray-600 text-lg"
             >
-              Discover our portfolio of exceptional construction projects and architectural achievements
+              From Concept to Concrete – Our Finest Work !!!
             </motion.p>
           </motion.div>
 
