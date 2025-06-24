@@ -6,8 +6,8 @@ const HeroPortfolio = () => {
         {/* Background Pattern */}
         <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-white to-red-50">
           <div className="absolute inset-0 opacity-50" style={{
-            backgroundImage: 'url("/assets/images/landinghero.png")',
-            backgroundSize: '1560px 780px' 
+            backgroundImage: 'url("/assets/images/saan.png")',
+            backgroundSize: '1560px 980px' 
           }} />
         </div>
 
