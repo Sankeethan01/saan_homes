@@ -73,6 +73,9 @@ export default function AdminLayout({
 }) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const pathname = usePathname();
+  const [openEquipmentSubMenu, setOpenEquipmentSubMenu] = useState(false);
+
+  const isEquipmentSection = pathname.startsWith('/dashboard/admin/equipment');
 
   return (
     <div className="flex h-screen bg-gray-50">
@@ -94,14 +97,14 @@ export default function AdminLayout({
           {sidebarItems.map((item) => {
             const isActive = pathname === item.path;
             const isEquipmentRental = item.name === 'Equipment_Rental';
-            const [openSubMenu, setOpenSubMenu] = useState(false);
             if (isEquipmentRental && item.subItems) {
               return (
                 <div key={item.name}>
-                  <button
-                    onClick={() => setOpenSubMenu((prev) => !prev)}
+                  <Link
+                    href={item.path}
+                    onClick={() => setOpenEquipmentSubMenu((prev) => !prev)}
                     className={`flex items-center px-4 py-3 mb-1 w-full text-left transition-colors duration-200 ${
-                      pathname.startsWith('/dashboard/admin/equipment')
+                      isEquipmentSection
                         ? 'bg-blue-50 text-blue-600'
                         : 'text-gray-600 hover:bg-gray-50'
                     }`}
@@ -114,9 +117,9 @@ export default function AdminLayout({
                     >
                       {item.name}
                     </span>
-                  </button>
-                  {/* Submenu */}
-                  {openSubMenu && !isCollapsed && (
+                  </Link>
+                  {/* Submenu: always open if in equipment section and not collapsed */}
+                  {isEquipmentSection && !isCollapsed && (
                     <div className="ml-8">
                       {item.subItems.map((sub) => (
                         <Link
