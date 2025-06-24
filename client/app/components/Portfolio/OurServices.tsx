@@ -23,7 +23,7 @@ const OurServicesPortfolio = () => {
               whileInView={{ opacity: 1 }}
               className="text-gray-600 text-lg"
             >
-              We provide comprehensive construction and real estate solutions tailored to your needs!!
+              Seamless Services from Groundbreaking to Completion!!!
             </motion.p>
           </motion.div>
           
