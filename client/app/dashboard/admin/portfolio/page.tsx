@@ -168,7 +168,7 @@ export default function AdminPortfolioPage() {
   };
 
   return (
-    <main className="min-h-screen bg-gray-50 p-8">
+    <main className="min-h-screen bg-white">
       <h1 className="text-3xl font-bold mb-6">Admin Portfolio Management</h1>
       <div className="flex gap-4 mb-8">
         {TABS.map((t) => (

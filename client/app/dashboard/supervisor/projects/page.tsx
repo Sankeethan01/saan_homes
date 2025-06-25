@@ -75,10 +75,13 @@ const projectTypes = ["All", "Residential", "Commercial", "Industrial"];
 const projectStatuses = ["All", "Upcoming", "Ongoing", "Completed"];
 
 export default function ProjectsPage() {
+
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedType, setSelectedType] = useState('All');
   const [selectedStatus, setSelectedStatus] = useState('All');
   const [sortBy, setSortBy] = useState('newest');
+
+  
 
   const filteredProjects = projects.filter(project => {
     const matchesSearch = project.title.toLowerCase().includes(searchQuery.toLowerCase()) ||

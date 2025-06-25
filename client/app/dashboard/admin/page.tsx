@@ -71,8 +71,8 @@ function PieChart({ data, size = 120 }: { data: { label: string; value: number; 
 
 export default function AdminDashboard() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50 p-6">
-      <div className="max-w-7xl mx-auto space-y-10">
+    <div className="min-h-screen bg-white">
+      <div className="space-y-10">
         <motion.h1
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
