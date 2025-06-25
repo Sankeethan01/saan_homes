@@ -9,6 +9,12 @@ class UserSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, required=True, validators=[validate_password])
     password2 = serializers.CharField(write_only=True, required=True)   # confirm pwd
 
+     # Profile fields flattened with source
+    phone = serializers.CharField(source='profile.phone', required=False, allow_blank=True)
+    date_of_birth = serializers.DateField(source='profile.date_of_birth', required=False)
+    address = serializers.CharField(source='profile.address', required=False, allow_blank=True)
+    profile_image = serializers.ImageField(source='profile.profile_image', required=False, allow_null=True)
+
     class Meta:
         model = User
         fields = (
@@ -18,6 +24,10 @@ class UserSerializer(serializers.ModelSerializer):
             "first_name",
             "last_name",
             "role",
+            "phone",
+            "date_of_birth",
+            "address",
+            "profile_image",
             "password",
             "password2",
         )
@@ -30,6 +40,8 @@ class UserSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         validated_data.pop("password2")
+        # Pop nested profile data
+        profile_data = validated_data.pop("profile", {})
         user = User.objects.create_user(
             username=validated_data["username"],
             email=validated_data.get("email", ""),
@@ -38,16 +50,28 @@ class UserSerializer(serializers.ModelSerializer):
             last_name=validated_data.get("last_name", ""),
             role=validated_data.get("role", User.Role.PUBLIC),
         )
+        # Create profile (only if profile fields are included)
+        if profile_data:
+            for key, value in profile_data.items():
+                setattr(user.profile, key, value)
+            user.profile.save()
         return user
 
     def update(self, instance, validated_data):
         validated_data.pop("password2", None)
         password = validated_data.pop("password", None)
+        profile_data = validated_data.pop("profile", {})
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         if password:
             instance.set_password(password)
         instance.save()
+        # Update profile fields
+        if profile_data:
+            profile = instance.profile
+            for attr, value in profile_data.items():
+                setattr(profile, attr, value)
+            profile.save()
         return instance
 
 class RegistrationSerializer(serializers.ModelSerializer):

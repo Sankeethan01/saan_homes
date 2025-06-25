@@ -1,6 +1,7 @@
 # projects/serializers.py
 from rest_framework import serializers
-from .models import Project, Step, ProgressLog, Bill, Invoice, VRVideo
+from django.contrib.auth.password_validation import validate_password
+from .models import Project, Step, ProgressLog, Bill, Invoice, VRVideo,User
 
 
 class ProgressLogSerializer(serializers.ModelSerializer):
@@ -56,3 +57,18 @@ class VRVideoSerializer(serializers.ModelSerializer):
         model = VRVideo
         fields = "__all__"
         read_only_fields = ("id", "uploaded")
+
+
+class UserProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields =   ['first_name', 'last_name', 'email', 'phone', 'date_of_birth', 'address', 'profile_image']
+        read_only_fields = ['id', 'username', 'role', 'department', 'position', 'employee_id', 'join_date']
+
+class PasswordChangeSerializer(serializers.Serializer):
+    current_password = serializers.CharField(required=True)
+    new_password = serializers.CharField(required=True)
+
+    def validate_new_password(self, value):
+        validate_password(value)
+        return value
