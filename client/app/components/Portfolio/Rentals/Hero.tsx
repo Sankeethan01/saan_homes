@@ -65,12 +65,7 @@ const HeroRentalsPortfolio = () => {
                  </motion.div>
                </div>
              </div>
-             <motion.div
-               initial={{ opacity: 0, y: 50 }}
-               animate={{ opacity: 1, y: 0 }}
-               transition={{ delay: 0.8 }}
-               className="absolute bottom-0 left-0 right-0 h-32" style={{ background: 'radial-gradient(ellipse at 20% 80%, #e0f7fa 0%, #f8fafc 100%)' }}
-             />
+             
            </section>
   );
 };

@@ -28,13 +28,14 @@ interface Project {
 }
 
 export default function ProjectsPage() {
-  const [projects, setProjects] = useState<Project[]>([]);
+  
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedType, setSelectedType] = useState('All');
   const [selectedStatus, setSelectedStatus] = useState('All');
   const [sortBy, setSortBy] = useState('newest');
   const [loading, setLoading] = useState(true);
   const token = useAuthStore((s) => s.token);
+  const [projects, setProjects] = useState<Project[]>([]);
 
 useEffect(() => {
   console.log("Token:", token); // Debugging
@@ -89,8 +90,22 @@ useEffect(() => {
       const dateB = new Date(b.start_date).getTime();
       return sortBy === 'newest' ? dateB - dateA : dateA - dateB;
     });
+  
 
-  if (loading) {
+  const filteredProjects = projects.filter(project => {
+    const matchesSearch = project.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         project.description.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesType = selectedType === 'All' || project.type === selectedType;
+    const matchesStatus = selectedStatus === 'All' || project.status === selectedStatus.toLowerCase();
+    return matchesSearch && matchesType && matchesStatus;
+  }).sort((a, b) => {
+    if (sortBy === 'newest') {
+      return new Date(b.startDate).getTime() - new Date(a.startDate).getTime();
+    }
+    return new Date(a.startDate).getTime() - new Date(b.startDate).getTime();
+  });
+      
+      if (loading) {
     return <div className="text-center text-gray-600">Loading projects...</div>;
   }
 

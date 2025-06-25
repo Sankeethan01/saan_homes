@@ -1,5 +1,6 @@
 'use client';
 
+import Footer from '@/app/components/Portfolio/Footer';
 import HomeIconPortfolio from '@/app/components/Portfolio/Home_Icon';
 import HeroOngoingProjectsPortfolio from '@/app/components/Portfolio/Projects/Ongoing/Hero';
 import ProjectListOngoingProjectsPortfolio from '@/app/components/Portfolio/Projects/Ongoing/ProjectList';
@@ -16,6 +17,9 @@ export default function OngoingProjectsPage() {
 
       {/* Home Icon */}
         <HomeIconPortfolio />
+
+      {/* Footer */}
+      <Footer />
     </main>
   );
 }

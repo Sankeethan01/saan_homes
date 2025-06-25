@@ -155,7 +155,7 @@ export default function SupervisorsPage() {
   );
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto p-6">
       {/* Header */}
       <div className="flex justify-between items-center mb-6">
         <div className="space-y-1">
