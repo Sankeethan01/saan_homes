@@ -17,7 +17,7 @@ const NavbarPortfolio = () => {
   const navItems = [
     { title: 'Services', href: '/services' },
     { title: 'Projects', href: '/projects' },
-    { title: 'Rentals', href: '/rentals' },
+    { title: 'Rentals', href: '/equipments' },
   ];
 
   return (
