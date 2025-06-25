@@ -96,33 +96,61 @@ export default function UpdateProfilePage() {
 
   // PERSONAL INFO UPDATE
   const handlePersonalUpdate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!token) return alert('You must be logged in');
+  e.preventDefault();
+  if (!token) return alert('You must be logged in');
 
-    const formData = new FormData();
-    formData.append('first_name', profileData.personalInfo.firstName);
-    formData.append('last_name', profileData.personalInfo.lastName);
-    formData.append('email', profileData.personalInfo.email);
-    formData.append('phone', profileData.personalInfo.phone);
-    formData.append('date_of_birth', profileData.personalInfo.dateOfBirth);
-    formData.append('address', profileData.personalInfo.address);
-    if (selectedFile) {
-      formData.append('profile_image', selectedFile);
-    }
+  const formData = new FormData();
+  formData.append('first_name', profileData.personalInfo.firstName);
+  formData.append('last_name', profileData.personalInfo.lastName);
+  formData.append('email', profileData.personalInfo.email);
+  formData.append('phone', profileData.personalInfo.phone);
+  formData.append('date_of_birth', profileData.personalInfo.dateOfBirth);
+  formData.append('address', profileData.personalInfo.address);
+  if (selectedFile) {
+    formData.append('profile_image', selectedFile);
+  }
 
-    try {
-      await axios.patch('http://localhost:8000/api/userAccounts/profile/', formData, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'multipart/form-data',
-        },
-      });
-      alert('Profile updated successfully!');
-    } catch (err) {
-      console.error(err);
-      alert('Failed to update profile');
-    }
-  };
+  try {
+    await axios.put('http://localhost:8000/api/userAccounts/profile/', formData, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+
+    // ✅ FETCH updated profile after upload
+    const res = await axios.get('http://localhost:8000/api/userAccounts/profile/', {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    const data = res.data;
+    setProfileData({
+      personalInfo: {
+        firstName: data.firstName || '',
+        lastName: data.lastName || '',
+        email: data.email || '',
+        phone: data.phone || '',
+        dateOfBirth: data.dateOfBirth || '',
+        address: data.address || '',
+        profileImage: data.profileImage || '/default-profile.png', // use full URL here if needed
+      },
+      professionalInfo: {
+        department: data.department || '',
+        position: data.position || '',
+        employeeId: data.employeeId || '',
+        joinDate: data.joinDate || '',
+      },
+    });
+
+    alert('Profile updated successfully!');
+    setSelectedFile(null); // Clear selected file
+
+  } catch (err) {
+    console.error(err);
+    alert('Failed to update profile');
+  }
+};
+
 
   // PASSWORD CHANGE
   const handleChangePassword = async (e: React.FormEvent) => {
