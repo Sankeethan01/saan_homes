@@ -65,12 +65,7 @@ const HeroServicesPortfolio = () => {
                  </motion.div>
                </div>
              </div>
-             <motion.div
-               initial={{ opacity: 0, y: 50 }}
-               animate={{ opacity: 1, y: 0 }}
-               transition={{ delay: 0.8 }}
-               className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-gray-50 to-transparent"
-             />
+             
            </section>
   );
 };

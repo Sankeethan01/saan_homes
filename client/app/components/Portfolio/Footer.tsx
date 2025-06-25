@@ -5,14 +5,18 @@ import { FaFacebookF, FaInstagram, FaTwitter } from 'react-icons/fa';
 
 export default function Footer() {
   return (
-    <footer className="bg-[#353535] text-gray-300 py-16">
-      <div className="container mx-auto px-4">
+    <footer
+      className="relative bg-[#353535] text-gray-300 py-16 bg-[url('/assets/images/footer.jpg')] bg-no-repeat bg-cover bg-center"
+    >
+      {/* Dark blue overlay */}
+      <div className="absolute inset-0 bg-[#001233] opacity-80 pointer-events-none z-0" />
+      <div className="relative container mx-auto px-4 z-0">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {/* Brand Section */}
           <div className="space-y-4">
-            <h2 className="text-2xl font-bold">
-              <span className="text-blue-700">SAAN</span>
-              <span className="text-red-800"> HOMES</span>
+            <h2 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-800 to-red-600">
+              <span >SAAN  HOMES</span>
+              
             </h2>
             <p className="text-gray-400">
               Building dreams into reality with innovation and excellence.

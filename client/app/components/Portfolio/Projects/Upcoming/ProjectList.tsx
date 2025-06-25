@@ -1,4 +1,3 @@
-
 import { motion } from 'framer-motion';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -51,68 +50,60 @@ const upcomingProjects = [
 
 const ProjectListUpcomingProjectsPortfolio = () => {
   return (
-    <section className="py-24">
-        <div className="container mx-auto px-4">
-          <div className="space-y-32">
-            {upcomingProjects.map((project, index) => (
-              <motion.div
-                key={project.id}
-                initial={{ opacity: 0, y: 50 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8 }}
-                viewport={{ once: true }}
-                className={`grid lg:grid-cols-2 gap-16 items-center ${
-                  index % 2 === 0 ? '' : 'lg:grid-flow-dense'
-                }`}
-              >
-                <div className={`space-y-8 ${index % 2 === 0 ? 'lg:order-1' : 'lg:order-2'}`}>
-                  <div>
-                    <motion.p
-                      initial={{ opacity: 0 }}
-                      whileInView={{ opacity: 1 }}
-                      transition={{ delay: 0.2 }}
-                      className="text-blue-600 font-medium mb-4"
-                    >
-                      {project.category}
-                    </motion.p>
-                    <h2 className="text-4xl font-bold mb-6">{project.title}</h2>
-                    <p className="text-gray-600 text-lg leading-relaxed">
-                      {project.description}
-                    </p>
-                    <Link href={`/projects/${project.id}`}>
-                      <motion.button
-                        whileHover={{ x: 5 }}
-                        className="group flex items-center gap-2 text-blue-600 font-medium hover:text-blue-700 transition-colors mt-4"
-                      >
-                        View Project Details
-                        <RiArrowRightLine className="text-xl transition-transform group-hover:translate-x-1" />
-                      </motion.button>
-                    </Link>
-                  </div>
-                  <div className="space-y-3">
-                    {project.features.map((feature, idx) => (
-                      <div key={idx} className="flex items-center gap-3">
-                        <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center">
-                          <RiCheckLine className="text-blue-600" />
-                        </div>
-                        <span className="text-gray-700">{feature}</span>
+    <section className="py-16 bg-[#f1f4f7]">
+      <div className="container mx-auto px-4">
+        <div className="space-y-16">
+          {upcomingProjects.map((project, index) => (
+            <motion.div
+              key={project.id}
+              initial={{ opacity: 0, y: 50 }}
+              whileInView={{ opacity: 1, y: 35 }}
+              transition={{ duration: 0.8 }}
+              viewport={{ once: true }}
+              className="bg-white/70 rounded-3xl shadow-xl flex flex-col lg:flex-row items-stretch overflow-hidden"
+            >
+              {/* Left: Text */}
+              <div className="flex-1 flex flex-col justify-center p-10">
+                <p className="text-blue-600 font-medium mb-2">{project.category}</p>
+                <h2 className="text-4xl font-bold mb-6 text-gray-900">{project.title}</h2>
+                <p className="text-gray-600 text-lg leading-relaxed mb-6">
+                  {project.description}
+                </p>
+                <div className="space-y-3 mb-8">
+                  {project.features.map((feature, idx) => (
+                    <div key={idx} className="flex items-center gap-3">
+                      <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center">
+                        <RiCheckLine className="text-blue-600" />
                       </div>
-                    ))}
-                  </div>
+                      <span className="text-gray-700">{feature}</span>
+                    </div>
+                  ))}
                 </div>
-                <div className={`relative aspect-[4/3] ${index % 2 === 0 ? 'lg:order-2' : 'lg:order-1'}`}>
-                  <Image
-                    src={project.image}
-                    alt={project.title}
-                    fill
-                    className="object-cover rounded-2xl shadow-xl"
-                  />
-                </div>
-              </motion.div>
-            ))}
-          </div>
+                <Link href={`/projects/${project.id}`}>
+                  <motion.button
+                    whileHover={{ x: 5 }}
+                    className="group flex items-center gap-2 bg-[#003049] text-white font-semibold px-6 py-3 rounded-lg shadow hover:bg-[#01416b] transition-colors"
+                  >
+                    View Project Details
+                    <RiArrowRightLine className="text-xl transition-transform group-hover:translate-x-1" />
+                  </motion.button>
+                </Link>
+              </div>
+              {/* Right: Image */}
+              <div className="relative flex-1 min-h-[320px]">
+                <Image
+                  src={project.image}
+                  alt={project.title}
+                  fill
+                  className="object-cover w-full h-full"
+                  style={{ borderTopRightRadius: '1.5rem', borderBottomRightRadius: '1.5rem' }}
+                />
+              </div>
+            </motion.div>
+          ))}
         </div>
-      </section>
+      </div>
+    </section>
   );
 }
 
