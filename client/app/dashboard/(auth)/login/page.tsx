@@ -67,6 +67,8 @@ export default function Login() {
         return;
       }
       const profile = await profileRes.json();
+      localStorage.setItem('username', profile.username);
+      localStorage.setItem('user_role', profile.role); 
       const uiSelectedRole = selectedRole.toUpperCase();
 
       if (profile.role === "ADMIN" && uiSelectedRole === "ADMIN") {

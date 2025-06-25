@@ -1,5 +1,6 @@
 from django.urls import include, path
 from rest_framework.routers import DefaultRouter
+from userAccounts.views import ProfileView
 from projects.views import (
     ProjectViewSet,
     StepViewSet,
@@ -10,7 +11,7 @@ from projects.views import (
 )
 
 router = DefaultRouter()
-router.register(r"projects", ProjectViewSet)
+router.register(r"", ProjectViewSet)
 router.register(r"steps", StepViewSet)
 router.register(r"logs", ProgressLogViewSet)
 router.register(r"bills", BillViewSet)
@@ -19,4 +20,5 @@ router.register(r"vr-videos", VRVideoViewSet)
 
 urlpatterns = [
     path("", include(router.urls)),
+    path('api/profile/', ProfileView.as_view()),
 ]

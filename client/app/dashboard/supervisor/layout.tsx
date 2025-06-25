@@ -57,6 +57,7 @@ interface User {
     email: string;
     first_name: string;
     last_name: string;
+    profile_image?: string;
     role: "ADMIN" | "SUPERVISOR" | "PUBLIC";
 }
 
@@ -72,6 +73,7 @@ export default function SupervisorLayout({
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const token = useAuthStore((s) => s.token);
+  
 
   useEffect(() => {
     if (token) {
@@ -95,7 +97,7 @@ export default function SupervisorLayout({
       router.replace("/dashboard/login");
       setLoading(false);
     }
-  }, [token, router]);
+  }, [token, router,setUser]);
 
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
 
@@ -217,27 +219,42 @@ export default function SupervisorLayout({
           </div>
           
           {/* User Profile Preview & Logout */}
-          <div className="border-t border-gray-200 p-4">
-              {isSidebarOpen && (
-                  <motion.div
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      className="flex items-center gap-3 mb-4"
-                  >
-                      <div className="w-10 h-10 rounded-full bg-gray-200" />
-                      <div className="flex-1">
-                          <h3 className="text-sm font-medium text-gray-800">{user?.first_name} {user?.last_name}</h3>
-                          <p className="text-xs text-gray-500">Supervisor</p>
-                      </div>
-                  </motion.div>
-              )}
-              <Link href="/dashboard/logout" className="w-full">
-                  <div className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors text-red-600 hover:bg-red-50 ${!isSidebarOpen && 'justify-center'}`}>
-                      <RiLogoutBoxRLine className="text-xl" />
-                      {isSidebarOpen && <span>Logout</span>}
-                  </div>
-              </Link>
-          </div>
+<div className="border-t border-gray-200 p-4">
+  {isSidebarOpen && (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="flex items-center gap-3 mb-4"
+    >
+      {user?.profile_image ? (
+        <img
+          src={`${process.env.NEXT_PUBLIC_API_BASE_URL}${user.profile_image}`}
+          alt="Profile"
+          className="w-10 h-10 rounded-full object-cover border"
+        />
+      ) : (
+        <div className="w-10 h-10 rounded-full bg-gray-200" />
+      )}
+      <div className="flex-1">
+        <h3 className="text-sm font-medium text-gray-800">
+          {user?.first_name} {user?.last_name}
+        </h3>
+        <p className="text-xs text-gray-500">Supervisor</p>
+      </div>
+    </motion.div>
+  )}
+  <Link href="/dashboard/logout" className="w-full">
+    <div
+      className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors text-red-600 hover:bg-red-50 ${
+        !isSidebarOpen && 'justify-center'
+      }`}
+    >
+      <RiLogoutBoxRLine className="text-xl" />
+      {isSidebarOpen && <span>Logout</span>}
+    </div>
+  </Link>
+</div>
+
         </motion.aside>
 
         {/* Main Content */}

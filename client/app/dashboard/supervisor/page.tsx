@@ -106,14 +106,14 @@ const recentActivities = [
 
 export default function SupervisorDashboard() {
   const [selectedPeriod, setSelectedPeriod] = useState('monthly');
-
+  const username = typeof window !== 'undefined' ? localStorage.getItem('username') : 'User';
   return (
     <div className="space-y-8">
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold text-gray-800">Supervisor Dashboard</h1>
-          <p className="text-gray-600">Welcome back, John Doe</p>
+          <p className="text-gray-600">Welcome back, {username}</p>
         </div>
         <select
           value={selectedPeriod}
