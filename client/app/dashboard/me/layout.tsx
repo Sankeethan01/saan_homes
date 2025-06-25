@@ -56,24 +56,38 @@ export default function DashboardLayout({
             .then(async (res) => {
                 if (!res.ok) {
                     useAuthStore.getState().clear();
-                    router.replace("/dashboard/login-user");
+                    router.replace("/dashboard/login");
                     return;
                 }
                 const data: User = await res.json();
                 if (data.role !== "PUBLIC") {
                     useAuthStore.getState().clear();
-                    router.replace("/dashboard/login-user");
+                    router.replace("/dashboard/login");
                     return;
                 }
                 setUser(data);
+                localStorage.setItem('user', JSON.stringify(data));
             })
             .catch(() => {
                 useAuthStore.getState().clear();
-                router.replace("/dashboard/login-user");
+                router.replace("/dashboard/login");
             })
             .finally(() => setLoading(false));
         } else {
-            router.replace("/dashboard/login-user");
+            const storedUser = localStorage.getItem('user');
+            if (storedUser) {
+                try {
+                    const userData = JSON.parse(storedUser);
+                    setUser(userData);
+                    setLoading(false);
+                } catch {
+                    useAuthStore.getState().clear();
+                    localStorage.removeItem('user');
+                    router.replace("/dashboard/login");
+                }
+            } else {
+                router.replace("/dashboard/login");
+            }
         }
     }, [token, router]);
 
