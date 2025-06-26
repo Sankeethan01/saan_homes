@@ -33,9 +33,9 @@ const equipmentCategories = [
 const equipmentList: Equipment[] = [
   {
     id: 1,
-    name: 'CAT 320 Excavator',
-    category: 'Excavators',
-    image: 'https://images.pexels.com/photos/95687/pexels-photo-95687.jpeg',
+    name: 'Jack',
+    category: 'Elevators',
+    image: '/assets/images/jack.jpeg',
     dailyRate: 450,
     weeklyRate: 2800,
     monthlyRate: 9000,
@@ -50,9 +50,9 @@ const equipmentList: Equipment[] = [
   },
   {
     id: 2,
-    name: 'Komatsu D61 Bulldozer',
-    category: 'Bulldozers',
-    image: 'https://images.pexels.com/photos/24245324/pexels-photo-24245324.jpeg',
+    name: 'Concrete Mixer',
+    category: 'Concrete Mixer',
+    image: '/assets/images/cmixer.jpg',
     dailyRate: 600,
     weeklyRate: 3500,
     monthlyRate: 12000,
@@ -194,12 +194,15 @@ const EquipmentGridRentalsPortfolio = () => {
                 className="bg-white rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300"
               >
                 <div className="relative h-64">
-                  <Image
-                    src={equipment.image}
-                    alt={equipment.name}
-                    fill
-                    className="object-cover"
-                  />
+                  <div className="relative w-full" style={{ height: '220px' }}>
+                    <Image
+                      src={equipment.image}
+                      alt={equipment.name}
+                      fill
+                      className="object-cover rounded-t-xl"
+                      style={{ objectFit: 'cover' }}
+                    />
+                  </div>
                   <div className="absolute top-4 right-4">
                     <span className={`px-3 py-1 rounded-full text-sm font-medium ${
                       equipment.availability
