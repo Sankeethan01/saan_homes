@@ -228,12 +228,14 @@ export default function SupervisorLayout({
     >
       {user?.profile_image ? (
         <img
-          src={`${process.env.NEXT_PUBLIC_API_BASE_URL}${user.profile_image}`}
+          src={`http://localhost:8000${user.profile_image}`}
           alt="Profile"
-          className="w-10 h-10 rounded-full object-cover border"
+          className="w-10 h-10 rounded-full object-cover border-2 border-gray-200 shadow-sm"
         />
       ) : (
-        <div className="w-10 h-10 rounded-full bg-gray-200" />
+        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white font-semibold text-sm">
+          {user?.first_name?.charAt(0)?.toUpperCase() || 'U'}
+        </div>
       )}
       <div className="flex-1">
         <h3 className="text-sm font-medium text-gray-800">
