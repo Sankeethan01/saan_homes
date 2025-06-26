@@ -73,8 +73,9 @@ export default function UserLogin() {
       }
       const profile = await profileRes.json();
 
-      if (profile.role !== "PUBLIC") {
-        toast.error("Only public users may log in here");
+      // Allow ADMIN and SUPERVISOR roles
+      if (!["ADMIN", "SUPERVISOR"].includes(profile.role)) {
+        toast.error("Only admin and supervisor users may log in here");
         setIsLoading(false);
         return;
       }
@@ -90,7 +91,7 @@ export default function UserLogin() {
 
       toast.success("Login successful!");
       setTimeout(() => {
-        router.push("/dashboard/me");
+        router.push("/dashboard/admin");
       }, 500);
     } catch (err) {
       console.error(err);

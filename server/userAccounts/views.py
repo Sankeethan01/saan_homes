@@ -16,10 +16,13 @@ User = get_user_model()
 
 class IsAdmin(permissions.BasePermission):
     def has_permission(self, request, view):
-        return (
-            request.user.is_authenticated
-            and getattr(request.user, "role", None) == "ADMIN"
-        )
+        if not request.user.is_authenticated:
+            return False
+            
+        if request.method in permissions.SAFE_METHODS:
+            return True
+            
+        return getattr(request.user, "role", None) == "ADMIN"
 
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -34,6 +37,13 @@ class UserViewSet(viewsets.ModelViewSet):
     filter_backends = [SearchFilter, OrderingFilter]
     search_fields = ["username", "email", "first_name", "last_name"]
     ordering = ["username"]
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        role = self.request.query_params.get('role', None)
+        if role:
+            queryset = queryset.filter(role=role)
+        return queryset
 
     # ---------- extra helper for /me ----------
     from rest_framework.decorators import action
