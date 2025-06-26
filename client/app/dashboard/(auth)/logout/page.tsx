@@ -4,27 +4,28 @@
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/app/stores/useAuthStore'
+import { clearAllAuthData } from '@/app/utils/auth'
 
-export default function LogoutPage() {
+export default function Logout() {
   const router = useRouter()
-  const setToken = useAuthStore((s) => s.setToken)
+  const clear = useAuthStore((s) => s.clear)
 
   useEffect(() => {
-    // Clear the token from the store and storage
-    setToken(null)
+    // Clear all auth data from cookies, localStorage, and sessionStorage
+    clearAllAuthData()
     
-    // Remove the remember me flag
-    localStorage.removeItem("auth-remember")
-
-    // Redirect to the login page
-    router.replace('/dashboard/login')
-  }, [setToken, router])
+    // Clear Zustand store
+    clear()
+    
+    // Redirect to login page
+    router.push('/dashboard/login')
+  }, [router, clear])
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="text-center">
-        <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-        <p className="text-gray-600 dark:text-gray-300 text-lg">Logging out...</p>
+        <h1 className="text-2xl font-semibold text-gray-800">Logging out...</h1>
+        <p className="mt-2 text-gray-600">You will be redirected shortly.</p>
       </div>
     </div>
   )

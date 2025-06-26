@@ -15,6 +15,7 @@ import {
   RiLogoutBoxRLine
 } from 'react-icons/ri';
 import { useAuthStore } from '@/app/stores/useAuthStore';
+import { getUserRole, getAccessToken, setAuthCookies, fetchWithAuth } from '@/app/utils/auth';
 
 interface NavItem {
   title: string;
@@ -76,28 +77,68 @@ export default function SupervisorLayout({
   
 
   useEffect(() => {
-    if (token) {
-      fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/userAccounts/users/me/`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-        .then(async (res) => {
-          if (!res.ok) {
-            useAuthStore.getState().setToken(null);
-            return router.replace("/dashboard/login");
+    const checkAuth = async () => {
+      try {
+        setLoading(true);
+        
+        // Try to get token from all possible sources
+        let accessToken = token;
+        if (!accessToken) {
+          accessToken = getAccessToken();
+          if (accessToken) {
+            // If we found a token in cookies/localStorage but not in store, update the store
+            useAuthStore.getState().setToken(accessToken);
           }
-          const data: User = await res.json();
-          if (data.role !== "SUPERVISOR") {
-            return router.replace("/dashboard/login");
+        }
+        
+        // Get role from all possible sources
+        const role = getUserRole();
+        
+        if (!accessToken || !role) {
+          router.push('/dashboard/login');
+          return;
+        }
+        
+        // Verify user is a supervisor
+        if (role !== 'SUPERVISOR') {
+          if (role === 'ADMIN') {
+            router.push('/dashboard/admin');
+          } else if (role === 'PUBLIC') {
+            router.push('/dashboard/me');
+          } else {
+            router.push('/dashboard/login');
           }
+          return;
+        }
+
+        // Fetch user details using our helper
+        try {
+          const profileRes = await fetchWithAuth(
+            `${process.env.NEXT_PUBLIC_API_BASE_URL}/userAccounts/users/me/`
+          );
+          
+          if (!profileRes.ok) {
+            useAuthStore.getState().clear();
+            router.replace("/dashboard/login");
+            return;
+          }
+          
+          const data = await profileRes.json();
           setUser(data);
-        })
-        .catch(() => router.replace("/dashboard/login"))
-        .finally(() => setLoading(false));
-    } else {
-      router.replace("/dashboard/login");
-      setLoading(false);
-    }
-  }, [token, router,setUser]);
+          
+          // Re-sync cookies to ensure they're set properly
+          setAuthCookies(accessToken, data.role, true);
+        } catch (error) {
+          console.error('Failed to verify authentication:', error);
+          router.replace("/dashboard/login");
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    checkAuth();
+  }, [token, router]);
 
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
 
