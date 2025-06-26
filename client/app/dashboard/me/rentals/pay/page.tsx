@@ -1,14 +1,22 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useAuthStore } from "@/app/stores/useAuthStore";
 
 export default function PaymentTermsPage() {
+  const token = useAuthStore((s) => s.token);
   const [accepted, setAccepted] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
   const bookingId = searchParams.get("bookingId");
+
+  useEffect(() => {
+    if (!token) {
+      router.push("/login");
+    }
+  }, [token, router]);
 
   const conditions = [
     {
