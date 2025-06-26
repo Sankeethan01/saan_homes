@@ -25,29 +25,40 @@ export default function PayNowPage() {
     setLoading(true);
     try {
       const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
+      console.log('Making payment request for booking:', bookingId);
+      
       const res = await fetch(`${API_BASE_URL}/equipments/bookings/${bookingId}/`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
-          // Add auth header if needed
           Authorization: typeof window !== 'undefined' ? `Bearer ${localStorage.getItem('token')}` : '',
         },
         body: JSON.stringify({ status: "PAID" }),
       });
+      
+      console.log('API Response status:', res.status);
+      
       if (res.status === 401 || res.status === 403) {
         alert('Session expired. Please log in again.');
         router.push('/login');
         return;
       }
+      
       if (res.ok) {
         alert('Payment successful!');
         router.push("/dashboard/me/rentals");
       } else {
         const data = await res.json();
+        console.log('API Error:', data);
         alert(data.error || "Failed to update booking status.");
+        // Still redirect even if API fails (for testing)
+        router.push("/dashboard/me/rentals");
       }
     } catch (err) {
+      console.error('Payment error:', err);
       alert("Payment failed. Please try again.");
+      // Still redirect even if there's an error (for testing)
+      router.push("/dashboard/me/rentals");
     } finally {
       setLoading(false);
     }
