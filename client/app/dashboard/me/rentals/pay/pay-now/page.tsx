@@ -5,6 +5,7 @@ import { FaCcVisa, FaCcMastercard } from "react-icons/fa";
 import { SiMastercard } from "react-icons/si";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuthStore } from "@/app/stores/useAuthStore";
+import toast, { Toaster } from "react-hot-toast";
 
 export default function PayNowPage() {
   const token = useAuthStore(state => state.token);
@@ -39,17 +40,17 @@ export default function PayNowPage() {
     
     // Validate required fields
     if (!cardName || !cardNumber || !expMonth || !expYear || !cvv) {
-      alert("Please fill in all card details");
+      toast.error("Please fill in all card details");
       return;
     }
 
     if (!bookingId) {
-      alert("Booking ID not found.");
+      toast.error("Booking ID not found.");
       return;
     }
 
     if (!token) {
-      alert("Please login to continue");
+      toast.error("Please login to continue");
       router.push("/dashboard/login-user");
       return;
     }
@@ -57,12 +58,11 @@ export default function PayNowPage() {
     setLoading(true);
     try {
       const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
-      const res = await fetch(`${API_BASE_URL}/equipments/bookings/${bookingId}/`, {
+      const res = await fetch(`${API_BASE_URL}/equipments/bookings/${bookingId}/pay/`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
-          // Add auth header if needed
-          Authorization: typeof window !== 'undefined' ? `Bearer ${localStorage.getItem('token')}` : '',
+          Authorization: `Bearer ${token}`
         },
         body: JSON.stringify({ 
           card_name: cardName,
@@ -72,20 +72,28 @@ export default function PayNowPage() {
           cvv: cvv
         }),
       });
-      if (res.status === 401 || res.status === 403) {
-        alert('Session expired. Please log in again.');
-        router.push('/login');
-        return;
+
+      if (!res.ok) {
+        if (res.status === 401 || res.status === 403) {
+          // Clear the token and redirect to login
+          clear();
+          toast.error('Session expired. Please log in again.');
+          router.push('/dashboard/login-user');
+          return;
+        }
+
+        const errorData = await res.json();
+        throw new Error(errorData.error || "Payment failed");
       }
-      if (res.ok) {
-        alert('Payment successful!');
+
+      toast.success('Payment successful!');
+      setTimeout(() => {
         router.push("/dashboard/me/rentals");
-      } else {
-        const data = await res.json();
-        alert(data.error || "Failed to update booking status.");
-      }
+      }, 2000); // Wait 2 seconds for toast to show before redirecting
+      
     } catch (err) {
-      alert("Payment failed. Please try again.");
+      console.error("Payment error:", err);
+      toast.error(err instanceof Error ? err.message : "Payment failed. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -93,6 +101,7 @@ export default function PayNowPage() {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-white px-2 py-8">
+      <Toaster position="top-right" />
       <div className="w-full max-w-md bg-white rounded-lg shadow-lg border border-gray-200">
         <h2 className="text-2xl font-bold text-center mt-8 mb-2">Payment Options</h2>
         <div className="text-center text-lg font-semibold mb-4">Total - INR 1500/month</div>
