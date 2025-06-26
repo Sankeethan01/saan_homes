@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   RiAddLine,
@@ -9,47 +9,160 @@ import {
   RiCheckLine,
   RiCloseLine,
 } from 'react-icons/ri';
+import { useAuthStore } from '@/app/stores/useAuthStore';
+import { useRouter } from 'next/navigation';
 
-const initialCategories = [
-  'Heavy Machinery',
-  'Power Tools',
-  'Construction Equipment',
-  'Landscaping Tools',
-  'Safety Equipment',
-  'Electrical Tools',
-];
+interface Category {
+  id: number;
+  name: string;
+  slug: string;
+}
 
 export default function CategoryPage() {
-  const [categories, setCategories] = useState<string[]>(initialCategories);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [newCategory, setNewCategory] = useState('');
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editingValue, setEditingValue] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [actionLoading, setActionLoading] = useState(false);
+  const token = useAuthStore((s) => s.token);
+  const router = useRouter();
+  const clearToken = useAuthStore((s) => s.clear);
 
-  const handleAddCategory = () => {
-    if (newCategory.trim() && !categories.includes(newCategory.trim())) {
-      setCategories([...categories, newCategory.trim()]);
+  useEffect(() => {
+    if (!token) {
+      router.replace('/dashboard/login');
+      return;
+    }
+    const fetchCategories = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/equipments/categories/`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        if (!response.ok) {
+          if (response.status === 401) {
+            clearToken();
+            router.replace('/dashboard/login');
+            return;
+          }
+          throw new Error('Failed to fetch categories');
+        }
+        const data = await response.json();
+        setCategories(data);
+      } catch (err) {
+        setError('Error loading categories. Please try again later.');
+        setCategories([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchCategories();
+  }, [token, router, clearToken]);
+
+  const handleAddCategory = async () => {
+    if (!newCategory.trim()) return;
+    setActionLoading(true);
+    try {
+      const slug = newCategory.trim().toLowerCase().replace(/\s+/g, '-');
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/equipments/categories/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ name: newCategory.trim(), slug }),
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        alert(errorData.detail || JSON.stringify(errorData) || 'Failed to add category');
+        throw new Error('Failed to add category');
+      }
+      const data = await response.json();
+      setCategories([...categories, data]);
       setNewCategory('');
       setIsAddModalOpen(false);
+    } catch (err) {
+      alert('Error adding category.');
+    } finally {
+      setActionLoading(false);
     }
   };
 
-  const handleDeleteCategory = (index: number) => {
-    setCategories(categories.filter((_, i) => i !== index));
+  const handleDeleteCategory = async (index: number) => {
+    const category = categories[index];
+    if (!category) return;
+    setActionLoading(true);
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/equipments/categories/${category.id}/`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!response.ok) throw new Error('Failed to delete category');
+      setCategories(categories.filter((_, i) => i !== index));
+    } catch (err) {
+      alert('Error deleting category.');
+    } finally {
+      setActionLoading(false);
+    }
   };
 
   const handleEditCategory = (index: number) => {
     setEditingIndex(index);
-    setEditingValue(categories[index]);
+    setEditingValue(categories[index].name);
   };
 
-  const handleUpdateCategory = () => {
-    if (editingValue.trim() && !categories.includes(editingValue.trim())) {
-      setCategories(categories.map((cat, i) => (i === editingIndex ? editingValue.trim() : cat)));
+  const handleUpdateCategory = async () => {
+    if (editingIndex === null || !editingValue.trim()) return;
+    const category = categories[editingIndex];
+    setActionLoading(true);
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/equipments/categories/${category.id}/`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ name: editingValue.trim() }),
+      });
+      if (!response.ok) throw new Error('Failed to update category');
+      const data = await response.json();
+      setCategories(categories.map((cat, i) => (i === editingIndex ? data : cat)));
       setEditingIndex(null);
       setEditingValue('');
+    } catch (err) {
+      alert('Error updating category.');
+    } finally {
+      setActionLoading(false);
     }
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-6 text-center">
+        <div className="text-red-600 mb-4">{error}</div>
+        <button 
+          onClick={() => window.location.reload()}
+          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors duration-200"
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -74,7 +187,7 @@ export default function CategoryPage() {
           </thead>
           <tbody>
             {categories.map((category, idx) => (
-              <tr key={category} className="border-b hover:bg-gray-50">
+              <tr key={category.id} className="border-b hover:bg-gray-50">
                 <td className="py-2 px-4">
                   {editingIndex === idx ? (
                     <input
@@ -84,7 +197,7 @@ export default function CategoryPage() {
                       className="p-2 border rounded w-full"
                     />
                   ) : (
-                    <span>{category}</span>
+                    <span>{category.name}</span>
                   )}
                 </td>
                 <td className="py-2 px-4 text-right">
@@ -93,12 +206,14 @@ export default function CategoryPage() {
                       <button
                         onClick={handleUpdateCategory}
                         className="p-2 text-green-600 hover:bg-green-50 rounded"
+                        disabled={actionLoading}
                       >
                         <RiCheckLine />
                       </button>
                       <button
                         onClick={() => { setEditingIndex(null); setEditingValue(''); }}
                         className="p-2 text-red-600 hover:bg-red-50 rounded"
+                        disabled={actionLoading}
                       >
                         <RiCloseLine />
                       </button>
@@ -108,12 +223,14 @@ export default function CategoryPage() {
                       <button
                         onClick={() => handleEditCategory(idx)}
                         className="p-2 text-blue-600 hover:bg-blue-50 rounded"
+                        disabled={actionLoading}
                       >
                         <RiEditLine />
                       </button>
                       <button
                         onClick={() => handleDeleteCategory(idx)}
                         className="p-2 text-red-600 hover:bg-red-50 rounded"
+                        disabled={actionLoading}
                       >
                         <RiDeleteBinLine />
                       </button>
@@ -153,19 +270,22 @@ export default function CategoryPage() {
                 onChange={e => setNewCategory(e.target.value)}
                 placeholder="Category name"
                 className="w-full p-2 border rounded mb-4"
+                disabled={actionLoading}
               />
               <div className="flex justify-end gap-4">
                 <button
                   onClick={() => { setIsAddModalOpen(false); setNewCategory(''); }}
                   className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded"
+                  disabled={actionLoading}
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleAddCategory}
                   className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                  disabled={actionLoading}
                 >
-                  Add Category
+                  {actionLoading ? 'Adding...' : 'Add Category'}
                 </button>
               </div>
             </motion.div>
