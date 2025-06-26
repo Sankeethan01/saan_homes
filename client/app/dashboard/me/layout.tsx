@@ -11,6 +11,7 @@ import {
 } from 'react-icons/ri';
 import { useEffect, useState, ReactNode, createContext, useContext } from 'react';
 import { useAuthStore } from '@/app/stores/useAuthStore';
+import { getUserRole, getAccessToken, setAuthCookies, fetchWithAuth } from '@/app/utils/auth';
 import Image from 'next/image';
 import './dashboard.css'; 
 
@@ -46,49 +47,68 @@ export default function DashboardLayout({
     }, []);
     
     useEffect(() => {
-        if (token) {
-            fetch(
-                `${process.env.NEXT_PUBLIC_API_BASE_URL}/userAccounts/users/me/`,
-                {
-                    headers: { Authorization: `Bearer ${token}` },
+        const checkAuth = async () => {
+            try {
+                setLoading(true);
+                
+                // Try to get token from all possible sources
+                let accessToken = token;
+                if (!accessToken) {
+                    accessToken = getAccessToken();
+                    if (accessToken) {
+                        // If we found a token in cookies/localStorage but not in store, update the store
+                        useAuthStore.getState().setToken(accessToken);
+                    }
                 }
-            )
-            .then(async (res) => {
-                if (!res.ok) {
-                    useAuthStore.getState().clear();
-                    router.replace("/dashboard/login");
+                
+                // Get role from all possible sources
+                const role = getUserRole();
+                
+                if (!accessToken || !role) {
+                    router.push('/dashboard/login');
                     return;
                 }
-                const data: User = await res.json();
-                if (data.role !== "PUBLIC") {
-                    useAuthStore.getState().clear();
-                    router.replace("/dashboard/login");
+                
+                // Verify user is a public user
+                if (role !== 'PUBLIC') {
+                    if (role === 'ADMIN') {
+                        router.push('/dashboard/admin');
+                    } else if (role === 'SUPERVISOR') {
+                        router.push('/dashboard/supervisor');
+                    } else {
+                        router.push('/dashboard/login');
+                    }
                     return;
                 }
-                setUser(data);
-                localStorage.setItem('user', JSON.stringify(data));
-            })
-            .catch(() => {
-                useAuthStore.getState().clear();
-                router.replace("/dashboard/login");
-            })
-            .finally(() => setLoading(false));
-        } else {
-            const storedUser = localStorage.getItem('user');
-            if (storedUser) {
+
+                // Fetch user details using our helper
                 try {
-                    const userData = JSON.parse(storedUser);
-                    setUser(userData);
-                    setLoading(false);
-                } catch {
-                    useAuthStore.getState().clear();
-                    localStorage.removeItem('user');
+                    const profileRes = await fetchWithAuth(
+                        `${process.env.NEXT_PUBLIC_API_BASE_URL}/userAccounts/users/me/`
+                    );
+                    
+                    if (!profileRes.ok) {
+                        useAuthStore.getState().clear();
+                        router.replace("/dashboard/login");
+                        return;
+                    }
+                    
+                    const data = await profileRes.json();
+                    setUser(data);
+                    localStorage.setItem('user', JSON.stringify(data));
+                    
+                    // Re-sync cookies to ensure they're set properly
+                    setAuthCookies(accessToken, data.role, true);
+                } catch (error) {
+                    console.error('Failed to verify authentication:', error);
                     router.replace("/dashboard/login");
                 }
-            } else {
-                router.replace("/dashboard/login");
+            } finally {
+                setLoading(false);
             }
-        }
+        };
+        
+        checkAuth();
     }, [token, router]);
 
     const handleThemeToggle = () => {
@@ -165,7 +185,7 @@ export default function DashboardLayout({
                         </nav>
 
                         <div className="mt-auto p-4 border-t border-[var(--border-color)]">
-                            <Link href="/dashboard/logout-user">
+                            <Link href="/dashboard/logout">
                                 <motion.div
                                     whileHover={{ x: isSidebarCollapsed ? 0 : 5 }}
                                     className="flex items-center gap-3 mx-2 px-4 py-3 text-left transition-colors cursor-pointer text-red-500 hover:bg-red-500/10 rounded-lg"

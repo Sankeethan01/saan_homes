@@ -3,8 +3,10 @@
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import Image from 'next/image';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useState, useEffect, createContext, useContext } from 'react';
+import { useAuthStore } from '@/app/stores/useAuthStore';
+import { getUserRole, getAccessToken, setAuthCookies, fetchWithAuth } from '@/app/utils/auth';
 import {
   RiDashboardLine,
   RiHomeGearLine,
@@ -86,12 +88,88 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const router = useRouter();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [theme, setTheme] = useState('light');
+  const [isLoading, setIsLoading] = useState(true);
+  const token = useAuthStore((s) => s.token);
+  const setToken = useAuthStore((s) => s.setToken);
+  const setUserRole = useAuthStore((s) => s.setUserRole);
   
   // Compute if we're in equipment section based on pathname
   const isInEquipmentSection = pathname.includes('/dashboard/admin/equipments');
   const [openEquipmentSubMenu, setOpenEquipmentSubMenu] = useState(isInEquipmentSection);
+
+  // Check authentication and role
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        setIsLoading(true);
+        
+        // Try to get token from all possible sources
+        let accessToken = token;
+        if (!accessToken) {
+          accessToken = getAccessToken();
+          if (accessToken) {
+            // If we found a token in cookies/localStorage but not in store, update the store
+            setToken(accessToken);
+          }
+        }
+        
+        // Get role from all possible sources
+        const role = getUserRole();
+        
+        if (!accessToken || !role) {
+          router.push('/dashboard/login');
+          return;
+        }
+        
+        // Verify user is an admin
+        if (role !== 'ADMIN') {
+          if (role === 'SUPERVISOR') {
+            router.push('/dashboard/supervisor');
+          } else if (role === 'PUBLIC') {
+            router.push('/dashboard/me');
+          } else {
+            router.push('/dashboard/login');
+          }
+          return;
+        }
+        
+        // Verify token is still valid with the backend using our helper
+        try {
+          const profileRes = await fetchWithAuth(
+            `${process.env.NEXT_PUBLIC_API_BASE_URL}/userAccounts/users/me/`
+          );
+          
+          if (!profileRes.ok) {
+            // Token is invalid, redirect to login
+            useAuthStore.getState().clear();
+            router.push('/dashboard/login');
+            return;
+          }
+          
+          // Token is valid, ensure it's properly saved everywhere
+          const profile = await profileRes.json();
+          setUserRole(profile.role);
+          
+          // Re-sync cookies to ensure they're set properly
+          setAuthCookies(accessToken, profile.role, true);
+        } catch (error) {
+          console.error('Failed to verify authentication:', error);
+          router.push('/dashboard/login');
+          return;
+        }
+      } catch (error) {
+        console.error('Auth check error:', error);
+        router.push('/dashboard/login');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    checkAuth();
+  }, [token, router, setToken, setUserRole]);
 
   useEffect(() => {
     const storedTheme = localStorage.getItem('theme') || 'light';
@@ -122,6 +200,16 @@ export default function AdminLayout({
     }));
 
   const themeValue = { theme, toggleTheme: handleThemeToggle };
+
+  // If we're checking authentication, show a loading state
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <p className="ml-3 text-lg text-gray-700">Verifying authentication...</p>
+      </div>
+    );
+  }
 
   return (
     <ThemeContext.Provider value={themeValue}>
