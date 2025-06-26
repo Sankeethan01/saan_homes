@@ -10,6 +10,7 @@ import CallActionsRentalsPortfolio from '../components/Portfolio/Rentals/CallAct
 import Footer from '../components/Portfolio/Footer';
 import ChatBotRentalsPortfolio from '../components/Portfolio/Rentals/ChatBot';
 import HomeIconPortfolio from '../components/Portfolio/Home_Icon';
+import NavBarRentalsPortfolio from '../components/Portfolio/Rentals/NavBar';
 
 
 export default function EquipmentsPage() {
@@ -26,6 +27,7 @@ export default function EquipmentsPage() {
         <HomeIconPortfolio />
       </div>
 
+      
       {/* Hero Section */}
       <HeroRentalsPortfolio />
 
