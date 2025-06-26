@@ -1,11 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { FaCcVisa, FaCcMastercard } from "react-icons/fa";
 import { SiMastercard } from "react-icons/si";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useAuthStore } from "@/app/stores/useAuthStore";
 
 export default function PayNowPage() {
+  const token = useAuthStore(state => state.token);
+  const clear = useAuthStore(state => state.clear);
+  
   const [cardName, setCardName] = useState("");
   const [cardNumber, setCardNumber] = useState("");
   const [expMonth, setExpMonth] = useState("");
@@ -16,49 +20,72 @@ export default function PayNowPage() {
   const searchParams = useSearchParams();
   const bookingId = searchParams.get("bookingId");
 
+  useEffect(() => {
+    // Check if token exists and redirect if not
+    if (!token) {
+      router.push("/dashboard/login-user");
+      return;
+    }
+
+    // Validate booking ID
+    if (!bookingId) {
+      router.push("/dashboard/me/rentals");
+      return;
+    }
+  }, [token, bookingId, router]);
+
   const handlePayment = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate required fields
+    if (!cardName || !cardNumber || !expMonth || !expYear || !cvv) {
+      alert("Please fill in all card details");
+      return;
+    }
+
     if (!bookingId) {
       alert("Booking ID not found.");
       return;
     }
+
+    if (!token) {
+      alert("Please login to continue");
+      router.push("/dashboard/login-user");
+      return;
+    }
+
     setLoading(true);
     try {
       const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
-      console.log('Making payment request for booking:', bookingId);
-      
       const res = await fetch(`${API_BASE_URL}/equipments/bookings/${bookingId}/`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
+          // Add auth header if needed
           Authorization: typeof window !== 'undefined' ? `Bearer ${localStorage.getItem('token')}` : '',
         },
-        body: JSON.stringify({ status: "PAID" }),
+        body: JSON.stringify({ 
+          card_name: cardName,
+          card_number: cardNumber,
+          exp_month: expMonth,
+          exp_year: expYear,
+          cvv: cvv
+        }),
       });
-      
-      console.log('API Response status:', res.status);
-      
       if (res.status === 401 || res.status === 403) {
         alert('Session expired. Please log in again.');
         router.push('/login');
         return;
       }
-      
       if (res.ok) {
         alert('Payment successful!');
         router.push("/dashboard/me/rentals");
       } else {
         const data = await res.json();
-        console.log('API Error:', data);
         alert(data.error || "Failed to update booking status.");
-        // Still redirect even if API fails (for testing)
-        router.push("/dashboard/me/rentals");
       }
     } catch (err) {
-      console.error('Payment error:', err);
       alert("Payment failed. Please try again.");
-      // Still redirect even if there's an error (for testing)
-      router.push("/dashboard/me/rentals");
     } finally {
       setLoading(false);
     }
