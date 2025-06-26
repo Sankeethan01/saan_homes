@@ -23,25 +23,28 @@ from .serializers import (
 # ──────────────────────────────────────────────
 # Permissions
 # ──────────────────────────────────────────────
-class IsAdminOrSupervisor(permissions.BasePermission):
+class IsAdminOrSupervisorOrReadOnly(permissions.BasePermission):
     """
-    Allow access to authenticated users whose role is ADMIN or SUPERVISOR.
+    Allow read access to authenticated users.
+    Only allow write access to ADMIN or SUPERVISOR.
     """
-
     def has_permission(self, request, view):
-        return (
-            request.user.is_authenticated
-            and getattr(request.user, "role", None) in ("ADMIN", "SUPERVISOR")
-        )
+        if not request.user.is_authenticated:
+            return False
+            
+        if request.method in permissions.SAFE_METHODS:
+            return True
+            
+        return request.user.role in ("ADMIN", "SUPERVISOR")
 
 
 # ──────────────────────────────────────────────
 # ViewSets
 # ──────────────────────────────────────────────
 class ProjectViewSet(viewsets.ModelViewSet):
-    queryset = Project.objects.all()
+    queryset = Project.objects.select_related('supervisor').all()
     serializer_class = ProjectSerializer
-    permission_classes = [IsAdminOrSupervisor]
+    permission_classes = [IsAdminOrSupervisorOrReadOnly]
     filter_backends = [SearchFilter, OrderingFilter]
     search_fields = ["name", "description"]
     ordering_fields = ["start_date", "estimated_end_date", "created"]
@@ -51,7 +54,7 @@ class ProjectViewSet(viewsets.ModelViewSet):
 class StepViewSet(viewsets.ModelViewSet):
     queryset = Step.objects.select_related("project").all()
     serializer_class = StepSerializer
-    permission_classes = [IsAdminOrSupervisor]
+    permission_classes = [IsAdminOrSupervisorOrReadOnly]
     filter_backends = [SearchFilter, OrderingFilter]
     search_fields = ["title"]
     ordering_fields = ["order", "is_approved", "actual_completed"]
@@ -61,7 +64,7 @@ class StepViewSet(viewsets.ModelViewSet):
 class ProgressLogViewSet(viewsets.ModelViewSet):
     queryset = ProgressLog.objects.select_related("step", "supervisor").all()
     serializer_class = ProgressLogSerializer
-    permission_classes = [IsAdminOrSupervisor]
+    permission_classes = [IsAdminOrSupervisorOrReadOnly]
     filter_backends = [OrderingFilter]
     ordering = ["-created"]
 
@@ -69,7 +72,7 @@ class ProgressLogViewSet(viewsets.ModelViewSet):
 class BillViewSet(viewsets.ModelViewSet):
     queryset = Bill.objects.select_related("step").all()
     serializer_class = BillSerializer
-    permission_classes = [IsAdminOrSupervisor]
+    permission_classes = [IsAdminOrSupervisorOrReadOnly]
     filter_backends = [OrderingFilter]
     ordering = ["-uploaded_at"]
 
@@ -77,7 +80,7 @@ class BillViewSet(viewsets.ModelViewSet):
 class InvoiceViewSet(viewsets.ModelViewSet):
     queryset = Invoice.objects.select_related("step").all()
     serializer_class = InvoiceSerializer
-    permission_classes = [IsAdminOrSupervisor]
+    permission_classes = [IsAdminOrSupervisorOrReadOnly]
     filter_backends = [OrderingFilter]
     ordering = ["-created"]
 
@@ -85,6 +88,6 @@ class InvoiceViewSet(viewsets.ModelViewSet):
 class VRVideoViewSet(viewsets.ModelViewSet):
     queryset = VRVideo.objects.select_related("project").all()
     serializer_class = VRVideoSerializer
-    permission_classes = [IsAdminOrSupervisor]
+    permission_classes = [IsAdminOrSupervisorOrReadOnly]
     filter_backends = [OrderingFilter]
     ordering = ["-uploaded"]
