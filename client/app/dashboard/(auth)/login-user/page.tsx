@@ -74,11 +74,7 @@ export default function UserLogin() {
       const profile = await profileRes.json();
 
       // Allow ADMIN and SUPERVISOR roles
-      if (!["ADMIN", "SUPERVISOR"].includes(profile.role)) {
-        toast.error("Only admin and supervisor users may log in here");
-        setIsLoading(false);
-        return;
-      }
+      
 
       // 3) Save tokens under consistent keys
       setToken(access);
@@ -91,7 +87,7 @@ export default function UserLogin() {
 
       toast.success("Login successful!");
       setTimeout(() => {
-        router.push("/dashboard/admin");
+        router.push("/dashboard/me");
       }, 500);
     } catch (err) {
       console.error(err);
