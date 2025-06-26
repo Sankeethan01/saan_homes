@@ -13,7 +13,7 @@ const ConditionsRentalsPortfolio = () => {
             <motion.h2
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 10 }}
-              className="text-3xl font-bold mb-0 mt-8 lg:mt-12 lg:col-start-3 lg:row-start-1 lg:text-center"
+              className="text-3xl font-bold mb-0 mt-8 lg:mt-12 lg:col-start-3 lg:row-start-1 lg:text-center text-[#1b4965]"
             >
               Rental Conditions
             </motion.h2>

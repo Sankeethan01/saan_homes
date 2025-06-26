@@ -32,7 +32,7 @@ const CallActionsRentalsPortfolio = () => {
           <motion.h2
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
-            className="text-3xl md:text-4xl font-bold mb-6"
+            className="text-3xl md:text-4xl font-bold mb-6 text-[#1b4965]"
           >
             Do Your Looking for Reliable Equipment??
           </motion.h2>

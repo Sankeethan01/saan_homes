@@ -12,7 +12,7 @@ const TestimonialsRentalsPortfolio = () => {
           <motion.h2
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
-            className="text-3xl font-bold text-center mb-12"
+            className="text-3xl font-bold text-center mb-12 text-[#1b4965]"
           >
             What Our Clients Say
           </motion.h2>
@@ -42,7 +42,8 @@ const TestimonialsRentalsPortfolio = () => {
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.1 }}
-                className="bg-white p-6 rounded-xl shadow-lg"
+                whileHover={{ scale: 1.07 }}
+                className="bg-white p-6 rounded-xl shadow-lg transition-all duration-300 hover:shadow-[0_4px_10px_0_#1b4965]"
               >
                 <div className="flex items-center mb-4">
                   <div className="relative w-12 h-12 rounded-full overflow-hidden mr-4">

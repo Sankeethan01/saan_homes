@@ -83,7 +83,7 @@ const FAQRentalsPortfolio = () => {
         <motion.h2
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
-          className="text-3xl font-bold text-center mb-12"
+          className="text-3xl font-bold text-center mb-12 text-[#1b4965]"
         >
           Frequently Asked Questions
         </motion.h2>
