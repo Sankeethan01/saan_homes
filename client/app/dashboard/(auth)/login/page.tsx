@@ -33,8 +33,11 @@ export default function Login() {
       return;
     }
 
+    const loadingToast = toast.loading(`Logging in as ${selectedRole}...`);
     setIsLoading(true);
+
     try {
+      // Step 1: Login and get token
       const loginRes = await fetch(
         `${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/token/`,
         {
@@ -46,53 +49,59 @@ export default function Login() {
       const loginData = await loginRes.json();
 
       if (!loginRes.ok) {
-        toast.error(loginData.detail || "Invalid credentials");
-        setIsLoading(false);
-        return;
+        throw new Error(loginData.detail || "Invalid credentials");
       }
 
       const access = loginData.access;
       setToken(access);
 
+      // Step 2: Get user profile
       const profileRes = await fetch(
         `${process.env.NEXT_PUBLIC_API_BASE_URL}/userAccounts/users/me/`,
         {
           headers: { Authorization: `Bearer ${access}` },
         }
       );
+      
       if (!profileRes.ok) {
-        toast.error("Could not verify user profile");
-        setToken(null);
-        setIsLoading(false);
-        return;
+        throw new Error("Could not verify user profile");
       }
+      
       const profile = await profileRes.json();
       localStorage.setItem('username', profile.username);
       localStorage.setItem('user_role', profile.role); 
       const uiSelectedRole = selectedRole.toUpperCase();
 
+      // Step 3: Verify role and redirect
       if (profile.role === "ADMIN" && uiSelectedRole === "ADMIN") {
-        toast.success("Admin login successful!");
         const isProduction = process.env.NODE_ENV === 'production';
         const cookieOptions = `path=/; sameSite=strict; max-age=3600${isProduction ? '; secure' : ''}`;
         document.cookie = `access_token=${access}; ${cookieOptions}`;
         document.cookie = `user_role=${profile.role}; ${cookieOptions}`;
+        toast.success("Welcome back, Admin! 👋", {
+          duration: 3000,
+          icon: '🔐'
+        });
         router.push("/dashboard/admin");
       } else if (profile.role === "SUPERVISOR" && uiSelectedRole === "SUPERVISOR") {
-        toast.success("Supervisor login successful!");
         const isProduction = process.env.NODE_ENV === 'production';
         const cookieOptions = `path=/; sameSite=strict; max-age=3600${isProduction ? '; secure' : ''}`;
         document.cookie = `access_token=${access}; ${cookieOptions}`;
         document.cookie = `user_role=${profile.role}; ${cookieOptions}`;
+        toast.success("Welcome back, Site Supervisor! 👋", {
+          duration: 3000,
+          icon: '🔐'
+        });
         router.push("/dashboard/supervisor");
       } else {
-        toast.error(`These credentials do not correspond to the '${selectedRole}' role.`);
-        setToken(null);
+        throw new Error(`Access denied. Your account does not have ${selectedRole} privileges.`);
       }
     } catch (err) {
       console.error(err);
-      toast.error("Login failed. Try again.");
+      setToken(null);
+      toast.error(err instanceof Error ? err.message : "Login failed. Please try again.");
     } finally {
+      toast.dismiss(loadingToast);
       setIsLoading(false);
     }
   };
@@ -126,8 +135,11 @@ export default function Login() {
           >
             <button
               type="button"
+              disabled={isLoading}
               onClick={() => setSelectedRole('admin')}
-              className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all cursor-pointer ${
+              className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all ${
+                isLoading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
+              } ${
                 selectedRole === 'admin'
                   ? 'bg-white text-blue-600 shadow-sm'
                   : 'text-gray-500 hover:text-gray-700'
@@ -137,8 +149,11 @@ export default function Login() {
             </button>
             <button
               type="button"
+              disabled={isLoading}
               onClick={() => setSelectedRole('supervisor')}
               className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all ${
+                isLoading ? 'opacity-50 cursor-not-allowed' : ''
+              } ${
                 selectedRole === 'supervisor'
                   ? 'bg-white text-blue-600 shadow-sm'
                   : 'text-gray-500 hover:text-gray-700'
@@ -160,9 +175,12 @@ export default function Login() {
               type="text"
               id="username"
               name="username"
+              disabled={isLoading}
               value={formData.username}
               onChange={handleChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+              className={`w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
+                isLoading ? 'opacity-50 cursor-not-allowed' : ''
+              }`}
               placeholder={`Enter ${selectedRole === 'admin' ? 'admin' : 'supervisor'} username`}
               required
             />
@@ -180,9 +198,12 @@ export default function Login() {
               type="password"
               id="password"
               name="password"
+              disabled={isLoading}
               value={formData.password}
               onChange={handleChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+              className={`w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
+                isLoading ? 'opacity-50 cursor-not-allowed' : ''
+              }`}
               placeholder="Enter your password"
               required
             />
@@ -195,11 +216,25 @@ export default function Login() {
             className="pt-4"
           >
             <button
-            disabled={isLoading}
+              disabled={isLoading}
               type="submit"
-              className="w-full bg-gradient-to-r from-blue-600 to-red-700 text-white py-2 px-4 rounded-md hover:opacity-90 transition-opacity focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+              className={`w-full bg-gradient-to-r from-blue-600 to-red-700 text-white py-2 px-4 rounded-md transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                isLoading 
+                  ? 'opacity-70 cursor-not-allowed' 
+                  : 'hover:opacity-90'
+              }`}
             >
-              Login as {selectedRole === 'admin' ? 'Admin' : 'Site Supervisor'}
+              {isLoading ? (
+                <span className="flex items-center justify-center">
+                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Logging in...
+                </span>
+              ) : (
+                `Login as ${selectedRole === 'admin' ? 'Admin' : 'Site Supervisor'}`
+              )}
             </button>
           </motion.div>
         </form>
