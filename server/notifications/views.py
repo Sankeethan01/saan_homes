@@ -31,7 +31,7 @@ class IsAdminOrSupervisor(permissions.BasePermission):
     def has_permission(self, request, view):
         return (
             request.user.is_authenticated
-            and getattr(request.user, "role", None) in ("ADMIN", "SUPERVISOR")
+            and getattr(request.user, "role", None) in ("ADMIN", "SUPERVISOR","PUBLIC")
         )
 
 
