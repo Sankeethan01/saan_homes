@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { RiHome5Line, RiSearchLine, RiFilter3Line, RiCalendarLine, RiTimeLine, RiMessage2Line, RiUser3Line, RiHomeSmileLine, RiPaletteLine, RiLeafLine, RiToolsLine } from 'react-icons/ri';
+import { RiHome5Line, RiSearchLine, RiFilter3Line, RiCalendarLine, RiTimeLine, RiMessage2Line, RiUser3Line, RiHomeSmileLine, RiPaletteLine, RiLeafLine, RiToolsLine, RiLoginCircleLine } from 'react-icons/ri';
 
 
 
@@ -181,37 +181,52 @@ const FilterSectionRentalsPortfolio = () => {
   );
 
   return (
-    <section className="py-8 bg-white shadow-md sticky top-0 z-40">
-        <div className="container mx-auto px-4">
-          <div className="flex flex-col md:flex-row gap-4 items-center">
-            {/* Category Filter Dropdown */}
-            <div className="relative w-full md:w-64">
-              <select
-                value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
-                className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none bg-white cursor-pointer"
-              >
-                {equipmentCategories.map((category) => (
-                  <option key={category} value={category}>
-                    {category}
-                  </option>
-                ))}
-              </select>
-              <div className="absolute right-4 top-1/2 transform -translate-y-1/2 pointer-events-none">
-                <RiFilter3Line className="text-gray-400 text-xl" />
+    <section className="py-3 px-2 bg-white shadow-md sticky top-0 z-60">
+        <div className="container mx-auto px-5">
+          <div className="flex items-center justify-between w-full  mb-4">
+            {/* All in one row: logo, filter, search, login */}
+            <div className="flex items-center w-full gap-6">
+              {/* Logo only, actual shape */}
+              <Link href="/" className="flex items-center">
+                <Image src="/assets/logo.jpg" alt="Logo" width={100} height={100} />
+              </Link>
+              {/* Filter and search options */}
+              <div className="flex flex-1 gap-4 items-center">
+                {/* Category Filter Dropdown */}
+                <div className="relative w-48">
+                  <select
+                    value={selectedCategory}
+                    onChange={(e) => setSelectedCategory(e.target.value)}
+                    className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none bg-white cursor-pointer"
+                  >
+                    {equipmentCategories.map((category) => (
+                      <option key={category} value={category}>
+                        {category}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="absolute right-4 top-1/2 transform -translate-y-1/2 pointer-events-none">
+                    <RiFilter3Line className="text-gray-400 text-xl" />
+                  </div>
+                </div>
+                {/* Search Bar */}
+                <div className="relative w-72">
+                  <RiSearchLine className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 text-xl" />
+                  <input
+                    type="text"
+                    placeholder="Search equipment..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full pl-12 pr-4 py-3 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
               </div>
-            </div>
-
-            {/* Search Bar */}
-            <div className="relative w-full md:w-96">
-              <RiSearchLine className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 text-xl" />
-              <input
-                type="text"
-                placeholder="Search equipment..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-12 pr-4 py-3 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
+              {/* User icon button */}
+              <Link href="/dashboard/login-user">
+                <button className="w-12 h-12 flex items-center justify-center rounded-full bg-blue-600 hover:bg-blue-700 text-white transition-all duration-200">
+                  <RiUser3Line className="text-2xl" />
+                </button>
+              </Link>
             </div>
           </div>
         </div>
