@@ -57,7 +57,7 @@ const ClientTestimonialsPortfolio = () => {
   const [selected, setSelected] = useState(0);
 
   return (
-    <section className="pt-20 pb-0" style={{ background: 'radial-gradient(ellipse at 20% 40%, #f3f8ff 60%, #f8fafc 100%)' }}>
+    <section className="py-2" style={{ background: 'radial-gradient(ellipse at 20% 40%, #f3f8ff 60%, #f8fafc 100%)' }}>
       {/* Heading/Tagline Section */}
       <motion.div className="text-center max-w-3xl mx-auto mb-2">
         <motion.h2 
@@ -94,7 +94,7 @@ const ClientTestimonialsPortfolio = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="font-semibold text-blue-700 text-lg"
+            className="font-semibold text-[#1b4965] text-lg"
           >
             {testimonials[selected].name}
           </motion.div>
