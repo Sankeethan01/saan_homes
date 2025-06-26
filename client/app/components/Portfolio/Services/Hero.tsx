@@ -3,7 +3,7 @@ import { RiHome5Line, RiHomeSmileLine, RiPaletteLine, RiLeafLine } from 'react-i
 
 const HeroServicesPortfolio = () => {
   return (
-     <section className="relative h-[120vh] bg-gradient-to-br from-blue-600 to-red-700">
+     <section className="relative h-[120vh] bg-gradient-to-br from-[#6d84ad] to-[#92a3c1]">
              <div className="absolute inset-0 bg-black/30" />
              <div className="container mx-auto px-4 h-full flex items-center relative">
                <div className="grid lg:grid-cols-2 gap-12 items-center">
