@@ -9,7 +9,7 @@ export default function Footer() {
       className="relative bg-[#353535] text-gray-300 py-16 bg-[url('/assets/images/footer.jpg')] bg-no-repeat bg-cover bg-center"
     >
       {/* Dark blue overlay */}
-      <div className="absolute inset-0 bg-[#001233] opacity-80 pointer-events-none z-0" />
+      <div className="absolute inset-0 bg-[#1b4965] opacity-70 pointer-events-none z-0" />
       <div className="relative container mx-auto px-4 z-0">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {/* Brand Section */}

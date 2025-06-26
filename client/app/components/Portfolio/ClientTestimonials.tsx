@@ -1,48 +1,128 @@
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState } from 'react';
+
+const testimonials = [
+  {
+    name: 'Tharmathayalan Sankeethan',
+    location: 'Jaffna, Sri Lanka',
+    avatar: '/assets/images/user.png',
+    feedback:
+      'SAAN Homes exceeded our expectations with their professionalism, timely delivery, and attention to detail. Their team made the entire construction process smooth and stress-free. Highly recommended for quality and reliability!'
+  },
+  {
+    name: 'Deluxshana Amalathas',
+    location: 'Anuradapura, Sri Lanka',
+    avatar: '/assets/images/user.png',
+    feedback:
+      'Working with SAAN Homes was a fantastic experience. Their team was professional, responsive, and committed to delivering high-quality results on time. From planning to completion, every step was handled with care and expertise. We are extremely satisfied with the outcome and highly recommend SAAN Homes for any construction project.QuickMatch made finding a reliable service provider so easy! The booking process was seamless, and the service quality exceeded my expectations. Highly recommend this app for hassle-free service bookings.'
+  },
+  {
+    name: 'Akila Ravithas',
+    location: 'Colombu, Sri Lanka',
+    avatar: '/assets/images/user.png',
+    feedback:
+      'SAAN Homes exceeded our expectations with their professionalism, timely delivery, and attention to detail. Their team made the entire construction process smooth and stress-free. Highly recommended for quality and reliability!'
+  },
+  {
+    name: 'Santhirasekaran Thanujan',
+    location: 'Kandy, Sri Lanka',
+    avatar: '/assets/images/user.png',
+    feedback:
+      'Working with SAAN Homes was a fantastic experience. Their team was professional, responsive, and committed to delivering high-quality results on time. From planning to completion, every step was handled with care and expertise. We are extremely satisfied with the outcome and highly recommend SAAN Homes for any construction project.QuickMatch made finding a reliable service provider so easy! The booking process was seamless, and the service quality exceeded my expectations. Highly recommend this app for hassle-free service bookings.'
+  },
+  {
+    name: 'Deluxshana Sankeethan',
+    location: 'Galle, Sri Lanka',
+    avatar: '/assets/images/user.png',
+    feedback:
+      'SAAN Homes exceeded our expectations with their professionalism, timely delivery, and attention to detail. Their team made the entire construction process smooth and stress-free. Highly recommended for quality and reliability!'
+  },
+  {
+    name: 'Dilani Jayasinghe',
+    location: 'Matara, Sri Lanka',
+    avatar: '/assets/images/user.png',
+    feedback:
+      'Working with SAAN Homes was a fantastic experience. Their team was professional, responsive, and committed to delivering high-quality results on time. From planning to completion, every step was handled with care and expertise. We are extremely satisfied with the outcome and highly recommend SAAN Homes for any construction project.QuickMatch made finding a reliable service provider so easy! The booking process was seamless, and the service quality exceeded my expectations. Highly recommend this app for hassle-free service bookings.'
+  },
+];
 
 const fadeInUp = {
   initial: { opacity: 0, y: 40 },
-  whileInView: { opacity: 1, y: 0 },
-  transition: { duration: 0.6, ease: 'easeOut' }
+  animate: { opacity: 1, y: 0 },
+  exit: { opacity: 0, y: 40 },
+  transition: { duration: 0.5, ease: 'easeOut' }
 };
 
 const ClientTestimonialsPortfolio = () => {
+  const [selected, setSelected] = useState(0);
+
   return (
-     <section id="testimonials" className="py-17" style={{ background: 'radial-gradient(ellipse at 80% 20%,rgb(255, 255, 255) 0%,rgb(253, 253, 253) 100%)' }}>
-        <div className="container mx-auto px-4">
-          <motion.h2 
-            {...fadeInUp}
-            className="text-4xl md:text-5xl text-center font-bold mb-12 bg-clip-text text-transparent bg-gradient-to-r from-blue-700 to-red-600"
+    <section className="py-2" style={{ background: 'radial-gradient(ellipse at 20% 40%, #f3f8ff 60%, #f8fafc 100%)' }}>
+      {/* Heading/Tagline Section */}
+      <motion.div className="text-center max-w-3xl mx-auto mb-2">
+        <motion.h2 
+          {...fadeInUp}
+          className="text-2xl md:text-3xl font-bold mb-2 bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-red-700"
+        >
+          Client Testimonials
+        </motion.h2>
+        <motion.p
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          className="text-gray-600 text-xl md:text-2xl"
+        >
+          Our satisfied customers !!!
+        </motion.p>
+      </motion.div>
+      <div className="max-w-3xl mx-auto flex flex-col items-center px-4">
+        
+        <div className="text-center text-[8rem] text-blue-400 mb-[-3.5rem]">&ldquo;</div>
+        <div className="flex flex-col items-center justify-center h-36 md:h-40 min-h-[144px] max-h-[160px]">
+          <AnimatePresence mode="wait">
+            <motion.p
+              key={selected}
+              {...fadeInUp}
+              className="text-gray-600 text-lg md:text-xl mb-10 text-justify flex items-center h-full"
+              style={{ minHeight: 70, height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            >
+              {testimonials[selected].feedback.split(' ').slice(0, 50).join(' ')}
+              {testimonials[selected].feedback.split(' ').length > 50 ? '...' : ''}
+            </motion.p>
+          </AnimatePresence>
+          <motion.div
+            key={testimonials[selected].name}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="font-semibold text-[#1b4965] text-lg"
           >
-            Client Testimonials
-          </motion.h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {[
-              { name: 'John Doe', role: 'Property Developer' },
-              { name: 'Jane Smith', role: 'Architect' },
-              { name: 'Mike Johnson', role: 'Project Manager' }
-            ].map((testimonial, index) => (
-              <motion.div
-                key={testimonial.name}
-                initial={{ opacity: 0, x: -50 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                transition={{ delay: index * 0.2 }}
-                className="p-6 rounded-3xl shadow-xl bg-white/80 backdrop-blur-md border border-white/40"
-              >
-                <p className="text-gray-600 mb-4">&quot;SAAN Homes exceeded our expectations with their professional service and attention to detail.&quot;</p>
-                <div className="flex items-center">
-                  <div className="w-12 h-12 bg-gray-200 rounded-full"></div>
-                  <div className="ml-4">
-                    <h4 className="font-semibold">{testimonial.name}</h4>
-                    <p className="text-gray-500">{testimonial.role}</p>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
+            {testimonials[selected].name}
+          </motion.div>
+          <div className="text-gray-400 text-sm mb-2">{testimonials[selected].location}</div>
         </div>
-      </section>
+        {/* Avatars row */}
+        <div className="flex items-center justify-center gap-4 mt-8">
+          {testimonials.map((t, idx) => (
+            <button
+              key={t.name}
+              onMouseEnter={() => setSelected(idx)}
+              onFocus={() => setSelected(idx)}
+              className={`rounded-full border-2 transition-all duration-300 focus:outline-none ${selected === idx ? 'border-blue-700 shadow-lg' : 'border-transparent opacity-70 hover:opacity-100'}`}
+              style={{ width: 72, height: 72 }}
+              tabIndex={0}
+              aria-label={`Show testimonial from ${t.name}`}
+            >
+              <img
+                src={t.avatar}
+                alt={t.name}
+                className="w-full h-full rounded-full object-cover"
+              />
+            </button>
+          ))}
+        </div>
+      </div>
+    </section>
   );
 };
 
-export default ClientTestimonialsPortfolio; 
+export default ClientTestimonialsPortfolio;

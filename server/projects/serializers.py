@@ -1,7 +1,10 @@
 # projects/serializers.py
 from rest_framework import serializers
 from django.contrib.auth.password_validation import validate_password
-from .models import Project, Step, ProgressLog, Bill, Invoice, VRVideo,User
+from django.contrib.auth import get_user_model
+from .models import Project, Step, ProgressLog, Bill, Invoice, VRVideo
+
+User = get_user_model()
 
 
 class ProgressLogSerializer(serializers.ModelSerializer):
@@ -78,6 +81,13 @@ class StepSerializer(serializers.ModelSerializer):
             return "PENDING"
 
 
+class SupervisorSerializer(serializers.ModelSerializer):
+    """Serializer for supervisor details in projects"""
+    class Meta:
+        model = User
+        fields = ['id', 'username', 'first_name', 'last_name', 'email']
+
+
 class ProjectSerializer(serializers.ModelSerializer):
     boq_file = serializers.FileField(required=False, allow_null=True)
     steps = StepSerializer(many=True, read_only=True)
@@ -89,6 +99,9 @@ class ProjectSerializer(serializers.ModelSerializer):
     client = serializers.SerializerMethodField()
     budget = serializers.SerializerMethodField()
     
+    supervisor = SupervisorSerializer(read_only=True)
+    supervisor_id = serializers.UUIDField(write_only=True, required=False, allow_null=True)
+
     class Meta:
         model = Project
         fields = "__all__"
@@ -128,6 +141,25 @@ class ProjectSerializer(serializers.ModelSerializer):
             for step in obj.steps.all()
         )
         return float(total_budget)
+
+    def to_representation(self, instance):
+        """Override to handle null supervisor gracefully"""
+        data = super().to_representation(instance)
+        if not instance.supervisor:
+            data['supervisor'] = None
+        return data
+
+    def create(self, validated_data):
+        supervisor_id = validated_data.pop('supervisor_id', None)
+        if supervisor_id:
+            validated_data['supervisor_id'] = supervisor_id
+        return super().create(validated_data)
+
+    def update(self, instance, validated_data):
+        supervisor_id = validated_data.pop('supervisor_id', None)
+        if supervisor_id:
+            validated_data['supervisor_id'] = supervisor_id
+        return super().update(instance, validated_data)
 
 
 class BillSerializer(serializers.ModelSerializer):

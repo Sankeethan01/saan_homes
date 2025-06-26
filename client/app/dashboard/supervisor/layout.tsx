@@ -228,7 +228,7 @@ export default function SupervisorLayout({
     >
       {user?.profile_image ? (
         <img
-          src={`http://localhost:8000${user.profile_image}`}
+          src={`${process.env.NEXT_PUBLIC_API_BASE_URL}${user.profile_image}`}
           alt="Profile"
           className="w-10 h-10 rounded-full object-cover border-2 border-gray-200 shadow-sm"
         />

@@ -1,5 +1,6 @@
-import { motion } from 'framer-motion';
 import Link from 'next/link';
+import React from 'react';
+import { motion } from 'framer-motion';
 
 const fadeInUp = {
   initial: { opacity: 0, y: 40 },
@@ -7,99 +8,111 @@ const fadeInUp = {
   transition: { duration: 0.6, ease: 'easeOut' }
 };
 
+const gridFadeInUp = {
+  initial: { opacity: 0, y: 40 },
+  whileInView: { opacity: 1, y: 0 },
+  transition: { duration: 0.5, ease: 'easeOut' }
+};
+
+const services = [
+  {
+    label: 'Construction',
+    image: '/assets/images/construction.png',
+    tagline: 'Expert construction services with attention to detail.'
+  },
+  {
+    label: 'Renovation',
+    image: '/assets/images/renovation.png',
+    tagline: 'Transforming spaces to new heights.'
+  },
+  {
+    label: 'Interior Design',
+    image: '/assets/images/interior.png',
+    tagline: 'Beautiful, functional spaces tailored to your needs.'
+  },
+  {
+    label: 'Garden Setup',
+    image: '/assets/images/garden.png',
+    tagline: 'Lush gardens and outdoor spaces for every home.'
+  },
+  {
+    label: 'Equipment Rentals',
+    image: '/assets/images/rentals.png',
+    tagline: 'Modern equipment and property rentals for every project.'
+  }
+];
+
 const OurServicesPortfolio = () => {
   return (
-     <section id="services" className="py-17" style={{ background: 'radial-gradient(ellipse at 20% 40%, #f3f8ff 60%, #f8fafc 100%), radial-gradient(ellipse at 80% 60%, #ffe5ec 0%, #f8fafc 100%)' }}>
-        <div className="container mx-auto px-4">
-          <motion.div className="text-center max-w-3xl mx-auto mb-16">
-            <motion.h2 
+    <section className="py-2" style={{ background: 'radial-gradient(ellipse at 20% 40%, #f3f8ff 60%, #f8fafc 100%)' }}>
+      <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-12 px-4 items-center">
+        {/* Left: Heading, Tagline, Button (vertically centered) */}
+        <div className="flex flex-col items-start justify-start h-full text-left mt-36">
+          <div className="flex flex-col items-start self-end w-full">
+            <motion.h2
               {...fadeInUp}
-              className="text-4xl md:text-5xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-blue-700 to-red-600"
+              className="text-3xl font-bold mb-2 bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-red-700 mt-22"
             >
               Our Services
             </motion.h2>
-            <motion.p
+            <motion.div
               initial={{ opacity: 0 }}
               whileInView={{ opacity: 1 }}
-              className="text-gray-600 text-lg"
+              className="text-gray-600 text-xl mb-6"
             >
-              Seamless Services from Groundbreaking to Completion!!!
-            </motion.p>
-          </motion.div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {[
-              { 
-                title: 'Construction',
-                icon: '🏗️',
-                description: 'Expert construction services with attention to detail and quality craftsmanship.',
-                features: ['Custom Homes', 'Renovations', 'Commercial Buildings']
-              },
-              { 
-                title: 'Equipment Rental',
-                icon: '🚜',
-                description: 'Wide range of construction equipment available for your project needs.',
-                features: ['Modern Fleet', '24/7 Support', 'Flexible Terms']
-              },
-              { 
-                title: 'Project Management',
-                icon: '📋',
-                description: 'Professional project management to ensure timely and efficient completion.',
-                features: ['Planning', 'Execution', 'Monitoring']
-              }
-            ].map((service, index) => (
-              <motion.div
-                key={service.title}
-                initial={{ opacity: 0, y: 50 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.2 }}
-                whileHover={{ y: -10 }}
-                className="p-8 rounded-3xl shadow-xl hover:shadow-2xl transition-all duration-300 border border-white/40 bg-white/80 backdrop-blur-md"
-              >
-                <div className="text-5xl mb-6">{service.icon}</div>
-                <h3 className="text-2xl font-semibold mb-4">{service.title}</h3>
-                <p className="text-gray-600 mb-6">{service.description}</p>
-                <ul className="space-y-3">
-                  {service.features.map((feature, i) => (
-                    <motion.li
-                      key={i}
-                      initial={{ opacity: 0, x: -10 }}
-                      whileInView={{ opacity: 1, x: 0 }}
-                      transition={{ delay: (index * 0.2) + (i * 0.1) }}
-                      className="flex items-center text-gray-700"
-                    >
-                      <span className="w-5 h-5 mr-2 flex items-center justify-center rounded-full bg-blue-100 text-blue-600">✓</span>
-                      {feature}
-                    </motion.li>
-                  ))}
-                </ul>
-              </motion.div>
-            ))}
-          </div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
-            className="text-center mt-12"
-          >
+              From Concept to Concrete – Our Finest Work !!!
+            </motion.div>
             <Link href="/services">
               <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="group inline-flex items-center gap-2 bg-white text-blue-600 px-8 py-4 rounded-full text-lg font-medium border-2 border-blue-600 hover:bg-blue-50 transition-all duration-300 shadow-lg hover:shadow-xl cursor-pointer"
+                whileHover={{ scale: 1.08 }}
+                whileTap={{ scale: 0.97 }}
+                className="group inline-flex items-center gap-2 text-white px-8 py-3 rounded-full text-lg font-medium bg-[#1b4965] transition-transform duration-500 focus:outline-none mb-8"
               >
                 <span>View More</span>
-                <motion.span
-                  className="inline-block transition-transform duration-300 group-hover:translate-x-1"
-                >
-                  →
-                </motion.span>
+                <span className="inline-block transition-transform duration-300 group-hover:translate-x-1">→</span>
               </motion.button>
             </Link>
+          </div>
+          {/* Interior Design grid card below the button */}
+          <motion.div
+            {...gridFadeInUp}
+            whileHover={{ scale: 1.05 }}
+            className="relative flex flex-col items-center justify-center bg-white rounded-xl shadow-lg transition-all duration-300 min-h-[290px] min-w-[290px] w-[290px] h-[290px] border border-blue-100 cursor-pointer overflow-hidden mt-20 self-end"
+            style={{ transition: 'background 0.3s' }}
+            onMouseEnter={e => e.currentTarget.style.background = '#1b4965'}
+            onMouseLeave={e => e.currentTarget.style.background = 'white'}
+          >
+            <img src={services[2].image} alt={services[2].label} className="w-full h-full p-0 object-contain z-10" />
+            {/* Overlay on hover */}
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#1b4965] opacity-0 hover:opacity-85 transition-opacity duration-300 z-20 text-center px-4">
+              <div className="text-white text-xl font-bold mb-2">{services[2].label}</div>
+              <div className="text-blue-100 text-base">{services[2].tagline}</div>
+            </div>
           </motion.div>
         </div>
-      </section>
+        {/* Right: 2x2 Service Grid, but skip Interior Design */}
+        <div className="grid grid-cols-2 grid-rows-2 gap-x-20 gap-y-8 justify-items-center mt-8">
+          {services.filter(s => s.label !== 'Interior Design').map((service) => (
+            <motion.div
+              key={service.label}
+              {...gridFadeInUp}
+              whileHover={{ scale: 1.05 }}
+              className="relative flex flex-col items-center justify-center bg-white rounded-xl shadow-lg transition-all duration-300 min-h-[290px] min-w-[290px] w-[290px] h-[290px] border border-blue-100 cursor-pointer overflow-hidden"
+              style={{ transition: 'background 0.3s' }}
+              onMouseEnter={e => e.currentTarget.style.background = '#1b4965'}
+              onMouseLeave={e => e.currentTarget.style.background = 'white'}
+            >
+              <img src={service.image} alt={service.label} className="w-full h-full p-0 object-contain z-10" />
+              {/* Overlay on hover */}
+              <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#1b4965] opacity-0 hover:opacity-85 transition-opacity duration-300 z-20 text-center px-4">
+                <div className="text-white text-xl font-bold mb-2">{service.label}</div>
+                <div className="text-blue-100 text-base">{service.tagline}</div>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+    </section>
   );
 };
 

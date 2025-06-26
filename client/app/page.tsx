@@ -2,12 +2,12 @@
 
 import Footer from './components/Portfolio/Footer';
 import HeroPortfolio from './components/Portfolio/Hero';
-import ContactUsPortfolio from './components/Portfolio/ContactUs';
 import OurServicesPortfolio from './components/Portfolio/OurServices';
 import FeaturedProjectsPortfolio from './components/Portfolio/FeaturedProjects';
 import EquipmentRentalsPortfolio from './components/Portfolio/EquipmentRentals';
 import ClientTestimonialsPortfolio from './components/Portfolio/ClientTestimonials';
 import NavbarPortfolio from './components/Portfolio/Navbar';
+import GetInTouchPortfolio from './components/Portfolio/GetInTouch';
 
 export default function Home() {
 
@@ -17,6 +17,8 @@ export default function Home() {
 
       {/* Hero Section */}
       <HeroPortfolio />
+
+      
 
       {/* Services Section */}
       <OurServicesPortfolio />
@@ -31,7 +33,7 @@ export default function Home() {
       <ClientTestimonialsPortfolio />
 
       {/* Contact Section */}
-      <ContactUsPortfolio />
+      <GetInTouchPortfolio />
 
       {/* Footer */}
       <Footer />
