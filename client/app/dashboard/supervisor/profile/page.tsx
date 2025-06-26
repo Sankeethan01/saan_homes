@@ -18,6 +18,7 @@ import {
   RiIdCardLine,
   RiTimeLine,
 } from 'react-icons/ri';
+import clsx from 'clsx';
 
 interface PersonalInfo {
   firstName: string;
@@ -220,10 +221,10 @@ export default function UpdateProfilePage() {
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2">
-            Profile Settings
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 via-purple-500 to-pink-500 bg-clip-text text-transparent mb-2 animate-gradient-x [background-size:200%_auto] animate-gradient-move">
+            <span className="inline-block animate-fade-in">Profile Settings</span>
           </h1>
-          <p className="text-gray-600">Manage your personal and professional information</p>
+          <p className="text-gray-600 animate-fade-in [animation-delay:200ms]">Manage your personal and professional information</p>
         </div>
 
         {/* Tab Navigation */}
@@ -259,9 +260,9 @@ export default function UpdateProfilePage() {
           {activeTab === 'personal' && (
             <form onSubmit={handlePersonalUpdate} className="p-8">
               <div className="mb-8">
-                <h2 className="text-2xl font-semibold text-gray-800 mb-6 flex items-center gap-2">
+                <h2 className="text-2xl font-semibold text-gray-800 mb-6 flex items-center gap-2 animate-fade-in-up">
                   <RiUser3Line className="text-blue-600" />
-                  Personal Information
+                  <span>Personal Information</span>
                 </h2>
                 
                 {/* Profile Image Section */}
@@ -366,9 +367,9 @@ export default function UpdateProfilePage() {
           {/* PROFESSIONAL INFO */}
           {activeTab === 'professional' && (
             <div className="p-8">
-              <h2 className="text-2xl font-semibold text-gray-800 mb-6 flex items-center gap-2">
+              <h2 className="text-2xl font-semibold text-gray-800 mb-6 flex items-center gap-2 animate-fade-in-up">
                 <RiBuildingLine className="text-blue-600" />
-                Professional Information
+                <span>Professional Information</span>
               </h2>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -403,16 +404,17 @@ export default function UpdateProfilePage() {
           {activeTab === 'password' && (
             <div className="p-8 flex items-center justify-center min-h-[500px]">
               <div className="w-full max-w-md">
-                <h2 className="text-2xl font-semibold text-gray-800 mb-6 flex items-center gap-2 text-center justify-center">
+                <h2 className="text-2xl font-semibold text-gray-800 mb-6 flex items-center gap-2 text-center justify-center animate-fade-in-up">
                   <RiLockPasswordLine className="text-blue-600" />
-                  Security Settings
+                  <span>Security Settings</span>
                 </h2>
                 
-                <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl border border-blue-200">
-                  <p className="text-blue-800 text-sm flex items-center gap-2">
+                <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl border border-blue-200 relative overflow-hidden animate-shimmer">
+                  <p className="text-blue-800 text-sm flex items-center gap-2 z-10 relative">
                     <span className="text-blue-600">🔒</span>
                     Update your password to keep your account secure
                   </p>
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/60 to-transparent animate-shimmer-bar pointer-events-none" />
                 </div>
                 
                 <form onSubmit={handleChangePassword} className="space-y-6">
