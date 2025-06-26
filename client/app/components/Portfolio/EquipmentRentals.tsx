@@ -49,7 +49,7 @@ const EquipmentRentalsPortfolio = () => {
   const [isHovered, setIsHovered] = useState(false);
 
   return (
-    <section id="rentals" className="pt-20 pb-8 bg-white" style={{ background: 'radial-gradient(ellipse at 20% 40%, #f3f8ff 60%, #f8fafc 100%)' }}>
+    <section id="rentals" className="py-2 bg-white" style={{ background: 'radial-gradient(ellipse at 20% 40%, #f3f8ff 60%, #f8fafc 100%)' }}>
       <div className="container mx-auto px-4">
         <motion.div className="text-center max-w-3xl mx-auto mb-12">
           <motion.h2
@@ -92,7 +92,7 @@ const EquipmentRentalsPortfolio = () => {
                   <img src={equipment.image} alt={equipment.name} className="object-cover w-full h-full group-hover:scale-110 transition-transform duration-500" />
                 </div>
                 <div className="p-6">
-                  <h3 className="text-xl font-semibold mb-2 group-hover:text-blue-600 transition-colors">{equipment.name}</h3>
+                  <h3 className="text-xl font-semibold mb-2 group-hover:text-[#1b4965] transition-colors">{equipment.name}</h3>
                   <p className="text-gray-600">{equipment.description}</p>
                 </div>
               </div>
@@ -106,18 +106,14 @@ const EquipmentRentalsPortfolio = () => {
           className="text-center mt-8"
         >
           <Link href="/rentals">
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="group inline-flex items-center gap-2 bg-white text-blue-600 px-8 py-4 rounded-full text-lg font-medium border-2 border-blue-600 hover:bg-blue-50 transition-all duration-300 shadow-lg hover:shadow-xl cursor-pointer"
-            >
-              <span>Rent Equipment</span>
-              <motion.span
-                className="inline-block transition-transform duration-300 group-hover:translate-x-1"
+          <motion.button
+                whileHover={{ scale: 1.08 }}
+                whileTap={{ scale: 0.97 }}
+                className="group inline-flex items-center gap-2 text-white px-8 py-3 rounded-full text-lg font-medium bg-[#1b4965] transition-transform duration-500 focus:outline-none mb-8"
               >
-                →
-              </motion.span>
-            </motion.button>
+                <span>Rent Equipment</span>
+                <span className="inline-block transition-transform duration-300 group-hover:translate-x-1">→</span>
+              </motion.button>
           </Link>
         </motion.div>
         {/* Keyframes for scroll animation */}

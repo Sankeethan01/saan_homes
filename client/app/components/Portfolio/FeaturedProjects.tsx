@@ -61,7 +61,7 @@ const FeaturedProjectsPortfolio = () => {
   const [isHovered, setIsHovered] = useState(false);
 
   return (
-    <section id="projects" className="pt-20 pb-15 bg-white" style={{ background: 'radial-gradient(ellipse at 20% 40%, #f3f8ff 60%, #f8fafc 100%)' }}>
+    <section id="projects" className="py-2 bg-white" style={{ background: 'radial-gradient(ellipse at 20% 40%, #f3f8ff 60%, #f8fafc 100%)' }}>
       <div className="container mx-auto px-4">
         <motion.div className="text-center max-w-3xl mx-auto mb-16">
           <motion.h2 
@@ -106,10 +106,10 @@ const FeaturedProjectsPortfolio = () => {
                   <div className="absolute inset-0 bg-gradient-to-br from-blue-100/40 to-red-100/40 opacity-20 group-hover:opacity-30 transition-opacity" />
                 </div>
                 <div className="p-6">
-                  <span className={`inline-block px-3 py-1 mb-4 text-sm font-medium text-blue-600 bg-white/80 backdrop-blur-sm rounded-full`}>
+                  <span className={`inline-block px-3 py-1 mb-4 text-sm font-medium text-[#1b4965] bg-white/80 backdrop-blur-sm rounded-full`}>
                     {project.category}
                   </span>
-                  <h3 className="text-xl font-semibold mb-2 group-hover:text-blue-600 transition-colors">
+                  <h3 className="text-xl font-semibold mb-2 group-hover:text-[#1b4965] transition-colors">
                     {project.title}
                   </h3>
                   <p className="text-gray-600">{project.description}</p>
@@ -117,7 +117,7 @@ const FeaturedProjectsPortfolio = () => {
                     <motion.button
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
-                      className="mt-4 text-blue-600 font-medium hover:text-blue-700 transition-colors"
+                      className="mt-4 text-[#1b4965] font-medium hover:font-maximum transition-colors"
                     >
                       Learn More →
                     </motion.button>
@@ -134,18 +134,14 @@ const FeaturedProjectsPortfolio = () => {
           className="text-center mt-08"
         >
           <Link href="/projects">
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="group inline-flex items-center gap-2 bg-white text-blue-600 px-8 py-4 rounded-full text-lg font-medium border-2 border-blue-600 hover:bg-blue-50 transition-all duration-300 shadow-lg hover:shadow-xl cursor-pointer"
-            >
-              <span>View More</span>
-              <motion.span
-                className="inline-block transition-transform duration-300 group-hover:translate-x-1"
+          <motion.button
+                whileHover={{ scale: 1.08 }}
+                whileTap={{ scale: 0.97 }}
+                className="group inline-flex items-center gap-2 text-white px-8 py-3 rounded-full text-lg font-medium bg-[#1b4965] transition-transform duration-500 focus:outline-none mb-8"
               >
-                →
-              </motion.span>
-            </motion.button>
+                <span>View More</span>
+                <span className="inline-block transition-transform duration-300 group-hover:translate-x-1">→</span>
+              </motion.button>
           </Link>
         </motion.div>
         {/* Keyframes for scroll animation */}
