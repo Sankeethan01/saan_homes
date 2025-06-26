@@ -43,12 +43,12 @@ const sidebarItems = [
     subItems: [
       {
         name: 'Category',
-        path: '/dashboard/admin/equipments/addcategory',
+        path: '/dashboard/admin/equipments/categories',
         icon: RiListSettingsLine,
       },
       {
         name: 'Equipments',
-        path: '/dashboard/admin/equipments/addequipment',
+        path: '/dashboard/admin/equipments/equipments',
         icon: RiTruckLine,
       },
       {
