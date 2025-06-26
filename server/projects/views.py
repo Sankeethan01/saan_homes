@@ -1,5 +1,7 @@
 # projects/views.py
-from rest_framework import viewsets, permissions
+from rest_framework import viewsets, permissions, status
+from rest_framework.decorators import action
+from rest_framework.response import Response
 from rest_framework.filters import OrderingFilter, SearchFilter
 
 from .models import (
@@ -50,6 +52,29 @@ class ProjectViewSet(viewsets.ModelViewSet):
     ordering_fields = ["start_date", "estimated_end_date", "created"]
     ordering = ["-created"]
 
+    @action(detail=False, methods=['get'])
+    def supervisor_projects(self, request):
+        """
+        Get projects assigned to the current supervisor
+        """
+        if request.user.role != "SUPERVISOR":
+            return Response(
+                {"error": "Only supervisors can access this endpoint"}, 
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        projects = Project.objects.filter(supervisor=request.user)
+        serializer = self.get_serializer(projects, many=True)
+        return Response(serializer.data)
+
+    def get_queryset(self):
+        """
+        Filter projects based on user role
+        """
+        if self.action == 'supervisor_projects':
+            return Project.objects.filter(supervisor=self.request.user)
+        return super().get_queryset()
+
 
 class StepViewSet(viewsets.ModelViewSet):
     queryset = Step.objects.select_related("project").all()
@@ -67,6 +92,12 @@ class ProgressLogViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAdminOrSupervisorOrReadOnly]
     filter_backends = [OrderingFilter]
     ordering = ["-created"]
+
+    def perform_create(self, serializer):
+        """
+        Automatically set the supervisor when creating a progress log
+        """
+        serializer.save(supervisor=self.request.user)
 
 
 class BillViewSet(viewsets.ModelViewSet):
