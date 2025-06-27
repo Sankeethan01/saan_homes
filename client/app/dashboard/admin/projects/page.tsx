@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useAuthStore } from '@/app/stores/useAuthStore';
 import { useRouter } from 'next/navigation';
+import { FiSearch, FiFilter, FiCalendar, FiUsers, FiCheckCircle, FiClock, FiArrowRight } from 'react-icons/fi';
 
 interface Project {
   id: string;
@@ -36,12 +37,22 @@ const getStatusFromProject = (project: Project): 'In Progress' | 'Completed' | '
 
 const getStatusStyle = (status: ReturnType<typeof getStatusFromProject>) => {
   const styles = {
-    'In Progress': 'bg-blue-100 text-blue-800',
-    'Completed': 'bg-green-100 text-green-800',
-    'Planning': 'bg-purple-100 text-purple-800',
-    'On Hold': 'bg-gray-100 text-gray-800',
+    'In Progress': 'bg-blue-100 text-blue-800 border-blue-200',
+    'Completed': 'bg-green-100 text-green-800 border-green-200',
+    'Planning': 'bg-purple-100 text-purple-800 border-purple-200',
+    'On Hold': 'bg-gray-100 text-gray-800 border-gray-200',
   };
   return styles[status] || styles['In Progress'];
+};
+
+const getStatusIcon = (status: ReturnType<typeof getStatusFromProject>) => {
+  const icons = {
+    'In Progress': <FiClock className="mr-1" />,
+    'Completed': <FiCheckCircle className="mr-1" />,
+    'Planning': <FiCalendar className="mr-1" />,
+    'On Hold': <FiClock className="mr-1" />,
+  };
+  return icons[status] || icons['In Progress'];
 };
 
 const getSupervisorDisplayName = (supervisor: Project['supervisor']) => {
@@ -54,8 +65,11 @@ const getSupervisorDisplayName = (supervisor: Project['supervisor']) => {
 
 export default function ProjectsPage() {
   const [projects, setProjects] = useState<Project[]>([]);
+  const [filteredProjects, setFilteredProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('All');
   const token = useAuthStore((s) => s.token);
   const router = useRouter();
   const clearToken = useAuthStore((s) => s.clear);
@@ -85,43 +99,9 @@ export default function ProjectsPage() {
 
         const data = await response.json();
         
-        // Fetch supervisor details for each project
-        const projectsWithSupervisors = await Promise.all(
-          data.map(async (project: Project) => {
-            if (!project.supervisor) return project;
-            
-            try {
-              const supervisorResponse = await fetch(
-                `${process.env.NEXT_PUBLIC_API_BASE_URL}/userAccounts/users/${project.supervisor.id}/`,
-                {
-                  headers: { Authorization: `Bearer ${token}` },
-                }
-              );
-              
-              if (supervisorResponse.ok) {
-                const supervisorData = await supervisorResponse.json();
-                return {
-                  ...project,
-                  supervisor: {
-                    ...project.supervisor,
-                    ...supervisorData
-                  }
-                };
-              }
-              
-              if (supervisorResponse.status === 401) {
-                clearToken();
-                router.replace('/dashboard/login');
-                return project;
-              }
-            } catch (err) {
-              console.error('Error fetching supervisor:', err);
-            }
-            return project;
-          })
-        );
-
-        setProjects(projectsWithSupervisors);
+        // No need to fetch supervisor details separately as they're now included in the API response
+        setProjects(data);
+        setFilteredProjects(data);
         setError(null);
       } catch (err) {
         setError('Error loading projects. Please try again later.');
@@ -133,6 +113,30 @@ export default function ProjectsPage() {
 
     fetchProjects();
   }, [token, router, clearToken]);
+
+  useEffect(() => {
+    // Filter projects based on search term and status filter
+    let result = [...projects];
+    
+    if (searchTerm) {
+      result = result.filter(project => 
+        project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        project.description.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+    
+    if (statusFilter !== 'All') {
+      result = result.filter(project => getStatusFromProject(project) === statusFilter);
+    }
+    
+    setFilteredProjects(result);
+  }, [searchTerm, statusFilter, projects]);
+
+  // Calculate summary metrics
+  const totalProjects = projects.length;
+  const completedProjects = projects.filter(p => p.is_completed).length;
+  const inProgressProjects = projects.filter(p => !p.is_completed && new Date(p.start_date) <= new Date()).length;
+  const plannedProjects = projects.filter(p => !p.is_completed && new Date(p.start_date) > new Date()).length;
 
   if (loading) {
     return (
@@ -165,7 +169,7 @@ export default function ProjectsPage() {
             animate={{ opacity: 1, y: 0 }}
             className="text-2xl font-semibold text-gray-800"
           >
-            Projects
+            Projects Dashboard
           </motion.h1>
           <motion.p
             initial={{ opacity: 0 }}
@@ -173,7 +177,7 @@ export default function ProjectsPage() {
             transition={{ delay: 0.1 }}
             className="text-sm text-gray-500 mt-1"
           >
-            Manage all ongoing projects and their details
+            Monitor and manage all your construction projects in one place
           </motion.p>
         </div>
         
@@ -189,68 +193,125 @@ export default function ProjectsPage() {
         </Link>
       </div>
 
+      {/* Summary Cards */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2 }}
+        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"
+      >
+        <div className="bg-white rounded-lg shadow-sm p-4 border-l-4 border-blue-500">
+          <div className="text-sm text-gray-500 mb-1">Total Projects</div>
+          <div className="text-2xl font-semibold">{totalProjects}</div>
+        </div>
+        <div className="bg-white rounded-lg shadow-sm p-4 border-l-4 border-green-500">
+          <div className="text-sm text-gray-500 mb-1">Completed</div>
+          <div className="text-2xl font-semibold">{completedProjects}</div>
+        </div>
+        <div className="bg-white rounded-lg shadow-sm p-4 border-l-4 border-blue-500">
+          <div className="text-sm text-gray-500 mb-1">In Progress</div>
+          <div className="text-2xl font-semibold">{inProgressProjects}</div>
+        </div>
+        <div className="bg-white rounded-lg shadow-sm p-4 border-l-4 border-purple-500">
+          <div className="text-sm text-gray-500 mb-1">Planned</div>
+          <div className="text-2xl font-semibold">{plannedProjects}</div>
+        </div>
+      </motion.div>
+
+      {/* Search and Filter */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3 }}
-        className="bg-white rounded-lg shadow-sm overflow-hidden"
+        className="bg-white rounded-lg shadow-sm p-4 flex flex-col md:flex-row gap-4"
       >
-        <table className="min-w-full">
-          <thead>
-            <tr className="bg-gray-50 border-b border-gray-200">
-              <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Project Name</th>
-              <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Start Date</th>
-              <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Deadline</th>
-              <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Status</th>
-              <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Supervisor</th>
-              <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-200">
-            {projects.map((project) => {
-              const status = getStatusFromProject(project);
-              return (
-                <tr key={project.id} className="hover:bg-gray-50 transition-colors duration-200">
-                  <td className="py-3 px-4 text-sm text-gray-800">{project.name}</td>
-                  <td className="py-3 px-4 text-sm text-gray-600">
-                    {new Date(project.start_date).toLocaleDateString('en-US', {
-                      year: 'numeric',
-                      month: '2-digit',
-                      day: '2-digit',
-                    })}
-                  </td>
-                  <td className="py-3 px-4 text-sm text-gray-600">
-                    {new Date(project.estimated_end_date).toLocaleDateString('en-US', {
-                      year: 'numeric',
-                      month: '2-digit',
-                      day: '2-digit',
-                    })}
-                  </td>
-                  <td className="py-3 px-4">
-                    <span
-                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusStyle(
-                        status
-                      )}`}
-                    >
+        <div className="relative flex-grow">
+          <FiSearch className="absolute left-3 top-3 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Search projects..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10 pr-4 py-2 w-full border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+        <div className="flex items-center">
+          <FiFilter className="mr-2 text-gray-400" />
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="px-3 py-2 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            aria-label="Filter projects by status"
+          >
+            <option value="All">All Statuses</option>
+            <option value="In Progress">In Progress</option>
+            <option value="Completed">Completed</option>
+            <option value="Planning">Planning</option>
+            <option value="On Hold">On Hold</option>
+          </select>
+        </div>
+      </motion.div>
+
+      {/* Projects Grid */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.4 }}
+        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+      >
+        {filteredProjects.length > 0 ? (
+          filteredProjects.map((project) => {
+            const status = getStatusFromProject(project);
+            const statusStyleClass = getStatusStyle(status);
+            const statusIcon = getStatusIcon(status);
+            
+            return (
+              <div key={project.id} className="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-100 hover:shadow-md transition-shadow duration-200">
+                <div className="p-5">
+                  <h3 className="text-lg font-medium text-gray-800 mb-2 truncate">{project.name}</h3>
+                  <p className="text-gray-600 text-sm mb-4 line-clamp-2">{project.description}</p>
+                  
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center text-sm">
+                      <FiCalendar className="text-gray-400 mr-1" />
+                      <span className="text-gray-600">
+                        {new Date(project.start_date).toLocaleDateString('en-US', {
+                          month: 'short',
+                          day: 'numeric',
+                          year: 'numeric',
+                        })}
+                      </span>
+                    </div>
+                    <div className="flex items-center text-sm">
+                      <FiUsers className="text-gray-400 mr-1" />
+                      <span className="text-gray-600 truncate max-w-[120px]">
+                        {getSupervisorDisplayName(project.supervisor)}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <div className={`flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${statusStyleClass} border`}>
+                      {statusIcon}
                       {status}
-                    </span>
-                  </td>
-                  <td className="py-3 px-4 text-sm text-gray-600">
-                    {getSupervisorDisplayName(project.supervisor)}
-                  </td>
-                  <td className="py-3 px-4">
+                    </div>
                     <Link
                       href={`/dashboard/admin/projects/${project.id}`}
-                      className="text-blue-600 hover:text-blue-800 text-sm font-medium transition-colors duration-200"
+                      className="text-blue-600 hover:text-blue-800 text-sm font-medium transition-colors duration-200 flex items-center"
                     >
                       View Details
+                      <FiArrowRight className="ml-1" />
                     </Link>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+                  </div>
+                </div>
+              </div>
+            );
+          })
+        ) : (
+          <div className="col-span-full text-center py-10">
+            <p className="text-gray-500">No projects found matching your criteria.</p>
+          </div>
+        )}
       </motion.div>
     </div>
   );

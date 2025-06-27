@@ -99,6 +99,7 @@ class ProjectSerializer(serializers.ModelSerializer):
     client = serializers.SerializerMethodField()
     budget = serializers.SerializerMethodField()
     
+    # Use SupervisorSerializer to include all supervisor details in the API response
     supervisor = SupervisorSerializer(read_only=True)
     supervisor_id = serializers.UUIDField(write_only=True, required=False, allow_null=True)
 
