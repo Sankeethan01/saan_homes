@@ -1,12 +1,11 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { RiHome5Line, RiBuilding4Line, RiTimeLine, RiCheckLine, RiCalendarLine, RiTeamLine, RiMapPinLine, RiArrowRightLine, RiHomeSmileLine, RiPaletteLine, RiLeafLine } from 'react-icons/ri';
 import Footer from '../components/Portfolio/Footer';
-import HomeIcon from '../components/Portfolio/Home_Icon';
 import HeroProjectsPortfolio from '../components/Portfolio/Projects/Hero';
 
 interface Project {
@@ -195,12 +194,23 @@ export default function ProjectsPage() {
   const ongoingProjects = projects.filter(p => p.status === 'ongoing');
   const completedProjects = projects.filter(p => p.status === 'completed');
 
+  // Navbar scroll state
+  const [showNavbar, setShowNavbar] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowNavbar(window.scrollY > 10);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   const ProjectCard = ({ project }: { project: Project }) => (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
       whileHover={{ y: -10 }}
-      className="bg-white/80 backdrop-blur-md border border-white/40 rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300"
+      className="bg-white/80 backdrop-blur-md border border-white/40 rounded-xl overflow-hidden shadow-lg hover:shadow-[0_4px_10px_0_#1b4965] transition-all duration-300"
     >
       <div className="relative h-64">
         <Image
@@ -259,229 +269,244 @@ export default function ProjectsPage() {
   );
 
   return (
-    <main className="min-h-screen" style={{ background: 'radial-gradient(ellipse at 20% 40%, #f3f8ff 60%, #f8fafc 100%), radial-gradient(ellipse at 80% 60%, #ffe5ec 0%, #f8fafc 100%)' }}>
-      {/* Hero Section */}
-      <HeroProjectsPortfolio />
+    <>
+      {/* Custom Navbar */}
+      <nav
+        className={`fixed w-full z-50 transition-all duration-300 ${showNavbar ? 'bg-[rgba(27,73,101,0.4)] shadow-lg opacity-100' : 'opacity-0 pointer-events-none'}`}
+      >
+        <div className="container mx-auto px-4 flex items-center justify-between h-20">
+          {/* Logo on the left */}
+          <Link href="/" className="flex items-center">
+            <Image src="/assets/logo.jpg" alt="Logo" width={120} height={60} className="inline-block mr-2" />
+          </Link>
+          {/* Navigation items (optional, can add more links here) */}
+          <div className="flex items-center space-x-8">
+            {/* Home button on the right */}
+            <Link href="/">
+              <div className="w-12 h-12 bg-[#1b4965] rounded-full flex items-center justify-center shadow-lg hover:shadow-xl cursor-pointer">
+                <RiHome5Line className="text-white text-2xl" />
+              </div>
+            </Link>
+          </div>
+        </div>
+      </nav>
+      <main className="min-h-screen" style={{ background: 'radial-gradient(ellipse at 20% 40%, #f3f8ff 60%, #f8fafc 100%), radial-gradient(ellipse at 80% 60%, #ffe5ec 0%, #f8fafc 100%)' }}>
+        {/* Hero Section */}
+        <HeroProjectsPortfolio />
 
-      {/* Statistics Section */}
-      <section className="py-16 bg-white">
-        <div className="container mx-auto px-4">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            {[
-              { label: "Total Projects", value: projects.length, icon: RiBuilding4Line },
-              { label: "Completed", value: completedProjects.length, icon: RiCheckLine },
-              { label: "Ongoing", value: ongoingProjects.length, icon: RiTimeLine },
-              { label: "Upcoming", value: upcomingProjects.length, icon: RiCalendarLine }
-            ].map((stat, index) => (
-              <motion.div
-                key={stat.label}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 }}
-                className="bg-gray-50 p-8 rounded-xl text-center transform hover:scale-105 transition-all duration-300"
-              >
-                <motion.div 
-                  className="flex justify-center mb-4"
-                  whileHover={{ rotate: 360 }}
-                  transition={{ duration: 0.5 }}
+        {/* Statistics Section */}
+        <section className="py-6 pt-10 bg-white">
+          <div className="container mx-auto px-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+              {[
+                { label: "Total Projects", value: projects.length, icon: RiBuilding4Line },
+                { label: "Completed", value: completedProjects.length, icon: RiCheckLine },
+                { label: "Ongoing", value: ongoingProjects.length, icon: RiTimeLine },
+                { label: "Upcoming", value: upcomingProjects.length, icon: RiCalendarLine }
+              ].map((stat, index) => (
+                <motion.div
+                  key={stat.label}
+                  initial={{ opacity: 0, y: 0 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                  className="bg-[rgba(27,73,101,0.1)] shadow-lg  p-8 rounded-xl text-center transform hover:scale-105 transition-all duration-300"
                 >
-                  <stat.icon className="text-5xl text-blue-600" />
+                  <motion.div 
+                    className="flex justify-center mb-4"
+                    whileHover={{ rotate: 360 }}
+                    transition={{ duration: 0.5 }}
+                  >
+                    <stat.icon className="text-5xl text-[#1b4965]" />
+                  </motion.div>
+                  <motion.h3 
+                    className="text-4xl font-bold mb-2"
+                    initial={{ opacity: 0 }}
+                    whileInView={{ opacity: 1 }}
+                    transition={{ delay: 0.3 }}
+                  >
+                    {stat.value}
+                  </motion.h3>
+                  <p className="text-gray-600 text-lg">{stat.label}</p>
                 </motion.div>
-                <motion.h3 
-                  className="text-4xl font-bold mb-2"
-                  initial={{ opacity: 0 }}
-                  whileInView={{ opacity: 1 }}
-                  transition={{ delay: 0.3 }}
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Upcoming Projects Section */}
+        <section className="py-16 bg-gray-50 overflow-hidden">
+          <div className="container mx-auto px-4 ">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              className="text-center mb-12"
+            >
+              <h2 className="text-4xl font-bold mb-4 text-[#1b4965]">Upcoming Projects</h2>
+              <p className="text-xl text-gray-600">Discover our future developments and innovations</p>
+            </motion.div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 ">
+              {upcomingProjects.map((project, index) => (
+                <motion.div
+                  key={`${project.id}-upcoming`}
+                  initial={{ opacity: 0, x: 100 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -100 }}
+                  transition={{ duration: 0.5, delay: index * 0.1 }}
                 >
-                  {stat.value}
-                </motion.h3>
-                <p className="text-gray-600 text-lg">{stat.label}</p>
-              </motion.div>
-            ))}
+                  <ProjectCard project={project} />
+                </motion.div>
+              ))}
+            </div>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              className="mt-12 text-center"
+            >
+              <Link href="/projects/upcoming">
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="bg-[#1b4965] text-white px-8 py-3 rounded-lg font-medium hover:bg-[#163a52] transition-all duration-300 flex items-center justify-center gap-2 mx-auto"
+                >
+                  View All Upcoming Projects
+                  <RiArrowRightLine className="text-xl" />
+                </motion.button>
+              </Link>
+            </motion.div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* Upcoming Projects Section */}
-      <section className="py-16 bg-gray-50 overflow-hidden">
-        <div className="container mx-auto px-4">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            className="text-center mb-12"
-          >
-            <h2 className="text-4xl font-bold mb-4">Upcoming Projects</h2>
-            <p className="text-xl text-gray-600">Discover our future developments and innovations</p>
-          </motion.div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {upcomingProjects.map((project, index) => (
-              <motion.div
-                key={`${project.id}-upcoming`}
-                initial={{ opacity: 0, x: 100 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -100 }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
-              >
-                <ProjectCard project={project} />
-              </motion.div>
-            ))}
+        {/* Ongoing Projects Section */}
+        <section className="py-16 bg-white overflow-hidden">
+          <div className="container mx-auto px-4">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              className="text-center mb-12"
+            >
+              <h2 className="text-4xl font-bold mb-4 text-[#1b4965]">Ongoing Projects</h2>
+              <p className="text-xl text-gray-600">Watch our current projects take shape</p>
+            </motion.div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              {ongoingProjects.map((project, index) => (
+                <motion.div
+                  key={`${project.id}-ongoing`}
+                  initial={{ opacity: 0, x: -100 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 100 }}
+                  transition={{ duration: 0.5, delay: index * 0.1 }}
+                >
+                  <ProjectCard project={project} />
+                </motion.div>
+              ))}
+            </div>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              className="mt-12 text-center"
+            >
+              <Link href="/projects/ongoing">
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="bg-[#1b4965] text-white px-8 py-3 rounded-lg font-medium hover:bg-[#163a52] transition-all duration-300 flex items-center justify-center gap-2 mx-auto"
+                >
+                  View All Ongoing Projects
+                  <RiArrowRightLine className="text-xl" />
+                </motion.button>
+              </Link>
+            </motion.div>
           </div>
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            className="mt-12 text-center"
-          >
-            <Link href="/projects/upcoming">
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className="bg-gradient-to-r from-blue-600 to-red-700 text-white px-8 py-3 rounded-lg font-medium hover:from-blue-700 hover:to-red-800 transition-all duration-300 flex items-center justify-center gap-2 mx-auto"
-              >
-                View All Upcoming Projects
-                <RiArrowRightLine className="text-xl" />
-              </motion.button>
-            </Link>
-          </motion.div>
-        </div>
-      </section>
+        </section>
 
-      {/* Ongoing Projects Section */}
-      <section className="py-16 bg-white overflow-hidden">
-        <div className="container mx-auto px-4">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            className="text-center mb-12"
-          >
-            <h2 className="text-4xl font-bold mb-4">Ongoing Projects</h2>
-            <p className="text-xl text-gray-600">Watch our current projects take shape</p>
-          </motion.div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {ongoingProjects.map((project, index) => (
-              <motion.div
-                key={`${project.id}-ongoing`}
-                initial={{ opacity: 0, x: -100 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 100 }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
-              >
-                <ProjectCard project={project} />
-              </motion.div>
-            ))}
+        {/* Completed Projects Section */}
+        <section className="py-16 bg-gray-50 overflow-hidden">
+          <div className="container mx-auto px-4">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              className="text-center mb-12"
+            >
+              <h2 className="text-4xl font-bold mb-4 text-[#1b4965]">Completed Projects</h2>
+              <p className="text-xl text-gray-600">Explore our successfully delivered projects</p>
+            </motion.div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              {completedProjects.map((project, index) => (
+                <motion.div
+                  key={`${project.id}-completed`}
+                  initial={{ opacity: 0, x: 100 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -100 }}
+                  transition={{ duration: 0.5, delay: index * 0.1 }}
+                >
+                  <ProjectCard project={project} />
+                </motion.div>
+              ))}
+            </div>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              className="mt-12 text-center"
+            >
+              <Link href="/projects/completed">
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="bg-[#1b4965] text-white px-8 py-3 rounded-lg font-medium hover:bg-[#163a52] transition-all duration-300 flex items-center justify-center gap-2 mx-auto"
+                >
+                  View All Completed Projects
+                  <RiArrowRightLine className="text-xl" />
+                </motion.button>
+              </Link>
+            </motion.div>
           </div>
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            className="mt-12 text-center"
-          >
-            <Link href="/projects/ongoing">
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className="bg-gradient-to-r from-blue-600 to-red-700 text-white px-8 py-3 rounded-lg font-medium hover:from-blue-700 hover:to-red-800 transition-all duration-300 flex items-center justify-center gap-2 mx-auto"
-              >
-                View All Ongoing Projects
-                <RiArrowRightLine className="text-xl" />
-              </motion.button>
-            </Link>
-          </motion.div>
-        </div>
-      </section>
+        </section>
 
-      {/* Completed Projects Section */}
-      <section className="py-16 bg-gray-50 overflow-hidden">
-        <div className="container mx-auto px-4">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            className="text-center mb-12"
-          >
-            <h2 className="text-4xl font-bold mb-4">Completed Projects</h2>
-            <p className="text-xl text-gray-600">Explore our successfully delivered projects</p>
-          </motion.div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {completedProjects.map((project, index) => (
-              <motion.div
-                key={`${project.id}-completed`}
-                initial={{ opacity: 0, x: 100 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -100 }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
-              >
-                <ProjectCard project={project} />
-              </motion.div>
-            ))}
-          </div>
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            className="mt-12 text-center"
-          >
-            <Link href="/projects/completed">
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className="bg-gradient-to-r from-blue-600 to-red-700 text-white px-8 py-3 rounded-lg font-medium hover:from-blue-700 hover:to-red-800 transition-all duration-300 flex items-center justify-center gap-2 mx-auto"
-              >
-                View All Completed Projects
-                <RiArrowRightLine className="text-xl" />
-              </motion.button>
-            </Link>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Testimonials Section */}
-      <section className="py-16 bg-white">
-        <div className="container mx-auto px-4">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            className="text-center mb-12"
-          >
-            <h2 className="text-4xl font-bold mb-4">Client Testimonials</h2>
-            <p className="text-xl text-gray-600">What our clients say about us</p>
-          </motion.div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {testimonials.map((testimonial, index) => (
-              <motion.div
-                key={testimonial.id}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 }}
-                className="bg-gray-50 p-8 rounded-xl"
-              >
-                <div className="flex items-center mb-6">
-                  <div className="relative w-16 h-16 rounded-full overflow-hidden mr-4">
+        {/* Testimonials Section */}
+        <section className="relative h-[90vh] py-16 bg-white">
+          <div className="container mx-auto px-4">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              className="text-center mb-12"
+            >
+              <h2 className="text-4xl font-bold mb-4 text-[#1b4965]">Client Testimonials</h2>
+              <p className="text-xl text-gray-600">What our clients say about us</p>
+            </motion.div>
+            <div className="grid grid-cols-1 h-[50vh] mt-10 md:grid-cols-3 gap-8">
+              {testimonials.map((testimonial) => (
+                <div
+                  key={testimonial.id}
+                  className="relative bg-white rounded-2xl shadow-lg p-8 flex flex-col items-center"
+                >
+                  <div className="absolute -top-10 left-1/2 -translate-x-1/2 w-20 h-20 rounded-full border-4 border-white shadow-md overflow-hidden bg-gray-100">
                     <Image
                       src={testimonial.image}
                       alt={testimonial.name}
-                      fill
-                      className="object-cover"
+                      width={80}
+                      height={80}
+                      className="object-cover w-full h-full"
                     />
                   </div>
-                  <div>
-                    <h3 className="font-semibold text-lg">{testimonial.name}</h3>
-                    <p className="text-gray-600">{testimonial.position}</p>
+                  <div className="mt-12 text-center">
+                    <h3 className="font-bold text-lg text-[#1b4965]">{testimonial.name}</h3>
+                    <p className="text-gray-500 text-sm mb-4">{testimonial.position}</p>
+                    <p className="text-gray-700 italic mb-4">"{testimonial.quote}"</p>
+                    <div className="flex justify-center text-yellow-400 mb-2">
+                      {[...Array(testimonial.rating)].map((_, i) => (
+                        <span key={i} className="text-xl">⭐</span>
+                      ))}
+                    </div>
                   </div>
                 </div>
-                <p className="text-gray-600 italic mb-4">"{testimonial.quote}"</p>
-                <div className="flex text-yellow-400">
-                  {[...Array(testimonial.rating)].map((_, i) => (
-                    <span key={i} className="text-2xl">⭐</span>
-                  ))}
-                </div>
-              </motion.div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* Footer */}
-      <Footer />
-
-      {/* Home Button */}
-            <HomeIcon />
-    </main>
+        {/* Footer */}
+        <Footer />
+      </main>
+    </>
   );
 }

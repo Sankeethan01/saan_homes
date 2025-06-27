@@ -1,9 +1,9 @@
 'use client';
 
 import Footer from '@/app/components/Portfolio/Footer';
-import HomeIconPortfolio from '@/app/components/Portfolio/Home_Icon';
 import HeroCompletedProjectsPortfolio from '@/app/components/Portfolio/Projects/Completed/Hero';
 import ProjectListCompletedProjectsPortfolio from '@/app/components/Portfolio/Projects/Completed/ProjectList';
+import HomeButton from '@/app/components/ui/HomeButton';
 
 
 
@@ -17,7 +17,7 @@ export default function CompletedProjectsPage() {
         <ProjectListCompletedProjectsPortfolio />
 
       {/* Home Icon */}
-          <HomeIconPortfolio />
+          <HomeButton />
 
       {/* Footer */}
       <Footer />
