@@ -66,7 +66,7 @@ const ConditionsRentalsPortfolio = () => {
                   whileInView={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.1 }}
                   whileHover={{ scale: 1.07 }}
-                  className={`p-6 rounded-xl shadow-lg transition-all duration-300 hover:shadow-[0_4px_10px_0_#1b4965] ${colorClass} ${gridClass}`}
+                  className={`p-6 rounded-xl shadow-lg transition-all duration-300 hover:shadow-[#1b4965] ${colorClass} ${gridClass}`}
                 >
                   <div className="text-4xl mb-4">{condition.icon}</div>
                   <h3 className="text-xl font-semibold mb-2">{condition.title}</h3>
