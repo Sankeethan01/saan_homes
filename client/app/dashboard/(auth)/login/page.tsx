@@ -15,7 +15,7 @@ export default function Login() {
   const router = useRouter();
   const setToken = useAuthStore((s) => s.setToken);
   const setUserRole = useAuthStore((s) => s.setUserRole);
-  
+
   const [formData, setFormData] = useState({
     username: "",
     password: "",
@@ -49,14 +49,14 @@ export default function Login() {
 
     setIsLoading(true);
     const loadingToast = toast.loading("Logging in...");
-    
+
     try {
       // 1) Obtain tokens
       const loginRes = await fetch(
         `${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/token/`,
         {
           method: "POST",
-          headers: { 
+          headers: {
             "Content-Type": "application/json",
             "Accept": "application/json"
           },
@@ -65,12 +65,12 @@ export default function Login() {
           credentials: "include", // Include cookies in the request
         }
       );
-      
+
       if (!loginRes.ok) {
         const errorData = await loginRes.json();
         throw new Error(errorData.detail || "Invalid credentials");
       }
-      
+
       const loginData = await loginRes.json();
       const access = loginData.access;
 
@@ -83,7 +83,7 @@ export default function Login() {
         `${process.env.NEXT_PUBLIC_API_BASE_URL}/userAccounts/users/me/`,
         {
           method: "GET",
-          headers: { 
+          headers: {
             "Authorization": `Bearer ${access}`,
             "Content-Type": "application/json",
             "Accept": "application/json"
@@ -92,11 +92,11 @@ export default function Login() {
           credentials: "include", // Include cookies in the request
         }
       );
-      
+
       if (!profileRes.ok) {
         throw new Error("Could not verify user profile");
       }
-      
+
       const profile = await profileRes.json();
       const userRole = profile.role;
 
@@ -107,17 +107,17 @@ export default function Login() {
       // 3) Save tokens and user data in Zustand store
       setToken(access);
       setUserRole(userRole);
-      
+
       // 4) Save tokens and user data in localStorage for redundancy
       localStorage.setItem('username', profile.username);
-      
+
       // 5) Set cookies with proper expiration
       setAuthCookies(access, userRole, rememberMe);
 
       // 6) Show success message and redirect based on role
       toast.success(`Welcome back, ${profile.username}!`);
       toast.dismiss(loadingToast);
-      
+
       // Delay redirect slightly to ensure cookies are set
       setTimeout(() => {
         if (userRole === UserRoles.ADMIN) {
@@ -138,25 +138,26 @@ export default function Login() {
   };
 
   return (
-    <div className="h-screen flex">
+    <div className="relative h-screen flex items-center justify-end overflow-hidden">
+      {/* Background gradient image */}
+      <div className="absolute inset-0 w-full h-full bg-[url('/assets/images/bg_login.png')] bg-cover bg-center z-0" />
+
       {/* Left side - Login form */}
-      <div className="w-full md:w-1/2 flex flex-col bg-white">
-        {/* Logo section */}
-        <div className="p-8">
-          <Image 
-            src="/assets/logo.jpg"
-            alt="SAAN Homes Logo"
-            width={120}
-            height={40}
-            className="h-12 w-auto object-contain"
-          />
-        </div>
-        
+      <div className="w-full md:w-2/3 flex flex-col relative z-10 ml-200 mt-10">
         {/* Form section */}
-        <div className="flex-grow flex items-center justify-center px-8 pb-8">
-          <div className="w-full max-w-md">
+        <div className="flex-grow flex items-center justify-end px-10 pb-8 mt-5">
+          <div className="w-full max-w-md mx-auto my-8 p-8 shadow-lg bg-white/60 rounded-xl">
             <div className="text-center mb-10">
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome back</h1>
+              <h1 className="text-3xl font-bold text-[#1b4965] mb-2">Welcome back to</h1>
+              <div className="p-0 items-center justify-center ml-30">
+                <Image
+                  src="/assets/logo.jpg"
+                  alt="SAAN Homes Logo"
+                  width={65}
+                  height={22}
+                  className="h-auto w-auto object-contain"
+                />
+              </div>
               <p className="text-gray-600">Sign in to access your account</p>
             </div>
 
@@ -177,7 +178,7 @@ export default function Login() {
                     placeholder="Enter your username"
                     aria-label="Username"
                     aria-required="true"
-                    className="pl-10 w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                    className="pl-10 w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1b4965] focus:border-[#1b4965] hover:border-[#1b4965] transition-all hover:shadow-md focus:shadow-md"
                     value={formData.username}
                     onChange={handleChange}
                   />
@@ -200,7 +201,7 @@ export default function Login() {
                     placeholder="Enter your password"
                     aria-label="Password"
                     aria-required="true"
-                    className="pl-10 w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all pr-10"
+                    className="pl-10 w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1b4965] focus:border-[#1b4965] hover:border-[#1b4965] transition-all hover:shadow-md focus:shadow-md pr-10"
                     value={formData.password}
                     onChange={handleChange}
                   />
@@ -212,13 +213,13 @@ export default function Login() {
                     title={showPassword ? "Hide password" : "Show password"}
                   >
                     <div className="relative w-5 h-5">
-                      <RiEyeOffLine 
-                        className={`h-5 w-5 absolute transition-opacity duration-200 ${showPassword ? 'opacity-100' : 'opacity-0'}`} 
-                        aria-hidden="true" 
+                      <RiEyeOffLine
+                        className={`h-5 w-5 absolute transition-opacity duration-200 ${showPassword ? 'opacity-100' : 'opacity-0'}`}
+                        aria-hidden="true"
                       />
-                      <RiEyeLine 
-                        className={`h-5 w-5 absolute transition-opacity duration-200 ${showPassword ? 'opacity-0' : 'opacity-100'}`} 
-                        aria-hidden="true" 
+                      <RiEyeLine
+                        className={`h-5 w-5 absolute transition-opacity duration-200 ${showPassword ? 'opacity-0' : 'opacity-100'}`}
+                        aria-hidden="true"
                       />
                     </div>
                   </button>
@@ -233,7 +234,7 @@ export default function Login() {
                     name="remember"
                     checked={rememberMe}
                     onChange={handleChange}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    className="h-4 w-4 text-[#1b4965] focus:ring-[#1b4965] border-gray-300 rounded accent-[#1b4965]"
                     aria-label="Remember me for 30 days"
 
                   />
@@ -241,7 +242,7 @@ export default function Login() {
                     Remember for 30 days
                   </label>
                 </div>
-                <Link href={Routes.FORGOT_PASSWORD} className="text-sm text-blue-600 hover:text-blue-800 font-medium transition-colors">
+                <Link href={Routes.FORGOT_PASSWORD} className="text-sm text-[#1b4965] hover:text-[#163a52] font-medium transition-colors">
                   Forgot password?
                 </Link>
               </div>
@@ -249,7 +250,7 @@ export default function Login() {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="relative w-full py-3 px-4 border border-transparent rounded-lg shadow-sm text-white bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-700 hover:to-blue-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all disabled:opacity-70 disabled:cursor-not-allowed"
+                className="relative w-full py-3 px-4 border border-transparent rounded-lg shadow-sm text-white bg-[#1b4965] hover:bg-[#163a52] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#1b4965] transition-all disabled:opacity-70 disabled:cursor-not-allowed"
                 aria-label="Sign in"
               >
                 {isLoading ? (
@@ -274,13 +275,13 @@ export default function Login() {
                     <div className="w-full border-t border-gray-300"></div>
                   </div>
                   <div className="relative flex justify-center text-sm">
-                    <span className="px-2 bg-white text-gray-500">Don&apos;t have an account?</span>
+                    <span className="px-2 bg-white text-[#1b4965]">Don&apos;t have an account?</span>
                   </div>
                 </div>
                 <div className="mt-6">
-                  <Link 
-                    href={Routes.REGISTER} 
-                    className="w-full flex justify-center py-3 px-4 border border-gray-300 rounded-lg shadow-sm bg-white text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all"
+                  <Link
+                    href={Routes.REGISTER}
+                    className="w-full flex justify-center py-3 px-4 border border-[#1b4965] rounded-lg shadow-sm bg-white text-[#1b4965] hover:bg-[#f3f8ff] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#1b4965] transition-all"
                   >
                     Create an account
                   </Link>
@@ -291,21 +292,6 @@ export default function Login() {
         </div>
       </div>
 
-      {/* Right side - Image */}
-      <div className="hidden md:block md:w-1/2 relative overflow-hidden bg-white">
-        <div className="flex items-center justify-center h-full">
-          <Image
-            src="/assets/images/3.png"
-            alt="Login illustration"
-            width={1000}
-            height={800}
-            style={{ objectFit: 'contain', maxWidth: '100%', maxHeight: '100%' }}
-            priority
-            className="h-auto w-auto"
-          />
-        </div>
-      </div>
-      
       <Toaster position="top-right" />
     </div>
   );
