@@ -107,7 +107,7 @@ const ClientTestimonialsPortfolio = () => {
               key={t.name}
               onMouseEnter={() => setSelected(idx)}
               onFocus={() => setSelected(idx)}
-              className={`rounded-full border-2 transition-all duration-300 focus:outline-none ${selected === idx ? 'border-blue-700 shadow-lg' : 'border-transparent opacity-70 hover:opacity-100'}`}
+              className={`rounded-full border-2 transition-all duration-300 focus:outline-none ${selected === idx ? 'border-[#1b4965] shadow-lg' : 'border-transparent opacity-70 hover:opacity-100'}`}
               style={{ width: 72, height: 72 }}
               tabIndex={0}
               aria-label={`Show testimonial from ${t.name}`}

@@ -52,7 +52,7 @@ const NavbarPortfolio = () => {
                 >
                   <Link
                     href={item.href}
-                    className={`text-gray-800 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200
+                    className={`text-[#1b4965] hover:text-[#1b4965]-200 px-3 py-2 rounded-md text-md font-medium transition-colors duration-200
                       ${isScrolled ? 'text-gray-800' : 'text-white'}`}
                   >
                     {item.title}

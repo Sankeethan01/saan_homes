@@ -1,24 +1,32 @@
-
 // import Image from 'next/image';
 // import { motion } from 'framer-motion';
 
-// // Placeholder data (replace with real data fetching as needed)
-// const projectData = {
+// interface Project {
+//   title: string;
+//   description: string;
+//   owner: string;
+//   price: string;
+//   details: string;
+//   images: string[];
+//   vrVideo?: string;
+// }
+
+// const sampleProject: Project = {
 //   title: 'Modern Villa',
 //   description: `This modern villa project features contemporary architecture, sustainable materials, and smart home technology. The design emphasizes open spaces, natural light, and seamless indoor-outdoor living. Key highlights include a rooftop garden, infinity pool, and energy-efficient systems throughout the property.`,
+//   owner: 'John Doe',
+//   price: '$1,200,000',
+//   details: '4 Bedrooms, 3 Bathrooms, 2,800 sq ft, Rooftop garden, Infinity pool, Smart home system.',
 //   images: [
 //     '/projects/modern-villa-1.jpg',
 //     '/projects/modern-villa-2.jpg',
 //     '/projects/modern-villa-3.jpg',
 //   ],
-//   video: 'https://www.youtube.com/embed/dQw4w9WgXcQ', // Example video
+//   vrVideo: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
 // };
 
-// export default function ProjectDetailPage() {
-//   // In a real app, fetch project data based on pageid param
-//   // const router = useRouter();
-//   // const { pageid } = router.query;
-
+// export default function ProjectDetailDesign({ project }: { project?: Project }) {
+//   const proj = project || sampleProject;
 //   return (
 //     <main className="min-h-screen bg-gray-50 py-12">
 //       <div className="container mx-auto px-4 max-w-5xl">
@@ -27,10 +35,20 @@
 //           initial={{ opacity: 0, y: 20 }}
 //           animate={{ opacity: 1, y: 0 }}
 //           transition={{ duration: 0.6 }}
-//           className="text-4xl md:text-5xl font-bold mb-6 text-gray-800"
+//           className="text-4xl md:text-5xl font-bold mb-4 text-[#1b4965]"
 //         >
-//           {projectData.title}
+//           {proj.title}
 //         </motion.h1>
+//         {/* Owner, Price, Details */}
+//         <div className="mb-6 flex flex-wrap gap-6 text-lg text-gray-700">
+//           <div>
+//             <span className="font-semibold">Owner:</span> {proj.owner}
+//           </div>
+//           <div>
+//             <span className="font-semibold">Price:</span> {proj.price}
+//           </div>
+//         </div>
+//         <div className="mb-8 text-gray-600">{proj.details}</div>
 //         {/* Description */}
 //         <motion.p
 //           initial={{ opacity: 0 }}
@@ -38,11 +56,11 @@
 //           transition={{ delay: 0.2 }}
 //           className="text-lg text-gray-600 mb-8"
 //         >
-//           {projectData.description}
+//           {proj.description}
 //         </motion.p>
 //         {/* Image Gallery */}
 //         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-//           {projectData.images.map((img, idx) => (
+//           {proj.images.map((img: string, idx: number) => (
 //             <motion.div
 //               key={img}
 //               initial={{ opacity: 0, scale: 0.95 }}
@@ -54,14 +72,14 @@
 //             </motion.div>
 //           ))}
 //         </div>
-//         {/* Video Section */}
-//         {projectData.video && (
+//         {/* VR Video Section */}
+//         {proj.vrVideo && (
 //           <div className="mb-10">
-//             <h2 className="text-2xl font-semibold mb-4 text-gray-800">Project Video</h2>
+//             <h2 className="text-2xl font-semibold mb-4 text-[#1b4965]">VR/Project Video</h2>
 //             <div className="aspect-w-16 aspect-h-9 rounded-2xl overflow-hidden shadow-lg">
 //               <iframe
-//                 src={projectData.video}
-//                 title="Project Video"
+//                 src={proj.vrVideo}
+//                 title="Project VR Video"
 //                 frameBorder="0"
 //                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
 //                 allowFullScreen
@@ -74,3 +92,6 @@
 //     </main>
 //   );
 // }
+
+// export { ProjectDetailDesign };
+

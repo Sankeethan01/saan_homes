@@ -218,7 +218,7 @@ const fadeInUp = {
                 <motion.span
                   initial={{ opacity: 0, y: 20 }}
                   whileInView={{ opacity: 1, y: 0 }}
-                  className="text-blue-600 font-medium"
+                  className="text-[#1b4965] font-medium"
                 >
                   {service.subtitle}
                 </motion.span>
@@ -247,18 +247,13 @@ const fadeInUp = {
                       transition={{ delay: 0.3 + featureIndex * 0.1 }}
                       className="flex items-center gap-3 text-gray-700"
                     >
-                      <span className="w-5 h-5 flex items-center justify-center rounded-full bg-blue-100 text-blue-600">
+                      <span className="w-5 h-5 flex items-center justify-center rounded-full bg-blue-100 text-[#1b4965]">
                         ✓
                       </span>
                       {feature}
                     </motion.li>
                   ))}
                 </motion.ul>
-                <Link href="#" passHref>
-                  <button className="mt-8 px-8 py-3 bg-[#003049] text-white font-semibold rounded-lg shadow hover:bg-[#005f73] transition">
-                    Explore More
-                  </button>
-                </Link>
               </div>
             </motion.div>
           ))}
