@@ -7,44 +7,73 @@ import Link from 'next/link';
 const CallActionsRentalsPortfolio = () => {
 
   return (
-    <section className="py-16 bg-gradient-to-br from-blue-600 to-red-700">
-        <div className="container mx-auto px-4">
-          <div className="text-center text-white">
-            <motion.h2
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              className="text-3xl md:text-4xl font-bold mb-6"
-            >
-              Ready to Start Your Project?
-            </motion.h2>
-            <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
-              className="text-xl mb-8 text-white/90"
-            >
-              Browse our equipment catalog and find the perfect machinery for your needs.
-            </motion.p>
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="flex flex-col md:flex-row gap-4 justify-center"
-            >
-              <Link href="/login">
-                <button className="px-8 py-3 bg-white text-blue-600 rounded-lg font-semibold hover:bg-gray-100 transition-colors">
-                  Login to Rent
-                </button>
-              </Link>
-              <Link href="/rentals/rental_contact">
-                <button className="px-8 py-3 bg-transparent border-2 border-white text-white rounded-lg font-semibold hover:bg-white/10 transition-colors">
-                  Contact Us
-                </button>
-              </Link>
-            </motion.div>
-          </div>
+    <section className="py-16  relative overflow-hidden">
+      {/* White texture image overlay */}
+      <img
+        src="/assets/images/bg01.jpeg"
+        alt="White Texture"
+        className="absolute inset-0 w-full h-full object-cover opacity-30 pointer-events-none"
+        style={{ zIndex: 0 }}
+      />
+      
+      {/* Right bottom animated image */}
+      <motion.img
+        src="/assets/images/bg02.png"
+        alt="Right Decoration"
+        initial={{ opacity: 0, y: 100 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.8, type: 'spring', delay: 0.1 }}
+        className="absolute right-0 bottom-0 w-[32rem] md:w-[48rem] pointer-events-none select-none"
+        style={{ zIndex: 1 }}
+      />
+      
+      <div className="container mx-auto px-4 relative z-10">
+        <div className="text-center text-[#1b4965]">
+          <motion.h2
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            className="text-3xl md:text-4xl font-bold mb-6 text-[#1b4965]"
+          >
+            Do Your Looking for Reliable Equipment??
+          </motion.h2>
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="text-xl mb-8 text-[#1b4965]"
+          >
+            Rent top-quality machines from our catalog and get to work with confidence.
+          </motion.p>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="flex flex-col md:flex-row gap-4 justify-center"
+          >
+            <Link href="/login">
+            <motion.button
+                whileHover={{ scale: 1.08 }}
+                whileTap={{ scale: 0.97 }}
+                className="group inline-flex items-center gap-2 text-white px-8 py-3 rounded-full text-lg font-medium bg-[#1b4965] transition-transform duration-500 focus:outline-none mb-8"
+              >
+                <span>Login</span>
+                
+              </motion.button>
+            </Link>
+            <Link href="/rentals/rental_contact">
+            <motion.button
+                whileHover={{ scale: 1.08 }}
+                whileTap={{ scale: 0.97 }}
+                className="group inline-flex items-center gap-2 text-white px-8 py-3 rounded-full text-lg font-medium bg-[#1b4965] transition-transform duration-500 focus:outline-none mb-8"
+              >
+                <span>Contact Us</span>
+                
+              </motion.button>
+            </Link>
+          </motion.div>
         </div>
-      </section>
+      </div>
+    </section>
   );
 }
 export default CallActionsRentalsPortfolio; 
