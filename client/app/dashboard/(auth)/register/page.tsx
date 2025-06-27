@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import toast, { Toaster } from 'react-hot-toast';
-import { RiUserLine, RiMailLine, RiLockLine, RiUserAddLine, RiEyeLine, RiEyeOffLine } from 'react-icons/ri';
+import { RiMailLine, RiLockLine, RiUserAddLine, RiEyeLine, RiEyeOffLine, RiUser3Line } from 'react-icons/ri';
 import { Routes } from '@/app/constants/Routes/Routes';
 
 export default function Register() {
@@ -226,7 +226,7 @@ export default function Register() {
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <RiUserLine className="h-5 w-5 text-gray-400" />
+                    <RiUser3Line className="h-5 w-5 text-gray-400" />
                   </div>
                   <input
                     id="username"

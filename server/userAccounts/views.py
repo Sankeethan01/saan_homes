@@ -7,6 +7,7 @@ from rest_framework.views import APIView
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.decorators import action
 from django.contrib.auth import authenticate
 from django.contrib.auth.hashers import check_password
 from django.contrib.auth.password_validation import validate_password, ValidationError
@@ -45,16 +46,11 @@ class UserViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(role=role)
         return queryset
 
-    # ---------- extra helper for /me ----------
-    from rest_framework.decorators import action
-    from rest_framework.response import Response
-    from rest_framework import status
-
     @action(detail=False, methods=["get", "patch"], permission_classes=[permissions.IsAuthenticated])
     def me(self, request):
         if request.method == "GET":
             serializer = self.get_serializer(request.user)
-            return self.Response(serializer.data)
+            return Response(serializer.data)
 
         # PATCH
         serializer = self.get_serializer(
@@ -62,8 +58,17 @@ class UserViewSet(viewsets.ModelViewSet):
         )
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        return self.Response(serializer.data, status=self.status.HTTP_200_OK)
+        return Response(serializer.data, status=status.HTTP_200_OK)
     
+    @action(detail=False, methods=["get"], permission_classes=[permissions.IsAuthenticated])
+    def supervisors(self, request):
+        """
+        Return all users with role='SUPERVISOR'
+        """
+        supervisors = User.objects.filter(role="SUPERVISOR")
+        serializer = self.get_serializer(supervisors, many=True)
+        return Response(serializer.data)
+
 
 class RegistrationView(generics.CreateAPIView):
     """

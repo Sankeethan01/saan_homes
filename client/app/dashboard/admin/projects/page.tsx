@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useAuthStore } from '@/app/stores/useAuthStore';
 import { useRouter } from 'next/navigation';
-import { FiSearch, FiFilter, FiCalendar, FiUsers, FiCheckCircle, FiClock, FiArrowRight } from 'react-icons/fi';
+import { FiSearch, FiFilter, FiCalendar, FiUsers, FiCheckCircle, FiClock, FiArrowRight, FiTrash2 } from 'react-icons/fi';
 
 interface Project {
   id: string;
@@ -181,16 +181,28 @@ export default function ProjectsPage() {
           </motion.p>
         </div>
         
-        <Link href="/dashboard/admin/projects/new">
-          <motion.button
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.2 }}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors duration-200"
-          >
-            Add Project
-          </motion.button>
-        </Link>
+        <div className="flex space-x-3">
+          <Link href="/dashboard/admin/projects/recycle-bin">
+            <motion.button
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.2 }}
+              className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors duration-200 flex items-center"
+            >
+              <FiTrash2 className="mr-1" /> Recycle Bin
+            </motion.button>
+          </Link>
+          <Link href="/dashboard/admin/projects/new">
+            <motion.button
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.2 }}
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors duration-200"
+            >
+              Add Project
+            </motion.button>
+          </Link>
+        </div>
       </div>
 
       {/* Summary Cards */}
