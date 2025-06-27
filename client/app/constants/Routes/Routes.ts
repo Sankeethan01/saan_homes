@@ -7,5 +7,5 @@ export const Routes = {
     
     ADMIN: "/dashboard/admin",
     SUPERVISOR: "/dashboard/supervisor",
-    USER: "/dashboard/user",
-}
+    USER: "/dashboard/me",
+} 

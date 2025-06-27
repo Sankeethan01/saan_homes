@@ -3,7 +3,7 @@ import { RiHome5Line, RiSearchLine, RiFilter3Line, RiCalendarLine, RiTimeLine, R
 
 const HeroRentalsPortfolio = () => {
   return (
-     <section className="relative h-[120vh] pt-0 m-0">
+     <section className="relative h-[100vh] pt-0 m-0">
         <div className="absolute inset-0">
           <img
             src="/assets/images/hero_rental.png"
@@ -13,10 +13,10 @@ const HeroRentalsPortfolio = () => {
           />
           
         </div>
-        <div className="container mx-7 px-20 py-30 h-full flex items-left relative z-10">
+        <div className="container mx-7 px-20 py-50 h-full flex items-left relative z-10">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <motion.div 
-              initial={{ opacity: 0, x: -50 }}
+              initial={{ opacity: 0, x: -55 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 1 }}
               className="max-w-3xl z-10"

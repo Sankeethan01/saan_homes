@@ -1,9 +1,9 @@
 'use client';
 
 import Footer from '../components/Portfolio/Footer';
-import HomeIconPortfolio from '../components/Portfolio/Home_Icon';
 import HeroServicesPortfolio from '../components/Portfolio/Services/Hero';
 import ServiceListServicesPortfolio from '../components/Portfolio/Services/ServiceList';
+import HomeButton from '../components/ui/HomeButton';
 
 export default function ServicesPage() {
 
@@ -16,7 +16,7 @@ export default function ServicesPage() {
         <ServiceListServicesPortfolio />
       
       {/* Home Icon */}
-          <HomeIconPortfolio/>
+          <HomeButton />
       {/* Footer */}
           <Footer />
     </main>

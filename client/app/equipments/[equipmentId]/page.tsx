@@ -15,7 +15,7 @@ import {
 } from "react-icons/ri";
 import "react-calendar/dist/Calendar.css";
 import ChatBotRentalsPortfolio from "@/app/components/Portfolio/Rentals/ChatBot";
-import HomeIconPortfolio from "@/app/components/Portfolio/Home_Icon";
+import HomeButton from "@/app/components/ui/HomeButton";
 
 type ValuePiece = Date | null;
 type Value = ValuePiece | [ValuePiece, ValuePiece];
@@ -119,7 +119,7 @@ export default function RentalEquipmentPage() {
       <ChatBotRentalsPortfolio />
 
       {/* Home Icon */}
-      <HomeIconPortfolio />
+      <HomeButton />
 
       <div className="container mx-auto px-4 py-12">
         {/* Step 1: Equipment Details and Calendar */}

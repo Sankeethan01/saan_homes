@@ -16,7 +16,7 @@ export default function HomeButton() {
         <motion.div
           whileHover={{ y: -3 }}
           whileTap={{ scale: 0.95 }}
-          className="w-12 h-12 bg-gradient-to-r from-blue-600 to-red-700 rounded-full flex items-center justify-center shadow-lg hover:shadow-xl cursor-pointer"
+          className="w-12 h-12 bg-gradient-to-r bg-[#1b4965] rounded-full flex items-center justify-center shadow-lg hover:shadow-xl cursor-pointer"
         >
           <RiHome5Line className="text-white text-2xl" />
         </motion.div>
