@@ -5,14 +5,14 @@ import { useState, useEffect } from 'react';
 import { useAuthStore } from '@/app/stores/useAuthStore';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { FiCalendar, FiClock, FiUsers, FiClipboard, FiChevronLeft, FiChevronRight, FiCheckCircle, FiClock as FiClockCircle, FiAlertTriangle } from 'react-icons/fi';
+import { FiCalendar, FiClock, FiUsers, FiClipboard, FiChevronLeft, FiChevronRight, FiCheckCircle, FiClock as FiClockCircle, FiAlertTriangle, FiMapPin, FiUser, FiMail, FiPhone, FiTag, FiFlag, FiEdit, FiTrash2 } from 'react-icons/fi';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation, Pagination, Autoplay } from 'swiper/modules';
 import 'swiper/css';
 import 'swiper/css/navigation';
 import 'swiper/css/pagination';
+import { use } from 'react';
 
-type StatusType = 'In Progress' | 'Completed' | 'Planning' | 'On Hold' | 'Pending' | 'Available' | 'Maintenance';
 
 interface Step {
   id: string;
@@ -28,8 +28,15 @@ interface Project {
   id: string;
   name: string;
   description: string;
+  project_type: string;
+  priority: string;
   start_date: string;
   estimated_end_date: string;
+  location: string;
+  address: string;
+  client_name: string;
+  client_email: string;
+  client_phone: string;
   is_completed: boolean;
   supervisor: {
     id: string;
@@ -45,6 +52,9 @@ interface Project {
   current_step: string;
   status: string;
   budget: number;
+  thumbnail: string | null;
+  images: string[];
+  model_3d: string | null;
 }
 
 // Sample images for the slideshow - in production, these would come from the API
@@ -93,11 +103,37 @@ const getStepIcon = (step: Step) => {
   return <FiAlertTriangle className="w-5 h-5" />;
 };
 
+const getProjectTypeLabel = (type: string) => {
+  const types = {
+    'RESIDENTIAL': 'Residential',
+    'COMMERCIAL': 'Commercial',
+    'INDUSTRIAL': 'Industrial',
+    'RENOVATION': 'Renovation',
+    'INFRASTRUCTURE': 'Infrastructure',
+    'OTHER': 'Other',
+  };
+  return types[type] || type;
+};
+
+const getPriorityStyle = (priority: string) => {
+  const styles = {
+    'HIGH': 'bg-red-100 text-red-800',
+    'MEDIUM': 'bg-yellow-100 text-yellow-800',
+    'LOW': 'bg-green-100 text-green-800',
+  };
+  return styles[priority] || 'bg-gray-100 text-gray-800';
+};
+
 export default function ProjectDetailsPage({ params }: { params: { projectId: string } }) {
+  // Unwrap params using React.use()
+  const { projectId } = use(params);
+  
   const [project, setProject] = useState<Project | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
   const token = useAuthStore((s) => s.token);
   const router = useRouter();
   const clearToken = useAuthStore((s) => s.clear);
@@ -110,7 +146,7 @@ export default function ProjectDetailsPage({ params }: { params: { projectId: st
 
     const fetchProject = async () => {
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/projects/${params.projectId}/`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/projects/${projectId}/`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -144,7 +180,7 @@ export default function ProjectDetailsPage({ params }: { params: { projectId: st
     };
 
     fetchProject();
-  }, [token, router, clearToken, params.projectId]);
+  }, [token, router, clearToken, projectId]);
 
   if (loading) {
     return (
@@ -177,6 +213,49 @@ export default function ProjectDetailsPage({ params }: { params: { projectId: st
     return project.supervisor.username;
   };
 
+  const handleEditProject = () => {
+    router.push(`/dashboard/admin/projects/edit/${projectId}`);
+  };
+
+  const handleDeleteClick = () => {
+    setShowDeleteModal(true);
+  };
+
+  const handleCancelDelete = () => {
+    setShowDeleteModal(false);
+  };
+
+  const handleConfirmDelete = async () => {
+    setDeleteLoading(true);
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/projects/${projectId}/soft-delete/`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          clearToken();
+          router.replace('/dashboard/login');
+          return;
+        }
+        throw new Error('Failed to delete project');
+      }
+
+      // Navigate back to projects list
+      router.replace('/dashboard/admin/projects');
+    } catch (err) {
+      console.error('Error deleting project:', err);
+      setError('Failed to delete project. Please try again.');
+    } finally {
+      setDeleteLoading(false);
+      setShowDeleteModal(false);
+    }
+  };
+
   return (
     <div className="space-y-6 p-6">
       {/* Back Button */}
@@ -196,18 +275,73 @@ export default function ProjectDetailsPage({ params }: { params: { projectId: st
           animate={{ opacity: 1, y: 0 }}
         >
           <h1 className="text-2xl font-semibold text-gray-800">{project.name}</h1>
-          <p className="text-sm text-gray-500 mt-1">{project.description}</p>
+          <div className="flex items-center mt-1 space-x-2">
+            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusStyle(project.status)}`}>
+              {project.status === 'IN_PROGRESS' ? 'In Progress' : 
+              project.status === 'COMPLETED' ? 'Completed' : 
+              project.status === 'PLANNING' ? 'Planning' : 'On Hold'}
+            </span>
+            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getPriorityStyle(project.priority)}`}>
+              {project.priority} Priority
+            </span>
+            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+              {getProjectTypeLabel(project.project_type)}
+            </span>
+          </div>
+          <p className="text-sm text-gray-500 mt-2">{project.description}</p>
         </motion.div>
-        <motion.span
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getStatusStyle(project.status)}`}
-        >
-          {project.status === 'IN_PROGRESS' ? 'In Progress' : 
-           project.status === 'COMPLETED' ? 'Completed' : 
-           project.status === 'PLANNING' ? 'Planning' : 'On Hold'}
-        </motion.span>
+        
+        {/* Admin Actions */}
+        <div className="flex space-x-2">
+          <button
+            onClick={handleEditProject}
+            className="flex items-center px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+          >
+            <FiEdit className="mr-1" /> Edit
+          </button>
+          <button
+            onClick={handleDeleteClick}
+            className="flex items-center px-3 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
+          >
+            <FiTrash2 className="mr-1" /> Delete
+          </button>
+        </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">Delete Project</h3>
+            <p className="text-gray-700 mb-6">
+              Are you sure you want to delete this project? This project will be moved to the recycle bin and can be restored later.
+            </p>
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={handleCancelDelete}
+                disabled={deleteLoading}
+                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmDelete}
+                disabled={deleteLoading}
+                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors flex items-center"
+              >
+                {deleteLoading ? (
+                  <>
+                    <span className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full mr-2"></span>
+                    Deleting...
+                  </>
+                ) : (
+                  <>Delete</>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Project Overview Cards */}
       <motion.div
@@ -260,6 +394,74 @@ export default function ProjectDetailsPage({ params }: { params: { projectId: st
         </div>
       </motion.div>
 
+      {/* Location & Client Information */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.15 }}
+        className="grid grid-cols-1 lg:grid-cols-2 gap-6"
+      >
+        {/* Location */}
+        <div className="bg-white rounded-lg shadow-sm p-6">
+          <h2 className="text-lg font-medium text-gray-800 mb-4 flex items-center">
+            <FiMapPin className="mr-2 text-blue-600" />
+            Location
+          </h2>
+          {project.location || project.address ? (
+            <div className="space-y-3">
+              {project.location && (
+                <p className="text-gray-700">{project.location}</p>
+              )}
+              {project.address && (
+                <p className="text-gray-600 whitespace-pre-line">{project.address}</p>
+              )}
+              {/* Map placeholder - could integrate Google Maps here */}
+              <div className="mt-3 bg-gray-100 rounded-lg p-4 text-center text-gray-500">
+                Map view would be displayed here
+              </div>
+            </div>
+          ) : (
+            <p className="text-gray-500">No location information available</p>
+          )}
+        </div>
+
+        {/* Client Information */}
+        <div className="bg-white rounded-lg shadow-sm p-6">
+          <h2 className="text-lg font-medium text-gray-800 mb-4 flex items-center">
+            <FiUser className="mr-2 text-blue-600" />
+            Client Information
+          </h2>
+          {project.client_name || project.client_email || project.client_phone ? (
+            <div className="space-y-3">
+              {project.client_name && (
+                <div className="flex items-center">
+                  <FiUser className="text-gray-400 mr-2" />
+                  <span className="text-gray-700">{project.client_name}</span>
+                </div>
+              )}
+              {project.client_email && (
+                <div className="flex items-center">
+                  <FiMail className="text-gray-400 mr-2" />
+                  <a href={`mailto:${project.client_email}`} className="text-blue-600 hover:underline">
+                    {project.client_email}
+                  </a>
+                </div>
+              )}
+              {project.client_phone && (
+                <div className="flex items-center">
+                  <FiPhone className="text-gray-400 mr-2" />
+                  <a href={`tel:${project.client_phone}`} className="text-blue-600 hover:underline">
+                    {project.client_phone}
+                  </a>
+                </div>
+              )}
+            </div>
+          ) : (
+            <p className="text-gray-500">No client information available</p>
+          )}
+        </div>
+      </motion.div>
+
       {/* 3D Plan and Project Images */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -267,12 +469,22 @@ export default function ProjectDetailsPage({ params }: { params: { projectId: st
         transition={{ delay: 0.2 }}
         className="grid grid-cols-1 lg:grid-cols-2 gap-6"
       >
-        {/* 3D Plan Viewer (Placeholder) */}
+        {/* 3D Plan Viewer */}
         <div className="bg-white rounded-lg shadow-sm overflow-hidden">
           <h2 className="text-lg font-medium text-gray-800 p-4 border-b">3D Plan Viewer</h2>
-          <div className="aspect-video bg-gray-100 flex items-center justify-center">
-            <p className="text-gray-500">3D model would be displayed here</p>
-            {/* In a real implementation, you would integrate a 3D viewer library here */}
+          <div className="aspect-video bg-gray-100">
+            {project.model_3d ? (
+              <div className="h-full w-full">
+                {/* 3D model viewer would be integrated here */}
+                <div className="flex items-center justify-center h-full">
+                  <p className="text-gray-500">3D model available - viewer would be integrated here</p>
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center justify-center h-full">
+                <p className="text-gray-500">No 3D model available</p>
+              </div>
+            )}
           </div>
         </div>
 
@@ -289,18 +501,45 @@ export default function ProjectDetailsPage({ params }: { params: { projectId: st
               autoplay={{ delay: 5000 }}
               className="h-full"
             >
-              {sampleImages.map((image, index) => (
-                <SwiperSlide key={index} className="h-full">
+              {project.images && project.images.length > 0 ? (
+                project.images.map((image, index) => (
+                  <SwiperSlide key={index} className="h-full">
+                    <div className="relative h-full">
+                      <Image
+                        src={`${process.env.NEXT_PUBLIC_API_BASE_URL}/media/${image}`}
+                        alt={`Project image ${index + 1}`}
+                        fill
+                        className="object-cover"
+                      />
+                    </div>
+                  </SwiperSlide>
+                ))
+              ) : project.thumbnail ? (
+                <SwiperSlide className="h-full">
                   <div className="relative h-full">
                     <Image
-                      src={image}
-                      alt={`Project image ${index + 1}`}
+                      src={`${process.env.NEXT_PUBLIC_API_BASE_URL}/media/${project.thumbnail}`}
+                      alt="Project thumbnail"
                       fill
                       className="object-cover"
                     />
                   </div>
                 </SwiperSlide>
-              ))}
+              ) : (
+                // Fallback to sample images if no project images
+                sampleImages.map((image, index) => (
+                  <SwiperSlide key={index} className="h-full">
+                    <div className="relative h-full">
+                      <Image
+                        src={image}
+                        alt={`Project image ${index + 1}`}
+                        fill
+                        className="object-cover"
+                      />
+                    </div>
+                  </SwiperSlide>
+                ))
+              )}
             </Swiper>
           </div>
         </div>
@@ -323,7 +562,10 @@ export default function ProjectDetailsPage({ params }: { params: { projectId: st
                 className={`flex items-center p-4 rounded-lg border-l-4 cursor-pointer hover:bg-gray-50 transition-colors duration-200 ${
                   index === currentStepIndex ? 'border-blue-600 bg-blue-50' : 'border-gray-200'
                 }`}
-                onClick={() => setCurrentStepIndex(index)}
+                onClick={() => {
+                  setCurrentStepIndex(index);
+                  router.push(`/dashboard/admin/projects/${projectId}/steps/${step.id}`);
+                }}
               >
                 <div className="mr-4 flex-shrink-0">
                   <div className={`w-10 h-10 rounded-full flex items-center justify-center ${getStepStatusStyle(step)}`}>

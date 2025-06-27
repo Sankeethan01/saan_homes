@@ -8,25 +8,88 @@ User = settings.AUTH_USER_MODEL
 
 
 class Project(models.Model):
+    # Project Type Choices
+    class ProjectType(models.TextChoices):
+        RESIDENTIAL = "RESIDENTIAL", "Residential"
+        COMMERCIAL = "COMMERCIAL", "Commercial"
+        INDUSTRIAL = "INDUSTRIAL", "Industrial"
+        RENOVATION = "RENOVATION", "Renovation"
+        INFRASTRUCTURE = "INFRASTRUCTURE", "Infrastructure"
+        OTHER = "OTHER", "Other"
+    
+    # Priority Choices
+    class Priority(models.TextChoices):
+        HIGH = "HIGH", "High"
+        MEDIUM = "MEDIUM", "Medium"
+        LOW = "LOW", "Low"
+
+    # Basic Information
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=200)
     description = models.TextField(blank=True)
+    project_type = models.CharField(
+        max_length=20, 
+        choices=ProjectType.choices,
+        default=ProjectType.RESIDENTIAL
+    )
+    priority = models.CharField(
+        max_length=10,
+        choices=Priority.choices,
+        default=Priority.MEDIUM
+    )
+    
+    # Dates
     start_date = models.DateField()
     estimated_end_date = models.DateField()
+    
+    # Location
+    location = models.CharField(max_length=255, blank=True)
+    address = models.TextField(blank=True)
+    coordinates = models.CharField(max_length=100, blank=True)  # Format: "latitude,longitude"
+    
+    # Client Information
+    client_name = models.CharField(max_length=200, blank=True)
+    client_email = models.EmailField(blank=True)
+    client_phone = models.CharField(max_length=20, blank=True)
+    
+    # Personnel
     supervisor = models.ForeignKey(
         User, null=True, blank=True,
         limit_choices_to={"role": "SUPERVISOR"},
         on_delete=models.SET_NULL
     )
+    
+    # Files
     boq_file = models.FileField(upload_to="boq/")
+    
+    # Optional Images and 3D Model
+    thumbnail = models.ImageField(upload_to="projects/thumbnails/", null=True, blank=True)
+    images = models.JSONField(default=list, blank=True)  # Store list of image paths
+    model_3d = models.FileField(upload_to="projects/3d_models/", null=True, blank=True)
+    
+    # Timestamps
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
 
-    # simple status flags
+    # Status flags
     is_completed = models.BooleanField(default=False)
+    
+    # Soft delete fields
+    is_deleted = models.BooleanField(default=False)
+    deleted_at = models.DateTimeField(null=True, blank=True)
 
     def __str__(self):
         return self.name
+        
+    def soft_delete(self):
+        self.is_deleted = True
+        self.deleted_at = timezone.now()
+        self.save()
+        
+    def restore(self):
+        self.is_deleted = False
+        self.deleted_at = None
+        self.save()
 
 
 class Step(models.Model):
@@ -34,7 +97,9 @@ class Step(models.Model):
     project = models.ForeignKey(Project, related_name="steps", on_delete=models.CASCADE)
     order = models.PositiveIntegerField()
     title = models.CharField(max_length=200)
-    expected_materials = models.JSONField(blank=True, default=dict)  # parsed BOQ
+    description = models.TextField(blank=True)
+    expected_materials = models.JSONField(blank=True, default=list)  # List of material descriptions
+    expected_quantity = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
     expected_budget = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
 
     is_approved = models.BooleanField(default=False)          # admin gate

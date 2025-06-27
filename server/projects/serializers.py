@@ -52,10 +52,24 @@ class ProgressLogSerializer(serializers.ModelSerializer):
         return data
 
 
+class BillSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Bill
+        fields = "__all__"
+        read_only_fields = ("id", "uploaded_at", "verified")
+
+    # Example: human-friendly filename
+    def validate_pdf(self, file):
+        if file.size > 10 * 1024 * 1024:          # 10 MB guard
+            raise serializers.ValidationError("PDF is too large.")
+        return file
+
+
 class StepSerializer(serializers.ModelSerializer):
     logs = ProgressLogSerializer(many=True, read_only=True)
     progress = serializers.SerializerMethodField()
     status = serializers.SerializerMethodField()
+    bills = BillSerializer(many=True, read_only=True)
     
     class Meta:
         model = Step
@@ -96,8 +110,11 @@ class ProjectSerializer(serializers.ModelSerializer):
     progress = serializers.SerializerMethodField()
     current_step = serializers.SerializerMethodField()
     status = serializers.SerializerMethodField()
-    client = serializers.SerializerMethodField()
     budget = serializers.SerializerMethodField()
+    
+    # File fields with proper handling
+    thumbnail = serializers.ImageField(required=False, allow_null=True)
+    model_3d = serializers.FileField(required=False, allow_null=True)
     
     # Use SupervisorSerializer to include all supervisor details in the API response
     supervisor = SupervisorSerializer(read_only=True)
@@ -132,8 +149,10 @@ class ProjectSerializer(serializers.ModelSerializer):
             return "PLANNING"
     
     def get_client(self, obj):
-        """Get client information - placeholder for now"""
-        return "Client Name"  # This would come from a related model
+        """Get client information from project model"""
+        if obj.client_name:
+            return obj.client_name
+        return "Not Specified"
     
     def get_budget(self, obj):
         """Calculate total budget from steps"""
@@ -152,28 +171,33 @@ class ProjectSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         supervisor_id = validated_data.pop('supervisor_id', None)
+        project = super().create(validated_data)
+        
+        # Explicitly set the supervisor if provided
         if supervisor_id:
-            validated_data['supervisor_id'] = supervisor_id
-        return super().create(validated_data)
+            try:
+                supervisor = User.objects.get(id=supervisor_id)
+                project.supervisor = supervisor
+                project.save()
+            except User.DoesNotExist:
+                pass
+                
+        return project
 
     def update(self, instance, validated_data):
         supervisor_id = validated_data.pop('supervisor_id', None)
+        instance = super().update(instance, validated_data)
+        
+        # Explicitly set the supervisor if provided
         if supervisor_id:
-            validated_data['supervisor_id'] = supervisor_id
-        return super().update(instance, validated_data)
-
-
-class BillSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Bill
-        fields = "__all__"
-        read_only_fields = ("id", "uploaded_at", "verified")
-
-    # Example: human-friendly filename
-    def validate_pdf(self, file):
-        if file.size > 10 * 1024 * 1024:          # 10 MB guard
-            raise serializers.ValidationError("PDF is too large.")
-        return file
+            try:
+                supervisor = User.objects.get(id=supervisor_id)
+                instance.supervisor = supervisor
+                instance.save()
+            except User.DoesNotExist:
+                pass
+                
+        return instance
 
 
 class InvoiceSerializer(serializers.ModelSerializer):

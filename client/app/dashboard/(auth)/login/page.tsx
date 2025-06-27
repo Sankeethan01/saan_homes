@@ -7,7 +7,7 @@ import Image from "next/image";
 import toast, { Toaster } from "react-hot-toast";
 import { useAuthStore } from "@/app/stores/useAuthStore";
 import { setAuthCookies } from "@/app/utils/auth";
-import { RiLockLine, RiMailLine, RiLoginBoxLine, RiEyeLine, RiEyeOffLine } from "react-icons/ri";
+import { RiLockLine, RiLoginBoxLine, RiEyeLine, RiEyeOffLine, RiUser3Line } from "react-icons/ri";
 import { Routes } from "@/app/constants/Routes/Routes";
 import { UserRoles } from "@/app/constants/UserRoles/UserRols";
 
@@ -62,7 +62,7 @@ export default function Login() {
           },
           body: JSON.stringify(formData),
           mode: "cors",
-          credentials: "include", // Include cookies in the request
+          credentials: "include", 
         }
       );
 
@@ -168,7 +168,7 @@ export default function Login() {
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <RiMailLine className="h-5 w-5 text-gray-400" />
+                    <RiUser3Line className="h-5 w-5 text-gray-400" />
                   </div>
                   <input
                     id="username"
