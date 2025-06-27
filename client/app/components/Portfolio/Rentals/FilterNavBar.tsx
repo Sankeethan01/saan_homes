@@ -222,8 +222,8 @@ const FilterSectionRentalsPortfolio = () => {
                 </div>
               </div>
               {/* User icon button */}
-              <Link href="/dashboard/login-user">
-                <button className="w-12 h-12 flex items-center justify-center rounded-full bg-blue-600 hover:bg-blue-700 text-white transition-all duration-200">
+              <Link href="/dashboard/login">
+                <button className="w-12 h-12 flex items-center justify-center rounded-full bg-[#1b4965] hover:bg-[#1b4965]-700 text-white transition-all duration-200">
                   <RiUser3Line className="text-2xl" />
                 </button>
               </Link>

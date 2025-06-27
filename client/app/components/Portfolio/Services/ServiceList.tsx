@@ -151,7 +151,7 @@ const fadeInUp = {
   };
 
   return (
-     <section className="py-20">
+     <section className="py-20 bg-white" >
         <div className="container mx-auto px-4">
           {services.map((service, index) => (
             <motion.div
@@ -161,7 +161,7 @@ const fadeInUp = {
               transition={{ duration: 0.8 }}
               className={`flex flex-col ${
                 index % 2 === 0 ? 'lg:flex-row' : 'lg:flex-row-reverse'
-              } gap-12 mb-8 items-center bg-[#e9ecef] rounded-3xl shadow-xl p-10`}
+              } gap-12 mb-8 items-center bg-white rounded-3xl shadow-md p-10`}
             >
               {/* Image Section */}
               <motion.div 

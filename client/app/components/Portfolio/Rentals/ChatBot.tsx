@@ -60,7 +60,7 @@ export default function ChatBotRentalsPortfolio() {
   onClick={() => setIsOpen(true)}
   className="fixed bottom-25 right-8 z-50 
              w-12 h-12 
-             bg-gradient-to-r from-blue-600 to-red-700 
+             bg-[#1b4965] 
              rounded-full 
              flex items-center justify-center 
              shadow-lg hover:shadow-xl"

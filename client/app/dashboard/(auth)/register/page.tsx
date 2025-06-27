@@ -198,29 +198,28 @@ export default function Register() {
   };
 
   return (
-    <div className="h-screen flex flex-row-reverse">
-      {/* Right side - Registration form */}
-      <div className="w-full md:w-1/2 flex flex-col bg-white">
-        {/* Logo section */}
-        <div className="p-8 flex justify-center items-center">
-          {/* <Image 
-            src="/assets/logo.jpg"
-            alt="SAAN Homes Logo"
-            width={120}
-            height={40}
-            className="h-12 w-auto object-contain"
-          /> */}
-        </div>
-        
-        {/* Form section */}
-        <div className="flex-grow flex items-center justify-center px-8 pb-8">
-          <div className="w-full max-w-md">
-            <div className="text-center mb-8">
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">Create an account</h1>
-              <p className="text-gray-600">Join SAAN Homes to get started</p>
+    <div className="relative h-screen flex items-center justify-start overflow-hidden">
+      {/* Background gradient image */}
+      <div className="absolute inset-0 w-full h-full bg-[url('/assets/images/bg_register.png')] bg-cover bg-center z-0" />
+      {/* Register form on left */}
+      <div className="w-full md:w-2/3 flex flex-col relative z-10 mt-5 -ml-30">
+        <div className="flex-grow flex items-center justify-start px-10 pb-8 mt-5">
+          <div className="w-full max-w-lg mx-auto my-8 p-10 shadow-lg bg-white/60 rounded-xl">
+            <div className="text-center mb-3">
+              <h1 className="text-3xl font-bold text-[#1b4965] mb-1">Create an account</h1>
+              <p className="text-gray-600 mb-2">Join SAAN Homes to get started</p>
+              <div className="flex justify-center mb-2">
+                <Image
+                  src="/assets/logo.jpg"
+                  alt="SAAN Homes Logo"
+                  width={70}
+                  height={45}
+                  className="h-auto w-auto object-contain"
+                />
+              </div>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-5">
+            <form onSubmit={handleSubmit} className="space-y-2">
               <div className="relative">
                 <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">
                   Username
@@ -239,7 +238,7 @@ export default function Register() {
                     aria-required="true"
                     className={`pl-10 w-full px-4 py-3 border ${
                       errors.username ? 'border-red-500' : 'border-gray-300'
-                    } rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all`}
+                    } rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1b4965] focus:border-[#1b4965] hover:border-[#1b4965] transition-all hover:shadow-md focus:shadow-md`}
                     value={formData.username}
                     onChange={handleChange}
                   />
@@ -267,7 +266,7 @@ export default function Register() {
                     aria-required="true"
                     className={`pl-10 w-full px-4 py-3 border ${
                       errors.email ? 'border-red-500' : 'border-gray-300'
-                    } rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all`}
+                    } rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1b4965] focus:border-[#1b4965] hover:border-[#1b4965] transition-all hover:shadow-md focus:shadow-md`}
                     value={formData.email}
                     onChange={handleChange}
                   />
@@ -295,7 +294,7 @@ export default function Register() {
                     aria-required="true"
                     className={`pl-10 w-full px-4 py-3 border ${
                       errors.password ? 'border-red-500' : 'border-gray-300'
-                    } rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all pr-10`}
+                    } rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1b4965] focus:border-[#1b4965] hover:border-[#1b4965] transition-all hover:shadow-md focus:shadow-md pr-10`}
                     value={formData.password}
                     onChange={handleChange}
                   />
@@ -341,7 +340,7 @@ export default function Register() {
                     aria-required="true"
                     className={`pl-10 w-full px-4 py-3 border ${
                       errors.confirmPassword ? 'border-red-500' : 'border-gray-300'
-                    } rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all pr-10`}
+                    } rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1b4965] focus:border-[#1b4965] hover:border-[#1b4965] transition-all hover:shadow-md focus:shadow-md pr-10`}
                     value={formData.confirmPassword}
                     onChange={handleChange}
                   />
@@ -372,7 +371,7 @@ export default function Register() {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="relative w-full py-3 px-4 mt-6 border border-transparent rounded-lg shadow-sm text-white bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-700 hover:to-blue-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all disabled:opacity-70 disabled:cursor-not-allowed"
+                className="relative w-full py-3 px-4 mt-6 border border-transparent rounded-lg shadow-sm text-white bg-[#1b4965] hover:bg-[#163a52] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#1b4965] transition-all disabled:opacity-70 disabled:cursor-not-allowed"
                 aria-label="Create account"
               >
                 {isLoading ? (
@@ -391,8 +390,8 @@ export default function Register() {
                 )}
               </button>
 
-              <div className="mt-6">
-                <div className="relative">
+              <div className="mt-3">
+                <div className="relative mb-2">
                   <div className="absolute inset-0 flex items-center">
                     <div className="w-full border-t border-gray-300"></div>
                   </div>
@@ -400,10 +399,10 @@ export default function Register() {
                     <span className="px-2 bg-white text-gray-500">Already have an account?</span>
                   </div>
                 </div>
-                <div className="mt-6">
+                <div className="mt-2">
                   <Link 
                     href={Routes.LOGIN}
-                    className="w-full flex justify-center py-3 px-4 border border-gray-300 rounded-lg shadow-sm bg-white text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all"
+                    className="w-full flex justify-center py-2 px-4 border border-[#1b4965] rounded-lg shadow-sm bg-white text-[#1b4965] hover:bg-[#f3f8ff] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#1b4965] transition-all"
                   >
                     Sign in
                   </Link>
@@ -411,21 +410,6 @@ export default function Register() {
               </div>
             </form>
           </div>
-        </div>
-      </div>
-
-      {/* Left side - Image */}
-      <div className="hidden md:block md:w-1/2 relative overflow-hidden bg-white">
-        <div className="flex items-center justify-center h-full">
-          <Image
-            src="/assets/images/img01.jpg"
-            alt="Register illustration"
-            width={1000}
-            height={800}
-            style={{ objectFit: 'contain', maxWidth: '100%', maxHeight: '100%' }}
-            priority
-            className="h-auto w-auto"
-          />
         </div>
       </div>
       
