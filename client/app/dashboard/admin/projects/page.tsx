@@ -5,8 +5,10 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useAuthStore } from '@/app/stores/useAuthStore';
 import { useRouter } from 'next/navigation';
-import { FiSearch, FiFilter, FiCalendar, FiUsers, FiCheckCircle, FiClock, FiArrowRight, FiTrash2 } from 'react-icons/fi';
+import { FiSearch, FiFilter, FiCalendar, FiUsers, FiCheckCircle, FiClock, FiArrowRight, FiTrash2, FiFile } from 'react-icons/fi';
 import { RiHomeGearLine } from 'react-icons/ri';
+import { MdFiberNew } from 'react-icons/md';
+import { FaFileUpload } from 'react-icons/fa';
 
 interface Project {
   id: string;
@@ -229,10 +231,10 @@ export default function ProjectsPage() {
       )}
       
       {/* Hero Header Section */}
-      <div className="relative overflow-hidden backdrop-blur-sm rounded-2xl p-8 mb-8 shadow-2xl">
-        <div className="absolute inset-0 bg-black/10"></div>
-        <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -translate-y-32 translate-x-32"></div>
-        <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full translate-y-24 -translate-x-24"></div>
+      <div className="relative overflow-hidden bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg p-8 mb-8 border border-white/20">
+        <div className="absolute inset-0 bg-gray-50/30"></div>
+        <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full -translate-y-32 translate-x-32"></div>
+        <div className="absolute bottom-0 left-0 w-48 h-48 bg-blue-500/5 rounded-full translate-y-24 -translate-x-24"></div>
         
         <div className="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between">
           <div className="mb-6 lg:mb-0">
@@ -241,16 +243,16 @@ export default function ProjectsPage() {
               animate={{ opacity: 1, y: 0 }}
               className="flex items-center mb-3"
             >
-              <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center mr-4">
-                <RiHomeGearLine className="w-6 h-6 text-white" />
+              <div className="w-12 h-12 bg-primary/10 backdrop-blur-sm rounded-xl flex items-center justify-center mr-4">
+                <RiHomeGearLine className="w-6 h-6 text-primary" />
               </div>
               <div>
-                <h1 className="text-3xl lg:text-4xl font-bold text-white">
+                <h1 className="text-3xl lg:text-4xl font-bold text-gray-900">
                   Projects Dashboard
                 </h1>
                 <div className="flex items-center mt-2">
                   <div className="w-2 h-2 bg-green-400 rounded-full mr-2 animate-pulse"></div>
-                  <p className="text-blue-100 text-sm">
+                  <p className="text-gray-600 text-sm">
                     {totalProjects} Active Projects • Real-time monitoring
                   </p>
                 </div>
@@ -261,7 +263,7 @@ export default function ProjectsPage() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.1 }}
-              className="text-blue-100 text-lg max-w-2xl"
+              className="text-gray-600 text-lg max-w-2xl"
             >
               Monitor, manage, and track all your construction projects with powerful analytics and real-time insights
             </motion.p>
@@ -274,16 +276,14 @@ export default function ProjectsPage() {
             className="flex flex-col sm:flex-row gap-3"
           >
             <Link href="/dashboard/admin/projects/recycle-bin">
-              <button className="group flex items-center px-6 py-3 bg-white/10 backdrop-blur-sm text-white rounded-xl hover:bg-white/20 transition-all duration-300 border border-white/20 hover:border-white/30">
+              <button className="group flex items-center px-6 py-3 bg-gray-100/80 backdrop-blur-sm text-gray-700 rounded-xl hover:bg-gray-200/80 transition-all duration-300 border border-gray-200/50 hover:border-gray-300/50">
                 <FiTrash2 className="mr-2 group-hover:rotate-12 transition-transform duration-300" />
                 Recycle Bin
               </button>
             </Link>
             <Link href="/dashboard/admin/projects/new">
-              <button className="group flex items-center px-6 py-3 bg-white text-primary-600 rounded-xl hover:bg-blue-50 transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 font-semibold">
-                <div className="w-5 h-5 bg-primary-100 rounded-lg flex items-center justify-center mr-2 group-hover:bg-primary-200 transition-colors">
-                  <span className="text-primary-600 text-lg font-bold">+</span>
-                </div>
+              <button className="group flex items-center px-6 py-3 bg-[#1b4965] text-white rounded-xl hover:bg-primary-600 transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 font-semibold">
+              <FaFileUpload className="mr-2 group-hover:rotate-12 transition-transform duration-300" />
                 New Project
               </button>
             </Link>
@@ -514,7 +514,7 @@ export default function ProjectsPage() {
                   
                   {/* Action Button */}
                   <Link href={`/dashboard/admin/projects/${project.id}`}>
-                    <button className="w-full group/btn flex items-center justify-center px-4 py-3 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-xl hover:from-primary-600 hover:to-primary-700 transition-all duration-300 shadow-lg hover:shadow-xl font-semibold">
+                    <button className="w-full group/btn flex items-center justify-center px-4 py-3 bg-[#1b4965] text-white rounded-xl hover:from-primary-600 hover:to-primary-700 transition-all duration-300 shadow-lg hover:shadow-xl font-semibold">
                       <span>View Project Details</span>
                       <FiArrowRight className="ml-2 w-4 h-4 group-hover/btn:translate-x-1 transition-transform duration-300" />
                     </button>

@@ -204,33 +204,55 @@ export default function EditProjectPage({ params }: { params: { projectId: strin
   }
 
   return (
-    <div className="p-6">
-      {/* Back Button */}
-      <div className="mb-6">
-        <button 
-          onClick={() => router.back()}
-          className="flex items-center text-blue-600 hover:text-blue-800"
-        >
-          <FiChevronLeft className="mr-1" /> Back to Project
-        </button>
-      </div>
-      
-      <div className="bg-white rounded-lg shadow-sm p-6">
-        <h1 className="text-2xl font-semibold text-gray-800 mb-6">Edit Project</h1>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 p-6">
+      <div className="max-w-4xl mx-auto">
+        {/* Enhanced Header */}
+        <div className="mb-8">
+          <button 
+            onClick={() => router.back()}
+            className="flex items-center text-blue-600 hover:text-blue-800 mb-4 transition-colors duration-200 hover:scale-105 transform"
+          >
+            <FiChevronLeft className="mr-1" /> Back to Project
+          </button>
+          
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-xl border border-white/20">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2">
+                  Edit Project
+                </h1>
+                <p className="text-gray-600">Update project details and settings</p>
+              </div>
+              <div className="hidden md:block">
+                <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
+                  <FiSave className="w-8 h-8 text-white" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
         
+        {/* Error Display */}
         {error && (
-          <div className="bg-red-50 text-red-700 p-4 rounded-md mb-6">
-            {error}
+          <div className="bg-red-50/80 backdrop-blur-sm border border-red-200 rounded-xl p-4 mb-6 flex items-center shadow-lg">
+            <div className="w-2 h-2 bg-red-500 rounded-full mr-3"></div>
+            <p className="text-red-700">{error}</p>
           </div>
         )}
         
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Basic Information */}
-          <div className="bg-gray-50 p-4 rounded-md">
-            <h2 className="text-lg font-medium text-gray-800 mb-4">Basic Information</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+          {/* Basic Information - Enhanced */}
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-xl border border-white/20">
+            <div className="flex items-center mb-6">
+              <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl flex items-center justify-center mr-3">
+                <span className="text-white font-bold">1</span>
+              </div>
+              <h2 className="text-xl font-semibold text-gray-800">Basic Information</h2>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="md:col-span-2">
+                <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
                   Project Name *
                 </label>
                 <input
@@ -240,12 +262,13 @@ export default function EditProjectPage({ params }: { params: { projectId: strin
                   value={formData.name || ''}
                   onChange={handleInputChange}
                   required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white/50 backdrop-blur-sm"
+                  placeholder="Enter project name..."
                 />
               </div>
               
               <div>
-                <label htmlFor="project_type" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="project_type" className="block text-sm font-medium text-gray-700 mb-2">
                   Project Type
                 </label>
                 <select
@@ -253,106 +276,118 @@ export default function EditProjectPage({ params }: { params: { projectId: strin
                   name="project_type"
                   value={formData.project_type || ''}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white/50 backdrop-blur-sm"
                 >
-                  <option value="RESIDENTIAL">Residential</option>
-                  <option value="COMMERCIAL">Commercial</option>
-                  <option value="INDUSTRIAL">Industrial</option>
-                  <option value="RENOVATION">Renovation</option>
-                  <option value="INFRASTRUCTURE">Infrastructure</option>
-                  <option value="OTHER">Other</option>
+                  <option value="RESIDENTIAL">🏠 Residential</option>
+                  <option value="COMMERCIAL">🏢 Commercial</option>
+                  <option value="INDUSTRIAL">🏭 Industrial</option>
+                  <option value="RENOVATION">🔨 Renovation</option>
+                  <option value="INFRASTRUCTURE">🛣️ Infrastructure</option>
+                  <option value="OTHER">📋 Other</option>
                 </select>
               </div>
               
-              <div className="md:col-span-2">
-                <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
-                  Description
-                </label>
-                <textarea
-                  id="description"
-                  name="description"
-                  value={formData.description || ''}
-                  onChange={handleInputChange}
-                  rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              
               <div>
-                <label htmlFor="priority" className="block text-sm font-medium text-gray-700 mb-1">
-                  Priority
+                <label htmlFor="priority" className="block text-sm font-medium text-gray-700 mb-2">
+                  Priority Level
                 </label>
                 <select
                   id="priority"
                   name="priority"
                   value={formData.priority || ''}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white/50 backdrop-blur-sm"
                 >
-                  <option value="HIGH">High</option>
-                  <option value="MEDIUM">Medium</option>
-                  <option value="LOW">Low</option>
+                  <option value="HIGH">🔴 High Priority</option>
+                  <option value="MEDIUM">🟡 Medium Priority</option>
+                  <option value="LOW">🟢 Low Priority</option>
                 </select>
               </div>
               
+              <div className="md:col-span-2">
+                <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
+                  Project Description
+                </label>
+                <textarea
+                  id="description"
+                  name="description"
+                  value={formData.description || ''}
+                  onChange={handleInputChange}
+                  rows={4}
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white/50 backdrop-blur-sm resize-none"
+                  placeholder="Describe the project goals and requirements..."
+                />
+              </div>
+              
               <div>
-                <label htmlFor="supervisor" className="block text-sm font-medium text-gray-700 mb-1">
-                  Supervisor
+                <label htmlFor="supervisor" className="block text-sm font-medium text-gray-700 mb-2">
+                  Project Supervisor
                 </label>
                 <select
                   id="supervisor"
                   name="supervisor"
                   value={formData.supervisor || ''}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white/50 backdrop-blur-sm"
                 >
-                  <option value="">Not Assigned</option>
+                  <option value="">👤 Not Assigned</option>
                   {supervisors && supervisors.length > 0 ? (
                     supervisors.map((supervisor) => (
                       <option key={supervisor.id} value={supervisor.id}>
-                        {supervisor.first_name && supervisor.last_name
+                        👨‍💼 {supervisor.first_name && supervisor.last_name
                           ? `${supervisor.first_name} ${supervisor.last_name}`
                           : supervisor.username}
                       </option>
                     ))
                   ) : project?.supervisor ? (
                     <option value={project.supervisor.id}>
-                      {project.supervisor.first_name && project.supervisor.last_name
+                      👨‍💼 {project.supervisor.first_name && project.supervisor.last_name
                         ? `${project.supervisor.first_name} ${project.supervisor.last_name}`
                         : project.supervisor.username}
                     </option>
                   ) : null}
                 </select>
                 {supervisors.length === 0 && (
-                  <p className="text-xs text-amber-600 mt-1">
-                    Note: Could not load supervisor list. Only the current supervisor is shown.
+                  <p className="text-xs text-amber-600 mt-2 bg-amber-50 px-3 py-2 rounded-lg">
+                    ⚠️ Could not load supervisor list. Only the current supervisor is shown.
                   </p>
                 )}
               </div>
               
-              <div>
-                <label htmlFor="is_completed" className="flex items-center space-x-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    id="is_completed"
-                    name="is_completed"
-                    checked={formData.is_completed || false}
-                    onChange={handleInputChange}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                  />
-                  <span className="text-sm font-medium text-gray-700">Mark as Completed</span>
-                </label>
+              <div className="flex items-center">
+                <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-4 rounded-xl border border-green-200 w-full">
+                  <label htmlFor="is_completed" className="flex items-center space-x-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      id="is_completed"
+                      name="is_completed"
+                      checked={formData.is_completed || false}
+                      onChange={handleInputChange}
+                      className="h-5 w-5 text-green-600 focus:ring-green-500 border-gray-300 rounded"
+                    />
+                    <div>
+                      <span className="text-sm font-medium text-gray-700">Mark as Completed</span>
+                      <p className="text-xs text-gray-500">Project has been finished</p>
+                    </div>
+                  </label>
+                </div>
               </div>
             </div>
           </div>
           
-          {/* Dates */}
-          <div className="bg-gray-50 p-4 rounded-md">
-            <h2 className="text-lg font-medium text-gray-800 mb-4">Project Dates</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label htmlFor="start_date" className="block text-sm font-medium text-gray-700 mb-1">
-                  Start Date *
+          {/* Project Timeline - Enhanced */}
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-xl border border-white/20">
+            <div className="flex items-center mb-6">
+              <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl flex items-center justify-center mr-3">
+                <span className="text-white font-bold">2</span>
+              </div>
+              <h2 className="text-xl font-semibold text-gray-800">Project Timeline</h2>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="bg-blue-50/50 p-4 rounded-xl border border-blue-200">
+                <label htmlFor="start_date" className="block text-sm font-medium text-gray-700 mb-2">
+                  📅 Start Date *
                 </label>
                 <input
                   type="date"
@@ -361,13 +396,13 @@ export default function EditProjectPage({ params }: { params: { projectId: strin
                   value={formData.start_date || ''}
                   onChange={handleInputChange}
                   required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white/70"
                 />
               </div>
               
-              <div>
-                <label htmlFor="estimated_end_date" className="block text-sm font-medium text-gray-700 mb-1">
-                  Estimated End Date *
+              <div className="bg-purple-50/50 p-4 rounded-xl border border-purple-200">
+                <label htmlFor="estimated_end_date" className="block text-sm font-medium text-gray-700 mb-2">
+                  🎯 Estimated End Date *
                 </label>
                 <input
                   type="date"
@@ -376,19 +411,25 @@ export default function EditProjectPage({ params }: { params: { projectId: strin
                   value={formData.estimated_end_date || ''}
                   onChange={handleInputChange}
                   required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 bg-white/70"
                 />
               </div>
             </div>
           </div>
           
-          {/* Location */}
-          <div className="bg-gray-50 p-4 rounded-md">
-            <h2 className="text-lg font-medium text-gray-800 mb-4">Location</h2>
-            <div className="grid grid-cols-1 gap-4">
-              <div>
-                <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-1">
-                  Location Name
+          {/* Location Information - Enhanced */}
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-xl border border-white/20">
+            <div className="flex items-center mb-6">
+              <div className="w-10 h-10 bg-gradient-to-r from-green-500 to-green-600 rounded-xl flex items-center justify-center mr-3">
+                <span className="text-white font-bold">3</span>
+              </div>
+              <h2 className="text-xl font-semibold text-gray-800">Location Details</h2>
+            </div>
+            
+            <div className="space-y-4">
+              <div className="bg-green-50/50 p-4 rounded-xl border border-green-200">
+                <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-2">
+                  📍 Location Name
                 </label>
                 <input
                   type="text"
@@ -396,13 +437,14 @@ export default function EditProjectPage({ params }: { params: { projectId: strin
                   name="location"
                   value={formData.location || ''}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 bg-white/70"
+                  placeholder="e.g., Downtown, Business District"
                 />
               </div>
               
-              <div>
-                <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-1">
-                  Full Address
+              <div className="bg-emerald-50/50 p-4 rounded-xl border border-emerald-200">
+                <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-2">
+                  🏠 Full Address
                 </label>
                 <textarea
                   id="address"
@@ -410,19 +452,26 @@ export default function EditProjectPage({ params }: { params: { projectId: strin
                   value={formData.address || ''}
                   onChange={handleInputChange}
                   rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200 bg-white/70 resize-none"
+                  placeholder="Enter complete project address..."
                 />
               </div>
             </div>
           </div>
           
-          {/* Client Information */}
-          <div className="bg-gray-50 p-4 rounded-md">
-            <h2 className="text-lg font-medium text-gray-800 mb-4">Client Information</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label htmlFor="client_name" className="block text-sm font-medium text-gray-700 mb-1">
-                  Client Name
+          {/* Client Information - Enhanced */}
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-xl border border-white/20">
+            <div className="flex items-center mb-6">
+              <div className="w-10 h-10 bg-gradient-to-r from-orange-500 to-orange-600 rounded-xl flex items-center justify-center mr-3">
+                <span className="text-white font-bold">4</span>
+              </div>
+              <h2 className="text-xl font-semibold text-gray-800">Client Information</h2>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="md:col-span-2 bg-orange-50/50 p-4 rounded-xl border border-orange-200">
+                <label htmlFor="client_name" className="block text-sm font-medium text-gray-700 mb-2">
+                  👤 Client Name
                 </label>
                 <input
                   type="text"
@@ -430,13 +479,14 @@ export default function EditProjectPage({ params }: { params: { projectId: strin
                   name="client_name"
                   value={formData.client_name || ''}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200 bg-white/70"
+                  placeholder="Client full name"
                 />
               </div>
               
-              <div>
-                <label htmlFor="client_email" className="block text-sm font-medium text-gray-700 mb-1">
-                  Client Email
+              <div className="bg-amber-50/50 p-4 rounded-xl border border-amber-200">
+                <label htmlFor="client_email" className="block text-sm font-medium text-gray-700 mb-2">
+                  📧 Email Address
                 </label>
                 <input
                   type="email"
@@ -444,13 +494,14 @@ export default function EditProjectPage({ params }: { params: { projectId: strin
                   name="client_email"
                   value={formData.client_email || ''}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all duration-200 bg-white/70"
+                  placeholder="client@example.com"
                 />
               </div>
               
-              <div>
-                <label htmlFor="client_phone" className="block text-sm font-medium text-gray-700 mb-1">
-                  Client Phone
+              <div className="bg-yellow-50/50 p-4 rounded-xl border border-yellow-200">
+                <label htmlFor="client_phone" className="block text-sm font-medium text-gray-700 mb-2">
+                  📞 Phone Number
                 </label>
                 <input
                   type="tel"
@@ -458,37 +509,44 @@ export default function EditProjectPage({ params }: { params: { projectId: strin
                   name="client_phone"
                   value={formData.client_phone || ''}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all duration-200 bg-white/70"
+                  placeholder="+1 (555) 123-4567"
                 />
               </div>
             </div>
           </div>
           
-          {/* Form Actions */}
-          <div className="flex justify-end space-x-3">
-            <button
-              type="button"
-              onClick={() => router.back()}
-              className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors flex items-center"
-            >
-              <FiX className="mr-1" /> Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={saving}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center"
-            >
-              {saving ? (
-                <>
-                  <span className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full mr-2"></span>
-                  Saving...
-                </>
-              ) : (
-                <>
-                  <FiSave className="mr-1" /> Save Changes
-                </>
-              )}
-            </button>
+          {/* Enhanced Action Buttons */}
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-xl border border-white/20">
+            <div className="flex justify-end space-x-4">
+              <button
+                type="button"
+                onClick={() => router.back()}
+                className="px-6 py-3 border-2 border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50 transition-all duration-200 flex items-center font-medium hover:scale-105 transform"
+              >
+                <FiX className="mr-2" /> Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={saving}
+                className={`px-8 py-3 rounded-xl text-white font-medium transition-all duration-200 flex items-center transform ${
+                  saving
+                    ? 'bg-gray-400 cursor-not-allowed'
+                    : 'bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 hover:scale-105 shadow-lg hover:shadow-xl'
+                }`}
+              >
+                {saving ? (
+                  <>
+                    <span className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full mr-2"></span>
+                    Saving Changes...
+                  </>
+                ) : (
+                  <>
+                    <FiSave className="mr-2" /> Save Changes
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </form>
       </div>
