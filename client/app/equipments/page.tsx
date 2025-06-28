@@ -9,7 +9,6 @@ import TestimonialsRentalsPortfolio from '../components/Portfolio/Rentals/Testim
 import CallActionsRentalsPortfolio from '../components/Portfolio/Rentals/CallAction';
 import Footer from '../components/Portfolio/Footer';
 import ChatBotRentalsPortfolio from '../components/Portfolio/Rentals/ChatBot';
-import NavBarRentalsPortfolio from '../components/Portfolio/Rentals/NavBar';
 import HomeButton from '../components/ui/HomeButton';
 
 
