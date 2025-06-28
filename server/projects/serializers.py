@@ -127,26 +127,30 @@ class ProjectSerializer(serializers.ModelSerializer):
     
     def get_progress(self, obj):
         """Calculate overall project progress based on completed steps"""
-        total_steps = obj.steps.count()
+        # Use prefetched steps to avoid additional queries
+        steps = obj.steps.all()
+        total_steps = len(steps)
         if total_steps == 0:
             return 0
         
-        completed_steps = obj.steps.filter(is_approved=True).count()
+        completed_steps = sum(1 for step in steps if step.is_approved)
         return int((completed_steps / total_steps) * 100)
     
     def get_current_step(self, obj):
         """Get the current step in progress"""
-        current_step = obj.steps.filter(is_approved=False).order_by('order').first()
+        # Use prefetched steps to avoid additional queries
+        steps = obj.steps.all()
+        current_step = next((step for step in sorted(steps, key=lambda s: s.order) if not step.is_approved), None)
         return current_step.title if current_step else "Completed"
     
     def get_status(self, obj):
         """Get project status"""
         if obj.is_completed:
             return "COMPLETED"
-        elif obj.steps.filter(is_approved=False).exists():
-            return "IN_PROGRESS"
-        else:
-            return "PLANNING"
+        # Use prefetched steps to avoid additional queries
+        steps = obj.steps.all()
+        has_pending_steps = any(not step.is_approved for step in steps)
+        return "IN_PROGRESS" if has_pending_steps else "PLANNING"
     
     def get_client(self, obj):
         """Get client information from project model"""
@@ -156,10 +160,9 @@ class ProjectSerializer(serializers.ModelSerializer):
     
     def get_budget(self, obj):
         """Calculate total budget from steps"""
-        total_budget = sum(
-            step.expected_budget or 0 
-            for step in obj.steps.all()
-        )
+        # Use prefetched steps to avoid additional queries
+        steps = obj.steps.all()
+        total_budget = sum(step.expected_budget or 0 for step in steps)
         return float(total_budget)
 
     def to_representation(self, instance):
