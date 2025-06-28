@@ -3,7 +3,8 @@
 import Footer from '@/app/components/Portfolio/Footer';
 import HeroOngoingProjectsPortfolio from '@/app/components/Portfolio/Projects/Ongoing/Hero';
 import ProjectListOngoingProjectsPortfolio from '@/app/components/Portfolio/Projects/Ongoing/ProjectList';
-import NavBar from '@/app/components/ui/NavBar';
+import NavBarProjects from '@/app/components/ui/NavBarProjects';
+
 
 
 export default function OngoingProjectsPage() {
@@ -11,7 +12,7 @@ export default function OngoingProjectsPage() {
     <main className="min-h-screen bg-gray-50">
 
       {/*Nav Bar */}
-      <NavBar />
+      <NavBarProjects />
 
       {/* Hero Section */}
         <HeroOngoingProjectsPortfolio />

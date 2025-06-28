@@ -5,8 +5,7 @@ import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { RiHome5Line, RiSearchLine, RiFilter3Line, RiCalendarLine, RiTimeLine, RiMessage2Line, RiUser3Line, RiHomeSmileLine, RiPaletteLine, RiLeafLine, RiToolsLine, RiLoginCircleLine } from 'react-icons/ri';
-
-
+import HomeButton from '../../ui/HomeButton';
 
 interface Equipment {
   id: number;
@@ -182,7 +181,7 @@ const FilterSectionRentalsPortfolio = () => {
 
   return (
     <section className="py-3 px-2 bg-white shadow-md sticky top-0 z-60">
-        <div className="container mx-auto px-5">
+        <div className="container mx-auto px-4 pt-2">
           <div className="flex items-center justify-between w-full  mb-4">
             {/* All in one row: logo, filter, search, login */}
             <div className="flex items-center w-full gap-6">
@@ -225,6 +224,12 @@ const FilterSectionRentalsPortfolio = () => {
               <Link href="/dashboard/login">
                 <button className="w-12 h-12 flex items-center justify-center rounded-full bg-[#1b4965] hover:bg-[#1b4965]-700 text-white transition-all duration-200">
                   <RiUser3Line className="text-2xl" />
+                </button>
+              </Link>
+              {/* Home Button */}
+              <Link href="/">
+                <button className="w-12 h-12 flex items-center justify-center rounded-full bg-[#1b4965] hover:bg-[#1b4965]-700 text-white transition-all duration-200">
+                  <RiHome5Line className="text-2xl" />
                 </button>
               </Link>
             </div>
