@@ -1,54 +1,66 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { RiArrowLeftLine, RiHome5Line, RiCheckLine, RiStarFill, RiUser3Line, RiBuilding2Line, RiToolsLine, RiAwardLine, RiMapPinLine, RiPhoneLine, RiMailLine, RiTimeLine } from "react-icons/ri";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+
+import { RiHome5Line, RiBuilding4Line, RiTimeLine, RiCheckLine, RiCalendarLine, RiTeamLine, RiMapPinLine, RiArrowRightLine, RiHomeSmileLine, RiPaletteLine, RiLeafLine } from 'react-icons/ri';
+
 
 const HeroAboutUsPortfolio = () => {
 
 
   return (
-    <section className="relative h-[60vh] bg-[#1b4965] overflow-hidden">
-        <div className="absolute inset-0 bg-black/40" />
-        <div className="absolute inset-0 bg-gradient-to-r from-[#1b4965] to-[#2d5a7a]" />
-        
-        {/* Animated background elements */}
-        <motion.div
-          className="absolute top-0 left-0 w-full h-full"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 0.1 }}
-          transition={{ duration: 2 }}
-        >
-          <div className="absolute top-20 left-20 w-32 h-32 border border-white/20 rounded-full" />
-          <div className="absolute top-40 right-32 w-24 h-24 border border-white/20 rounded-full" />
-          <div className="absolute bottom-20 left-1/3 w-20 h-20 border border-white/20 rounded-full" />
-        </motion.div>
+    <section className="relative h-[75vh] overflow-hidden">
+        <div className="absolute inset-0">
+          <img
+            src="/assets/images/hero_about_us.png"
+            alt="Project Hero Background"
+            className="w-full h-full object-cover object-center"
+            style={{ zIndex: 0 }}
+          />
+          
+        </div>
 
-        <div className="container mx-auto px-4 h-full flex items-center justify-center relative z-10">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            className="text-center text-white"
-          >
-            <motion.h1
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.8, delay: 0.2, type: "spring" }}
-              className="text-5xl md:text-7xl font-bold mb-6"
+        <div className="container mx-auto px-4 h-full flex items-end-safe justify-right relative z-10">
+        <motion.div 
+              initial={{ opacity: 0, x: -50 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 1 }}
+              className="max-w-3xl z-10"
             >
-              About SAAN Homes
-            </motion.h1>
-            <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.4 }}
-              className="text-xl md:text-2xl max-w-3xl mx-auto"
-            >
-              Leading construction company and equipment rental provider in the UAE
-            </motion.p>
-          </motion.div>
+                
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: 100 }}
+                className="h-1 bg-white mb-8"
+              />
+              
+              <h1 className="text-6xl font-semibold mb-8 w-xl text-white leading-tight">
+                <span className="relative block mb-4">
+                About
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: '35%' }}
+                    transition={{ delay: 0.5, duration: 0.8 }}
+                    className="absolute bottom-[-4] left-0 h-3 bg-white/20 -z-10"
+                  />
+                </span>
+                <span className="relative inline-block">
+                SAAN Homes.
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: '100%' }}
+                    transition={{ delay: 0.8, duration: 0.8 }}
+                    className="absolute bottom-0 left-0 h-3 bg-white/20 -z-10"
+                  />
+                </span>
+              </h1>
+              <p className="text-xl text-white/90 w-130 leading-relaxed mb-12">
+              Decades of Dedication, One Solid Reputation.
+              </p>
+              
+            </motion.div>
         </div>
       </section>
   );

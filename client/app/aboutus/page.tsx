@@ -10,6 +10,7 @@ import AchievementsAboutUsPortfolio from "../components/Portfolio/AboutUs/Achiev
 import TeamAboutUsPortfolio from "../components/Portfolio/AboutUs/Team";
 import ContactAboutUsPortfolio from "../components/Portfolio/AboutUs/Contact";
 import CTAAboutUsPortfolio from "../components/Portfolio/AboutUs/CTA";
+import Footer from "../components/Portfolio/Footer";
 
 export default function AboutUs() {
   
@@ -42,6 +43,9 @@ export default function AboutUs() {
 
       {/* CTA Section */}
       <CTAAboutUsPortfolio />
+
+      {/*Footer*/}
+      <Footer />
       
     </main>
   );
