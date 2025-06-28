@@ -16,7 +16,7 @@ const HeroServicesPortfolio = () => {
               animate={{ width: 100 }}
               className="h-1 bg-white mb-8"
             />
-            <h1 className="text-6xl font-light mb-8 w-2xl text-white leading-tight text-right">
+            <h1 className="text-6xl font-semibold mb-8 w-2xl text-white leading-tight text-right">
             Delivering quality where    {' '}
               <span className="relative">
               every detail
