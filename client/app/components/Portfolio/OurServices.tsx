@@ -51,7 +51,7 @@ const OurServicesPortfolio = () => {
           <div className="flex flex-col items-start self-end w-full">
             <motion.h2
               {...fadeInUp}
-              className="text-3xl font-bold mb-2 bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-red-700 mt-22"
+              className="text-3xl font-bold mb-2 bg-clip-text text-transparent bg-[#1b4965]"
             >
               Our Services
             </motion.h2>

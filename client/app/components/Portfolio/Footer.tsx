@@ -22,13 +22,13 @@ export default function Footer() {
               Building dreams into reality with innovation and excellence.
             </p>
             <div className="flex space-x-4">
-              <Link href="https://facebook.com" className="hover:text-blue-500 transition-colors">
+              <Link href="https://facebook.com" className="hover:text-[#1b4965] transition-colors">
                 <FaFacebookF size={20} />
               </Link>
-              <Link href="https://instagram.com" className="hover:text-blue-500 transition-colors">
+              <Link href="https://instagram.com" className="hover:text-[#1b4965] transition-colors">
                 <FaInstagram size={20} />
               </Link>
-              <Link href="https://twitter.com" className="hover:text-blue-500 transition-colors">
+              <Link href="https://twitter.com" className="hover:text-[#1b4965] transition-colors">
                 <FaTwitter size={20} />
               </Link>
             </div>
@@ -44,7 +44,7 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/about" className="hover:text-blue-500 transition-colors">
+                <Link href="/aboutus" className="hover:text-blue-500 transition-colors">
                   About Us
                 </Link>
               </li>

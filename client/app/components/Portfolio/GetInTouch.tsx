@@ -55,7 +55,7 @@ const GetInTouchPortfolio = () => {
           </div>
           {/* Right Side: Intro Paragraph */}
           <div className="md:w-1/2 w-full flex flex-col justify-center">
-            <h2 className="text-2xl md:text-3xl font-bold mb-2 bg-clip-text text-transparent bg-gradient-to-r from-blue-700 to-red-600">Get In Touch</h2>
+            <h2 className="text-2xl md:text-3xl font-bold mb-2 bg-clip-text text-transparent bg-[#1b4965]">Get In Touch</h2>
             <p className="text-gray-600 text-xl md:text-2xl mb-4">Let's Build Something Great Together!</p>
             <p className="text-gray-700 mb-6">
               In our Contact section, you can easily reach out to us with any inquiries, feedback, or support needs. Whether you have questions about using QuickMatch, need assistance with your account, or want to provide feedback to help us improve, we're here to help. Fill out the contact form with your details and message, and our dedicated support team will respond promptly. Your satisfaction is our priority, and we strive to provide excellent customer service. Thank you for choosing QuickMatch! We look forward to assisting you.

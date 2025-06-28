@@ -54,7 +54,7 @@ const EquipmentRentalsPortfolio = () => {
         <motion.div className="text-center max-w-3xl mx-auto mb-12">
           <motion.h2
             {...fadeInUp}
-            className="text-2xl md:text-3xl font-bold mb-2 bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-red-700"
+            className="text-2xl md:text-3xl font-bold mb-2 bg-clip-text text-transparent bg-[#1b4965]"
           >
             Equipment Rentals
           </motion.h2>
