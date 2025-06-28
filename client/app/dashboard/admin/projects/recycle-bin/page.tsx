@@ -51,7 +51,10 @@ export default function RecycleBinPage() {
 
     const fetchDeletedProjects = async () => {
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/projects/recycle-bin/`, {
+        const apiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/projects/recycle-bin/`;
+        console.log('Fetching deleted projects from:', apiUrl);
+        
+        const response = await fetch(apiUrl, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -63,15 +66,35 @@ export default function RecycleBinPage() {
             router.replace('/dashboard/login');
             return;
           }
-          throw new Error('Failed to fetch deleted projects');
+          if (response.status === 403) {
+            setError('Access denied. Only administrators can view the recycle bin.');
+            return;
+          }
+          if (response.status === 404) {
+            setError('Recycle bin endpoint not found. Please contact support.');
+            return;
+          }
+          
+          // Try to get error message from response
+          try {
+            const errorData = await response.json();
+            setError(errorData.error || `Server error: ${response.status}`);
+          } catch {
+            setError(`Failed to fetch deleted projects. Server returned status: ${response.status}`);
+          }
+          return;
         }
 
         const data = await response.json();
         setProjects(data);
         setError(null);
       } catch (err) {
-        setError('Error loading deleted projects. Please try again later.');
         console.error('Error:', err);
+        if (err instanceof TypeError && err.message.includes('fetch')) {
+          setError('Network error. Please check your connection and try again.');
+        } else {
+          setError('Error loading deleted projects. Please try again later.');
+        }
       } finally {
         setLoading(false);
       }
@@ -97,14 +120,27 @@ export default function RecycleBinPage() {
           router.replace('/dashboard/login');
           return;
         }
-        throw new Error('Failed to restore project');
+        
+        // Try to get error message from response
+        try {
+          const errorData = await response.json();
+          setError(errorData.error || 'Failed to restore project');
+        } catch {
+          setError(`Failed to restore project. Server returned status: ${response.status}`);
+        }
+        return;
       }
 
       // Remove the project from the list
       setProjects(projects.filter(p => p.id !== projectId));
+      setError(null); // Clear any previous errors
     } catch (err) {
       console.error('Error restoring project:', err);
-      setError('Failed to restore project. Please try again.');
+      if (err instanceof TypeError && err.message.includes('fetch')) {
+        setError('Network error. Please check your connection and try again.');
+      } else {
+        setError('Failed to restore project. Please try again.');
+      }
     } finally {
       setActionLoading(null);
     }
@@ -134,15 +170,28 @@ export default function RecycleBinPage() {
           router.replace('/dashboard/login');
           return;
         }
-        throw new Error('Failed to permanently delete project');
+        
+        // Try to get error message from response
+        try {
+          const errorData = await response.json();
+          setError(errorData.error || 'Failed to permanently delete project');
+        } catch {
+          setError(`Failed to permanently delete project. Server returned status: ${response.status}`);
+        }
+        return;
       }
 
       // Remove the project from the list
       setProjects(projects.filter(p => p.id !== projectId));
       setShowDeleteModal(null);
+      setError(null); // Clear any previous errors
     } catch (err) {
       console.error('Error deleting project:', err);
-      setError('Failed to delete project. Please try again.');
+      if (err instanceof TypeError && err.message.includes('fetch')) {
+        setError('Network error. Please check your connection and try again.');
+      } else {
+        setError('Failed to delete project. Please try again.');
+      }
     } finally {
       setActionLoading(null);
     }

@@ -528,11 +528,18 @@ class ProjectViewSet(viewsets.ModelViewSet):
         # By default, exclude deleted projects with optimized queries
         return Project.objects.select_related('supervisor').prefetch_related('steps', 'steps__logs').filter(is_deleted=False)
     
-    @action(detail=False, methods=['get'])
+    @action(detail=False, methods=['get'], url_path='recycle-bin')
     def recycle_bin(self, request):
         """
         List all deleted projects (recycle bin)
         """
+        # Only admins should be able to access recycle bin
+        if request.user.role != 'ADMIN':
+            return Response(
+                {"error": "Only administrators can access the recycle bin"}, 
+                status=status.HTTP_403_FORBIDDEN
+            )
+            
         deleted_projects = Project.objects.select_related('supervisor').filter(is_deleted=True)
         page = self.paginate_queryset(deleted_projects)
         if page is not None:
@@ -547,6 +554,13 @@ class ProjectViewSet(viewsets.ModelViewSet):
         """
         Move a project to the recycle bin (soft delete)
         """
+        # Only admins should be able to soft delete projects
+        if request.user.role != 'ADMIN':
+            return Response(
+                {"error": "Only administrators can delete projects"}, 
+                status=status.HTTP_403_FORBIDDEN
+            )
+            
         project = self.get_object()
         project.soft_delete()
         return Response({"status": "project moved to recycle bin"}, status=status.HTTP_200_OK)
@@ -556,21 +570,47 @@ class ProjectViewSet(viewsets.ModelViewSet):
         """
         Restore a project from the recycle bin
         """
-        # Override get_queryset to include deleted projects
-        project = Project.objects.get(pk=pk)
-        project.restore()
-        serializer = self.get_serializer(project)
-        return Response(serializer.data)
+        # Only admins should be able to restore projects
+        if request.user.role != 'ADMIN':
+            return Response(
+                {"error": "Only administrators can restore projects"}, 
+                status=status.HTTP_403_FORBIDDEN
+            )
+            
+        try:
+            # Get the project including deleted ones
+            project = Project.objects.get(pk=pk, is_deleted=True)
+            project.restore()
+            serializer = self.get_serializer(project)
+            return Response(serializer.data)
+        except Project.DoesNotExist:
+            return Response(
+                {"error": "Project not found in recycle bin"}, 
+                status=status.HTTP_404_NOT_FOUND
+            )
     
     @action(detail=True, methods=['delete'])
     def permanent_delete(self, request, pk=None):
         """
         Permanently delete a project from the recycle bin
         """
-        # Override get_queryset to include deleted projects
-        project = Project.objects.get(pk=pk)
-        project.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        # Only admins should be able to permanently delete projects
+        if request.user.role != 'ADMIN':
+            return Response(
+                {"error": "Only administrators can permanently delete projects"}, 
+                status=status.HTTP_403_FORBIDDEN
+            )
+            
+        try:
+            # Get the project including deleted ones
+            project = Project.objects.get(pk=pk, is_deleted=True)
+            project.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except Project.DoesNotExist:
+            return Response(
+                {"error": "Project not found in recycle bin"}, 
+                status=status.HTTP_404_NOT_FOUND
+            )
 
     @action(detail=False, methods=['post'], url_path='preview-boq')
     def preview_boq(self, request):

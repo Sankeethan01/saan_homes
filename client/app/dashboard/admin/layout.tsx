@@ -196,15 +196,37 @@ export default function AdminLayout({
     document.documentElement.classList.toggle('dark', newTheme === 'dark');
   };
 
-  // Generate breadcrumb items
-  const breadcrumbItems = pathname
-    .split('/')
-    .filter(Boolean)
-    .map((item, index, array) => ({
-      name: item.charAt(0).toUpperCase() + item.slice(1),
-      path: '/' + array.slice(0, index + 1).join('/'),
-      isLast: index === array.length - 1,
-    }));
+  // Generate breadcrumb items - stop at projects level to prevent layout issues
+  const generateBreadcrumbItems = () => {
+    const segments = pathname.split('/').filter(Boolean);
+    const items = [];
+    
+    for (let i = 0; i < segments.length; i++) {
+      const segment = segments[i];
+      const path = '/' + segments.slice(0, i + 1).join('/');
+      
+      // Stop after 'projects' to prevent breadcrumb overflow
+      if (segment === 'projects') {
+        items.push({
+          name: 'Projects',
+          path: path,
+          isLast: true, // Mark as last to prevent further items
+        });
+        break;
+      }
+      
+      // Add regular breadcrumb items
+      items.push({
+        name: segment.charAt(0).toUpperCase() + segment.slice(1),
+        path: path,
+        isLast: i === segments.length - 1,
+      });
+    }
+    
+    return items;
+  };
+  
+  const breadcrumbItems = generateBreadcrumbItems();
 
   const themeValue = { theme, toggleTheme: handleThemeToggle };
 
@@ -408,20 +430,21 @@ export default function AdminLayout({
           <header className="bg-white/80 backdrop-blur-xl border-b border-slate-200/50 z-10 sticky top-0">
             <div className="flex items-center justify-between px-8 py-4">
               {/* Breadcrumb */}
-              <div className="flex items-center space-x-2">
-                <nav className="flex items-center space-x-2 text-sm">
+              <div className="flex items-center space-x-2 min-w-0 flex-1 mr-6">
+                <nav className="flex items-center space-x-2 text-sm min-w-0">
                   {breadcrumbItems.map((item, index) => (
-                    <div key={item.path} className="flex items-center">
+                    <div key={item.path} className="flex items-center min-w-0">
                       {index > 0 && (
-                        <MdChevronRight className="mx-2 text-slate-400 w-4 h-4" />
+                        <MdChevronRight className="mx-2 text-slate-400 w-4 h-4 flex-shrink-0" />
                       )}
                       <Link
                         href={item.path}
-                        className={`px-3 py-1.5 rounded-lg transition-all duration-200 ${
+                        className={`px-3 py-1.5 rounded-lg transition-all duration-200 truncate ${
                           item.isLast
                             ? 'bg-slate-100 text-slate-900 font-semibold'
                             : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
                         }`}
+                        title={item.name}
                       >
                         {item.name}
                       </Link>
@@ -431,7 +454,7 @@ export default function AdminLayout({
               </div>
 
               {/* Right side actions */}
-              <div className="flex items-center space-x-3">
+              <div className="flex items-center space-x-3 flex-shrink-0">
                 {/* Search */}
                 <div className="relative">
                   <RiSearchLine className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
