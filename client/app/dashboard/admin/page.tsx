@@ -16,8 +16,33 @@ import {
   RiDownloadLine
 } from 'react-icons/ri';
 
+// Type definitions
+interface StatItem {
+  label: string;
+  value: string;
+  trend: string;
+  trendUp: boolean;
+  subtext: string;
+  icon: React.ReactNode;
+}
+
+interface ActivityItem {
+  user: string;
+  email: string;
+  status: string;
+  id: string;
+  date: string;
+  amount: string;
+}
+
+interface ChartDataItem {
+  month: string;
+  projects: number;
+  rentals: number;
+}
+
 // Sample data for dashboard
-const stats = [
+const stats: StatItem[] = [
   { 
     label: 'Total Projects', 
     value: '24', 
@@ -53,7 +78,7 @@ const stats = [
 ];
 
 // Recent activity data
-const recentActivity = [
+const recentActivity: ActivityItem[] = [
   { user: 'John Smith', email: 'john.smith@example.com', status: 'Approved', id: '#329341', date: '49 min ago', amount: '$738.61' },
   { user: 'Sarah Johnson', email: 'sarah.j@example.com', status: 'Pending', id: '#329342', date: '27 min ago', amount: '$108.16' },
   { user: 'Michael Brown', email: 'mbrown@example.com', status: 'Completed', id: '#329343', date: '40 min ago', amount: '$1,279.80' },
@@ -62,7 +87,7 @@ const recentActivity = [
 ];
 
 // Monthly data for chart
-const monthlyData = [
+const monthlyData: ChartDataItem[] = [
   { month: 'Jan', projects: 12, rentals: 8 },
   { month: 'Feb', projects: 15, rentals: 10 },
   { month: 'Mar', projects: 18, rentals: 14 },
@@ -71,10 +96,16 @@ const monthlyData = [
   { month: 'Jun', projects: 32, rentals: 22 },
 ];
 
-function BarChart({ data, height = 200 }: { data: any[]; height?: number }) {
+function BarChart({ data }: { data: ChartDataItem[] }) {
   const maxProjects = Math.max(...data.map(d => d.projects));
   const maxRentals = Math.max(...data.map(d => d.rentals));
   const maxValue = Math.max(maxProjects, maxRentals);
+
+  // Create height classes dynamically
+  const getHeightClass = (value: number) => {
+    const percentage = Math.round((value / maxValue) * 100);
+    return `h-[${percentage}%]`;
+  };
 
   return (
     <div className="mt-4">
@@ -83,13 +114,11 @@ function BarChart({ data, height = 200 }: { data: any[]; height?: number }) {
           <div key={index} className="flex-1 flex flex-col items-center gap-1">
             <div className="w-full flex items-end justify-center gap-1 h-full">
               <div 
-                className="w-5 rounded-t-md bg-[#1b4965]" 
-                style={{ height: `${(item.projects / maxValue) * 100}%` }}
+                className={`w-5 rounded-t-md bg-[#1b4965] ${getHeightClass(item.projects)}`}
                 title={`Projects: ${item.projects}`}
               ></div>
               <div 
-                className="w-5 rounded-t-md bg-[#5fa8d3]" 
-                style={{ height: `${(item.rentals / maxValue) * 100}%` }}
+                className={`w-5 rounded-t-md bg-[#5fa8d3] ${getHeightClass(item.rentals)}`}
                 title={`Rentals: ${item.rentals}`}
               ></div>
             </div>
@@ -111,7 +140,7 @@ function BarChart({ data, height = 200 }: { data: any[]; height?: number }) {
   );
 }
 
-function getStatusColor(status: string) {
+function getStatusColor(status: string): string {
   switch (status.toLowerCase()) {
     case 'approved': return 'bg-green-100 text-green-800';
     case 'pending': return 'bg-yellow-100 text-yellow-800';
@@ -123,7 +152,7 @@ function getStatusColor(status: string) {
 }
 
 export default function AdminDashboard() {
-  const [period, setPeriod] = useState('month');
+  const [period, setPeriod] = useState<'week' | 'month' | 'year'>('month');
 
   return (
     <div className="min-h-screen bg-white p-6">
@@ -199,51 +228,191 @@ export default function AdminDashboard() {
         
         {/* Charts and Tables Section */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Revenue Chart */}
+          {/* Enhanced Revenue Analytics */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-100 p-6"
+            className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden"
           >
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h2 className="text-lg font-bold text-gray-800">Revenue</h2>
-                <p className="text-sm text-gray-500 mt-1">Projects & Rentals Performance</p>
+            {/* Header with gradient background */}
+            <div className="bg-gradient-to-r from-[#1b4965] to-[#5fa8d3] p-6 text-white">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-xl font-bold">Revenue Analytics</h2>
+                  <p className="text-blue-100 mt-1">Projects & Equipment Rentals Performance</p>
+                </div>
+                <div className="flex items-center gap-2 bg-white/20 backdrop-blur-sm rounded-lg p-1">
+                  <button 
+                    className={`px-3 py-1 text-sm rounded-md transition-all ${
+                      period === 'week' 
+                        ? 'bg-white text-[#1b4965] shadow-sm font-medium' 
+                        : 'text-white/80 hover:text-white hover:bg-white/10'
+                    }`}
+                    onClick={() => setPeriod('week')}
+                  >
+                    Week
+                  </button>
+                  <button 
+                    className={`px-3 py-1 text-sm rounded-md transition-all ${
+                      period === 'month' 
+                        ? 'bg-white text-[#1b4965] shadow-sm font-medium' 
+                        : 'text-white/80 hover:text-white hover:bg-white/10'
+                    }`}
+                    onClick={() => setPeriod('month')}
+                  >
+                    Month
+                  </button>
+                  <button 
+                    className={`px-3 py-1 text-sm rounded-md transition-all ${
+                      period === 'year' 
+                        ? 'bg-white text-[#1b4965] shadow-sm font-medium' 
+                        : 'text-white/80 hover:text-white hover:bg-white/10'
+                    }`}
+                    onClick={() => setPeriod('year')}
+                  >
+                    Year
+                  </button>
+                </div>
               </div>
-              <div className="flex items-center gap-2 bg-gray-100 rounded-lg p-1">
-                <button 
-                  className={`px-3 py-1 text-sm rounded-md ${period === 'week' ? 'bg-white shadow-sm' : ''}`}
-                  onClick={() => setPeriod('week')}
-                >
-                  Week
-                </button>
-                <button 
-                  className={`px-3 py-1 text-sm rounded-md ${period === 'month' ? 'bg-white shadow-sm' : ''}`}
-                  onClick={() => setPeriod('month')}
-                >
-                  Month
-                </button>
-                <button 
-                  className={`px-3 py-1 text-sm rounded-md ${period === 'year' ? 'bg-white shadow-sm' : ''}`}
-                  onClick={() => setPeriod('year')}
-                >
-                  Year
-                </button>
+              
+              {/* Quick stats in header */}
+              <div className="grid grid-cols-3 gap-4 mt-4">
+                <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3">
+                  <p className="text-blue-100 text-xs font-medium">Total Projects</p>
+                  <p className="text-white text-lg font-bold">127</p>
+                  <div className="flex items-center text-green-300 text-xs mt-1">
+                    <RiArrowUpLine className="mr-1" />
+                    +8.2%
+                  </div>
+                </div>
+                <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3">
+                  <p className="text-blue-100 text-xs font-medium">Equipment Rented</p>
+                  <p className="text-white text-lg font-bold">1,247</p>
+                  <div className="flex items-center text-green-300 text-xs mt-1">
+                    <RiArrowUpLine className="mr-1" />
+                    +12.5%
+                  </div>
+                </div>
+                <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3">
+                  <p className="text-blue-100 text-xs font-medium">Avg. Project Value</p>
+                  <p className="text-white text-lg font-bold">$185K</p>
+                  <div className="flex items-center text-green-300 text-xs mt-1">
+                    <RiArrowUpLine className="mr-1" />
+                    +5.7%
+                  </div>
+                </div>
               </div>
             </div>
             
-            <BarChart data={monthlyData} />
+            {/* Chart Section */}
+            <div className="p-6">
+              <BarChart data={monthlyData} />
+            </div>
             
-            <div className="mt-6 pt-6 border-t border-gray-100">
-              <div className="flex items-center">
-                <div className="flex-1">
-                  <p className="text-sm text-gray-500">Total Revenue</p>
-                  <p className="text-xl font-bold text-gray-800 mt-1">$14,324</p>
+            {/* Enhanced Bottom Analytics */}
+            <div className="px-6 pb-6">
+              <div className="bg-gray-50 rounded-xl p-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="font-semibold text-gray-800">Revenue Breakdown</h3>
+                      <span className="text-xs text-gray-500 bg-gray-200 px-2 py-1 rounded-full">This Month</span>
+                    </div>
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 bg-[#1b4965] rounded-full"></div>
+                          <span className="text-sm text-gray-600">Construction Projects</span>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm font-semibold text-gray-800">$23,456</p>
+                          <p className="text-xs text-green-600">+15.2%</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 bg-[#5fa8d3] rounded-full"></div>
+                          <span className="text-sm text-gray-600">Equipment Rentals</span>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm font-semibold text-gray-800">$18,924</p>
+                          <p className="text-xs text-green-600">+8.7%</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between pt-2 border-t border-gray-200">
+                        <span className="text-sm font-semibold text-gray-800">Total Revenue</span>
+                        <div className="text-right">
+                          <p className="text-lg font-bold text-[#1b4965]">$42,380</p>
+                          <p className="text-xs text-green-600">+12.1% vs last month</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="font-semibold text-gray-800">Performance Metrics</h3>
+                      <button className="text-xs text-[#1b4965] hover:underline">View Details</button>
+                    </div>
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-gray-600">Project Completion Rate</span>
+                        <div className="flex items-center gap-2">
+                          <div className="w-16 h-2 bg-gray-200 rounded-full overflow-hidden">
+                            <div className="w-[85%] h-full bg-green-500 rounded-full"></div>
+                          </div>
+                          <span className="text-sm font-semibold text-gray-800">85%</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-gray-600">Equipment Utilization</span>
+                        <div className="flex items-center gap-2">
+                          <div className="w-16 h-2 bg-gray-200 rounded-full overflow-hidden">
+                            <div className="w-[92%] h-full bg-blue-500 rounded-full"></div>
+                          </div>
+                          <span className="text-sm font-semibold text-gray-800">92%</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-gray-600">Client Satisfaction</span>
+                        <div className="flex items-center gap-2">
+                          <div className="w-16 h-2 bg-gray-200 rounded-full overflow-hidden">
+                            <div className="w-[96%] h-full bg-yellow-500 rounded-full"></div>
+                          </div>
+                          <span className="text-sm font-semibold text-gray-800">96%</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between pt-2 border-t border-gray-200">
+                        <span className="text-sm font-semibold text-gray-800">Overall Score</span>
+                        <div className="flex items-center gap-1">
+                          <span className="text-lg font-bold text-[#1b4965]">91%</span>
+                          <div className="flex items-center text-green-600 text-xs">
+                            <RiArrowUpLine className="w-3 h-3" />
+                            +3%
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex items-center text-green-600 text-sm font-medium">
-                  <RiArrowUpLine className="mr-1" />
-                  +10% from last period
+                
+                {/* Action buttons */}
+                <div className="flex items-center justify-between mt-6 pt-4 border-t border-gray-200">
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <RiCalendarLine className="w-4 h-4" />
+                    Last updated: 2 hours ago
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button className="flex items-center gap-1 px-3 py-1.5 text-sm text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                      <RiDownloadLine className="w-4 h-4" />
+                      Export
+                    </button>
+                    <button className="flex items-center gap-1 px-3 py-1.5 text-sm text-white bg-[#1b4965] rounded-lg hover:bg-[#0d3b59] transition-colors">
+                      <RiFileChartLine className="w-4 h-4" />
+                      Full Report
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>

@@ -515,7 +515,7 @@ class IsAdminOrSupervisorOrReadOnly(permissions.BasePermission):
 # ViewSets
 # ──────────────────────────────────────────────
 class ProjectViewSet(viewsets.ModelViewSet):
-    queryset = Project.objects.select_related('supervisor').all()  # Keep this for DRF to discover the model
+    queryset = Project.objects.select_related('supervisor').prefetch_related('steps').all()  # Optimize with prefetch_related
     serializer_class = ProjectSerializer
     permission_classes = [IsAdminOrSupervisorOrReadOnly]
     filter_backends = [SearchFilter, OrderingFilter]
@@ -525,8 +525,8 @@ class ProjectViewSet(viewsets.ModelViewSet):
     parser_classes = (MultiPartParser, FormParser, JSONParser)
     
     def get_queryset(self):
-        # By default, exclude deleted projects
-        return Project.objects.select_related('supervisor').filter(is_deleted=False)
+        # By default, exclude deleted projects with optimized queries
+        return Project.objects.select_related('supervisor').prefetch_related('steps', 'steps__logs').filter(is_deleted=False)
     
     @action(detail=False, methods=['get'])
     def recycle_bin(self, request):
