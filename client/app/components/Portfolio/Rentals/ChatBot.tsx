@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { RiCloseLine, RiSendPlaneFill, RiCustomerService2Fill } from 'react-icons/ri';
 
@@ -13,6 +13,7 @@ interface Message {
 
 export default function ChatBotRentalsPortfolio() {
   const [isOpen, setIsOpen] = useState(false);
+  const [showPopUp, setShowPopUp] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
     {
       id: 1,
@@ -22,6 +23,18 @@ export default function ChatBotRentalsPortfolio() {
     }
   ]);
   const [inputMessage, setInputMessage] = useState('');
+
+  // Periodic pop-up animation
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (!isOpen) {
+        setShowPopUp(true);
+        setTimeout(() => setShowPopUp(false), 3000); // Show for 3 seconds
+      }
+    }, 3000); // Pop up every 3 seconds
+
+    return () => clearInterval(interval);
+  }, [isOpen]);
 
   const handleSendMessage = () => {
     if (!inputMessage.trim()) return;
@@ -51,23 +64,53 @@ export default function ChatBotRentalsPortfolio() {
 
   return (
     <>
-      {/* Chat Bot Button */}
-      <motion.button
-  initial={{ scale: 0 }}
-  animate={{ scale: 1 }}
-  whileHover={{ scale: 1.1 }}
-  whileTap={{ scale: 0.9 }}
-  onClick={() => setIsOpen(true)}
-  className="fixed bottom-25 right-8 z-50 
-             w-12 h-12 
-             bg-[#1b4965] 
-             rounded-full 
-             flex items-center justify-center 
-             shadow-lg hover:shadow-xl"
->
-  <RiCustomerService2Fill className="text-white text-2xl" />
-</motion.button>
+      {/* Chat Bot Button with Pop-up Animation */}
+      <div className="fixed bottom-5 right-8 z-70">
+        {/* Pop-up Message */}
+        <AnimatePresence>
+          {showPopUp && (
+            <motion.div
+              initial={{ opacity: 0, y: 20, scale: 0.8 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 20, scale: 0.8 }}
+              className="absolute bottom-16 right-0 bg-white border-[#1b4965] rounded-lg shadow-lg p-3 mb-2 w-31"
+            >
+              <div className="text-sm text-gray-800 font-medium">
+                Can I help you?
+              </div>
+              {/* Arrow pointing down */}
+              <div className="absolute top-full right-6 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-white"></div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
+        {/* Chat Bot Button */}
+        <motion.button
+          initial={{ scale: 0 }}
+          animate={{ 
+            scale: showPopUp ? 1.2 : 1,
+            rotate: showPopUp ? [0, -10, 10, -10, 0] : 0
+          }}
+          transition={{ 
+            scale: { duration: 0.3 },
+            rotate: { duration: 0.5, repeat: showPopUp ? 2 : 0 }
+          }}
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+          onClick={() => {
+            setIsOpen(true);
+            setShowPopUp(false); // Hide pop-up when chat opens
+          }}
+          className="w-12 h-12 
+                     bg-[#1b4965] 
+                     rounded-full 
+                     flex items-center justify-center 
+                     shadow-lg hover:shadow-xl
+                     transition-all duration-300"
+        >
+          <RiCustomerService2Fill className="text-white text-2xl" />
+        </motion.button>
+      </div>
 
       {/* Chat Window */}
       <AnimatePresence>
@@ -76,10 +119,10 @@ export default function ChatBotRentalsPortfolio() {
             initial={{ opacity: 0, y: 100 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 100 }}
-            className="fixed bottom-25 right-8 z-50 w-96 max-w-[calc(100vw-2rem)] bg-white rounded-2xl shadow-2xl overflow-hidden"
+            className="fixed bottom-25 right-8 !z-70 w-96 max-w-[calc(100vw-2rem)] bg-white rounded-2xl shadow-2xl overflow-hidden"
           >
             {/* Header */}
-            <div className="bg-gradient-to-r from-blue-600 to-red-700 p-4 flex items-center justify-between">
+            <div className="bg-[#1b4965] p-4 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <RiCustomerService2Fill className="text-white text-2xl" />
                 <h3 className="text-white font-semibold">Equipment Assistant</h3>
@@ -106,8 +149,8 @@ export default function ChatBotRentalsPortfolio() {
                   <div
                     className={`max-w-[80%] p-3 rounded-2xl ${
                       message.isBot
-                        ? 'bg-gray-100 text-gray-800'
-                        : 'bg-blue-600 text-white'
+                        ? 'bg-gray-100 text-[#1b4965]'
+                        : 'bg-[#1b4965] text-white'
                     }`}
                   >
                     <p>{message.text}</p>
@@ -131,13 +174,13 @@ export default function ChatBotRentalsPortfolio() {
                   onChange={(e) => setInputMessage(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
                   placeholder="Type your message..."
-                  className="flex-1 p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="flex-1 p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1b4965]"
                 />
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={handleSendMessage}
-                  className="bg-blue-600 text-white p-2 rounded-lg hover:bg-blue-700 transition-colors"
+                  className="bg-[#1b4965] text-white p-2 rounded-lg hover:bg-[#1b4965]-200 transition-colors"
                 >
                   <RiSendPlaneFill className="text-xl" />
                 </motion.button>

@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 const HeroOngoingProjectsPortfolio = () => {
   return (
     <section className="relative h-[100vh] py-16 overflow-hidden">
-    <div className="absolute inset-0 w-full h-full bg-[url('/assets/images/hero_pro.png')] bg-cover bg-center z-0" />
+    <div className="absolute inset-0 w-full h-full bg-[url('/assets/images/hero_bg_pro.png')] bg-cover bg-center z-0" />
     <div className="container mx-auto px-4 h-[25vh] flex items-center justify-start relative z-10">
       <div className="z-10 text-left">
        <motion.div
@@ -11,7 +11,7 @@ const HeroOngoingProjectsPortfolio = () => {
        animate={{ width: 100 }}
        className="h-1 bg-white mb-8"
      />
-     <h1 className="text-6xl font-light mt-150 mb-8 w-xl align-baseline text-white leading-tight text-left">
+     <h1 className="text-6xl font-semibold mt-150 mb-8 w-xl align-baseline text-white leading-tight text-left">
      
        <span className="relative">
        In Progress:
@@ -34,7 +34,7 @@ const HeroOngoingProjectsPortfolio = () => {
          />
        </span>
      </h1>
-     <p className="text-xl text-white/90 w-160 leading-relaxed mb-12 text-justify">
+     <p className="text-xl text-white/90 w-120 leading-relaxed mt-8 mb-2 text-justify">
      The journey from blueprint to reality is underway. SAAN Excellence Engineering PVT LTD is proud to showcase our current builds each one a symbol of hard work, teamwork, and our relentless pursuit of construction excellence.
      </p>
         

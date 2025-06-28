@@ -13,20 +13,14 @@ import HomeButton from '../components/ui/HomeButton';
 
 
 export default function EquipmentsPage() {
-  
+
   return (
     <main className="min-h-screen bg-gray-50">
       {/* Floating Action Buttons */}
-      <div className="fixed bottom-8 right-8 z-50 flex flex-col gap-4">
 
-        {/* ChatBot */}
-        <ChatBotRentalsPortfolio />
+      {/* ChatBot */}
+      <ChatBotRentalsPortfolio />
 
-        {/* Home Icon */}
-        <HomeButton />
-      </div>
-
-      
       {/* Hero Section */}
       <HeroRentalsPortfolio />
 

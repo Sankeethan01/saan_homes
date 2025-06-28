@@ -26,7 +26,7 @@ const HeroRentalsPortfolio = () => {
                 animate={{ width: 100 }}
                 className="h-1 bg-white mb-8"
               />
-              <h1 className="text-6xl font-light mb-8 text-white leading-tight">
+              <h1 className="text-6xl font-semibold mb-8 text-white leading-tight">
                 Professional{' '}
                 <span className="relative inline-block">
                   equipment
