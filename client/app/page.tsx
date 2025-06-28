@@ -8,6 +8,7 @@ import EquipmentRentalsPortfolio from './components/Portfolio/EquipmentRentals';
 import ClientTestimonialsPortfolio from './components/Portfolio/ClientTestimonials';
 import NavbarPortfolio from './components/Portfolio/Navbar';
 import GetInTouchPortfolio from './components/Portfolio/GetInTouch';
+import ContactPortfolio from './components/Portfolio/Contact';
 
 export default function Home() {
 
@@ -17,8 +18,6 @@ export default function Home() {
 
       {/* Hero Section */}
       <HeroPortfolio />
-
-      
 
       {/* Services Section */}
       <OurServicesPortfolio />
@@ -34,6 +33,9 @@ export default function Home() {
 
       {/* Contact Section */}
       <GetInTouchPortfolio />
+
+      {/*Contact Form */}
+      <ContactPortfolio />
 
       {/* Footer */}
       <Footer />
