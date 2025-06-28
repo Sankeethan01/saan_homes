@@ -57,6 +57,23 @@ const services = [
   },
   {
     id: 4,
+    title: 'Landscape Design',
+    subtitle: 'Outdoor Living Spaces',
+    description: 'Transform your outdoor space into a beautiful, functional landscape that enhances your property value and lifestyle. Our landscape design services create stunning gardens, patios, and outdoor living areas that blend seamlessly with your home.',
+    images: [
+      '/services/landscape-1.jpg',
+      '/services/landscape-2.jpg',
+      '/services/landscape-3.jpg',
+    ],
+    features: [
+      'Garden Design & Installation',
+      'Patio & Hardscaping',
+      'Irrigation Systems',
+      'Seasonal Maintenance'
+    ]
+  },
+  {
+    id: 5,
     title: 'Interior Design',
     subtitle: 'Bespoke Interior Solutions',
     description: 'Our interior design service creates personalized spaces that reflect your style and meet your needs. We focus on creating harmonious environments that combine aesthetics with functionality.',
@@ -73,7 +90,7 @@ const services = [
     ]
   },
   {
-    id: 5,
+    id: 6,
     title: 'Sustainable Building',
     subtitle: 'Eco-Friendly Construction',
     description: 'Were committed to sustainable construction practices that minimize environmental impact while maximizing energy efficiency. Our green building solutions help create a better future for generations to come.',
@@ -90,7 +107,7 @@ const services = [
     ]
   },
   {
-    id: 6,
+    id: 7,
     title: 'Project Management',
     subtitle: 'End-to-End Solutions',
     description: 'Our experienced project management team ensures your construction project is completed on time, within budget, and to the highest standards. We handle all aspects of the project from planning to execution.',
@@ -107,7 +124,7 @@ const services = [
     ]
   },
   {
-    id: 7,
+    id: 8,
     title: 'Architectural Design',
     subtitle: 'Creative & Functional Design',
     description: 'Our architectural design services blend creativity with functionality to create stunning spaces that work for you. We focus on innovative solutions that make the most of your space and location.',
@@ -124,7 +141,7 @@ const services = [
     ]
   },
   {
-    id: 8,
+    id: 9,
     title: 'Equipment Rental',
     subtitle: 'Professional Grade Equipment',
     description: 'Access top-quality construction equipment through our comprehensive rental service. We provide well-maintained equipment and expert guidance to ensure your project runs smoothly.',
