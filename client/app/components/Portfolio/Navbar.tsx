@@ -18,6 +18,7 @@ const NavbarPortfolio = () => {
     { title: 'Services', href: '/services' },
     { title: 'Projects', href: '/projects' },
     { title: 'Rentals', href: '/equipments' },
+    { title: 'About Us', href: '/aboutus' },
   ];
 
   return (
