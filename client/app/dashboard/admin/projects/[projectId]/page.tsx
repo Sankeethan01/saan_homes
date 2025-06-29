@@ -323,7 +323,7 @@ export default function ProjectDetailsPage({ params }: { params: Promise<{ proje
             >
               <button
                 onClick={handleEditProject}
-                className="flex items-center justify-center px-6 py-3 bg-[#1b4965] backdrop-blur-sm text-white rounded-xl hover:bg-gray-200/80 transition-all duration-300 border border-gray-200/50 hover:border-gray-300/50 font-semibold"
+                className="flex items-center justify-center px-6 py-3 bg-[#1b4965] backdrop-blur-sm text-white rounded-xl transition-all duration-300 border border-gray-200/50 hover:border-gray-300/50 font-semibold"
               >
                 <FiEdit className="mr-2" /> Edit Project
               </button>

@@ -6,6 +6,7 @@ from .models import Category, Equipment, Booking, Payment
 from .serializers import (
     CategorySerializer,
     EquipmentSerializer,
+    EquipmentDetailSerializer,
     BookingSerializer,
     PaymentSerializer,
 )
@@ -57,6 +58,12 @@ class EquipmentViewSet(viewsets.ModelViewSet):
     search_fields = ["name", "description", "category__name"]
     ordering_fields = ["daily_rate", "name"]
     ordering = ["name"]
+
+    def get_serializer_class(self):
+        """Use detailed serializer for individual equipment retrieval"""
+        if self.action == 'retrieve':
+            return EquipmentDetailSerializer
+        return EquipmentSerializer
 
 
 class BookingViewSet(viewsets.ModelViewSet):
