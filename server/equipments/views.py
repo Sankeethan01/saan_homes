@@ -44,7 +44,7 @@ class AuthenticatedPostOrAdmin(permissions.BasePermission):
 class CategoryViewSet(viewsets.ModelViewSet):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
-    permission_classes = [IsAdminOrSupervisor]
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]  # Allow public read access
     filter_backends = [SearchFilter, OrderingFilter]
     search_fields = ["name"]
     ordering = ["name"]
@@ -64,6 +64,17 @@ class EquipmentViewSet(viewsets.ModelViewSet):
         if self.action == 'retrieve':
             return EquipmentDetailSerializer
         return EquipmentSerializer
+
+    def get_queryset(self):
+        """Override to handle random ordering"""
+        queryset = super().get_queryset()
+        ordering = self.request.query_params.get('ordering')
+        
+        # Handle random ordering with '?' parameter
+        if ordering == '?':
+            return queryset.order_by('?')
+        
+        return queryset
 
 
 class BookingViewSet(viewsets.ModelViewSet):

@@ -3,7 +3,7 @@ import { RiHome5Line, RiSearchLine, RiFilter3Line, RiCalendarLine, RiTimeLine, R
 
 const HeroRentalsPortfolio = () => {
   return (
-     <section className="relative h-[105vh] pt-0 m-0">
+     <section className="relative h-[100vh] pt-0 m-0">
         <div className="absolute inset-0">
           <img
             src="/assets/images/hero_rental.png"

@@ -7,7 +7,8 @@ import { usePathname, useRouter } from 'next/navigation';
 import { 
     RiTruckLine, RiNotification3Line, RiHistoryLine, RiFileList2Line, 
     RiMessage2Line, RiCustomerService2Line, RiUser3Line, RiLogoutBoxRLine, 
-    RiMenuFoldLine, RiMenuUnfoldLine, RiSunLine, RiMoonLine, RiSearchLine 
+    RiMenuFoldLine, RiMenuUnfoldLine, RiSunLine, RiMoonLine, RiSearchLine,
+    RiToolsLine
 } from 'react-icons/ri';
 import { useEffect, useState, ReactNode, createContext, useContext } from 'react';
 import { useAuthStore } from '@/app/stores/useAuthStore';
@@ -119,6 +120,7 @@ export default function DashboardLayout({
 
     const sidebarItems = [
         { id: 'dashboard', label: 'Dashboard', icon: RiTruckLine, href: '/dashboard/me' },
+        { id: 'equipments', label: 'Equipments', icon: RiToolsLine, href: '/equipments' },
         { id: 'notifications', label: 'Notifications', icon: RiNotification3Line, href: '/dashboard/me/notifications' },
         { id: 'history', label: 'Rental History', icon: RiHistoryLine, href: '/dashboard/me/rentals' },
         { id: 'conditions', label: 'Rental Conditions', icon: RiFileList2Line, href: '/dashboard/me/conditions' },

@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import HeroRentalsPortfolio from '../components/Portfolio/Rentals/Hero';
 import ConditionsRentalsPortfolio from '../components/Portfolio/Rentals/Conditions';
 import EquipmentGridRentalsPortfolio from '../components/Portfolio/Rentals/EquipmentGrid';
@@ -9,10 +10,20 @@ import TestimonialsRentalsPortfolio from '../components/Portfolio/Rentals/Testim
 import CallActionsRentalsPortfolio from '../components/Portfolio/Rentals/CallAction';
 import Footer from '../components/Portfolio/Footer';
 import ChatBotRentalsPortfolio from '../components/Portfolio/Rentals/ChatBot';
-import HomeButton from '../components/ui/HomeButton';
-
 
 export default function EquipmentsPage() {
+  // State for search and filtering
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('All Equipment');
+
+  // Handlers for state updates
+  const handleSearchChange = (query: string) => {
+    setSearchQuery(query);
+  };
+
+  const handleCategoryChange = (category: string) => {
+    setSelectedCategory(category);
+  };
 
   return (
     <main className="min-h-screen bg-gray-50">
@@ -25,10 +36,18 @@ export default function EquipmentsPage() {
       <HeroRentalsPortfolio />
 
       {/* Filter and Search Section */}
-      <FilterSectionRentalsPortfolio />
+      <FilterSectionRentalsPortfolio
+        searchQuery={searchQuery}
+        selectedCategory={selectedCategory}
+        onSearchChange={handleSearchChange}
+        onCategoryChange={handleCategoryChange}
+      />
 
       {/* Equipment Grid */}
-      <EquipmentGridRentalsPortfolio />
+      <EquipmentGridRentalsPortfolio
+        searchQuery={searchQuery}
+        selectedCategory={selectedCategory}
+      />
 
       {/* Conditions Section */}
       <ConditionsRentalsPortfolio />

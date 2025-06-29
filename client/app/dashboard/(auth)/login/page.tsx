@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import toast, { Toaster } from "react-hot-toast";
@@ -13,6 +13,8 @@ import { UserRoles } from "@/app/constants/UserRoles/UserRols";
 
 export default function Login() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const returnUrl = searchParams.get('returnUrl');
   const setToken = useAuthStore((s) => s.setToken);
   const setUserRole = useAuthStore((s) => s.setUserRole);
 
@@ -114,13 +116,16 @@ export default function Login() {
       // 5) Set cookies with proper expiration
       setAuthCookies(access, userRole, rememberMe);
 
-      // 6) Show success message and redirect based on role
+      // 6) Show success message and redirect based on role or return URL
       toast.success(`Welcome back, ${profile.username}!`);
       toast.dismiss(loadingToast);
 
       // Delay redirect slightly to ensure cookies are set
       setTimeout(() => {
-        if (userRole === UserRoles.ADMIN) {
+        if (returnUrl) {
+          // Redirect to the return URL if provided
+          router.push(returnUrl);
+        } else if (userRole === UserRoles.ADMIN) {
           router.push(Routes.ADMIN);
         } else if (userRole === UserRoles.SUPERVISOR) {
           router.push(Routes.SUPERVISOR);
