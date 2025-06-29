@@ -21,6 +21,8 @@ import {
   RiArrowRightLine,
   RiPlayLine,
   RiPauseLine,
+  RiDeleteBinLine,
+  RiCloseLine,
 } from 'react-icons/ri';
 
 interface Project {
@@ -68,6 +70,8 @@ interface MediaFile {
   filename: string;
 }
 
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://127.0.0.1:8000';
+
 export default function SupervisorProjectsPage() {
   const token = useAuthStore((s) => s.token);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -80,7 +84,7 @@ export default function SupervisorProjectsPage() {
     
     const fetchProjects = async () => {
       try {
-        const response = await axios.get('http://localhost:8000/api/projects/supervisor_projects/', {
+        const response = await axios.get(`${API_BASE}/projects/supervisor_projects/`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         setProjects(response.data);
@@ -221,33 +225,23 @@ export default function SupervisorProjectsPage() {
                     </div>
                   </div>
 
-                  {/* BOQ File */}
-                  {project.boq_file && (
-                    <div className="mb-6">
-                      <a
-                        href={`http://localhost:8000${project.boq_file}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-4 p-4 bg-gradient-to-r from-blue-600 to-indigo-700 text-white rounded-2xl hover:from-blue-700 hover:to-indigo-800 transition-all duration-300 shadow-xl hover:shadow-2xl group/btn"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <RiDownloadLine className="text-xl group-hover/btn:scale-110 transition-transform duration-300" />
-                        <span className="font-semibold">Download BOQ</span>
-                      </a>
+                  {/* Status Section */}
+                  <div className="p-5 bg-gradient-to-r from-emerald-50 to-green-50 rounded-2xl border border-emerald-100 mb-6 group-hover:from-emerald-100 group-hover:to-green-100 transition-all duration-500">
+                    <div className="text-sm font-semibold text-emerald-800 mb-2 flex items-center gap-2">
+                      <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+                      Project Status
                     </div>
-                  )}
-
-                  {/* Current Step */}
-                  <div className="p-5 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-2xl border border-indigo-100 mb-6 group-hover:from-indigo-100 group-hover:to-purple-100 transition-all duration-500">
-                    <div className="text-sm font-semibold text-indigo-800 mb-2 flex items-center gap-2">
-                      <div className="w-2 h-2 bg-indigo-500 rounded-full animate-pulse"></div>
-                      Current Phase
+                    <div className={`text-lg font-bold px-3 py-1 rounded-full text-sm ${
+                      project.is_completed 
+                        ? 'bg-green-100 text-green-800' 
+                        : 'bg-blue-100 text-blue-800'
+                    }`}>
+                      {project.is_completed ? 'Completed' : 'In Progress'}
                     </div>
-                    <div className="text-lg font-bold text-indigo-900 animate-pulse">{project.currentStep}</div>
                   </div>
 
                   {/* Progress Indicator */}
-                  <div className="mb-4">
+                  {/* <div className="mb-4">
                     <div className="flex justify-between text-sm font-semibold text-slate-700 mb-3">
                       <span>Overall Progress</span>
                       <span className="text-blue-600 animate-pulse font-bold">{project.progress}%</span>
@@ -260,7 +254,7 @@ export default function SupervisorProjectsPage() {
                         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer"></div>
                       </div>
                     </div>
-                  </div>
+                  </div> */}
 
                   {/* Animated Action Button */}
                   <div className="mt-6">
@@ -340,6 +334,95 @@ export default function SupervisorProjectsPage() {
 
 // Project Overview Component
 function ProjectOverview({ project }: { project: Project }) {
+  const token = useAuthStore((s) => s.token);
+  // Supervisor Notes State
+  const [note, setNote] = useState<string>('');
+  const [noteId, setNoteId] = useState<string | null>(null);
+  const [noteLoading, setNoteLoading] = useState(false);
+  const [noteEditing, setNoteEditing] = useState(false);
+  const [noteError, setNoteError] = useState<string | null>(null);
+  const userRole = typeof window !== 'undefined' ? localStorage.getItem('role') : null;
+  const supervisorId = typeof window !== 'undefined' ? localStorage.getItem('user_id') : null;
+
+  // Fetch supervisor note for this project
+  useEffect(() => {
+    if (userRole !== 'SUPERVISOR' || !token || !project.id) return;
+    setNoteLoading(true);
+    fetch(`${API_BASE}/projects/supervisor-notes/?project=${project.id}`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data) && data.length > 0) {
+          setNote(data[0].note);
+          setNoteId(data[0].id);
+        } else {
+          setNote('');
+          setNoteId(null);
+        }
+        setNoteLoading(false);
+      })
+      .catch(() => {
+        setNote('');
+        setNoteId(null);
+        setNoteLoading(false);
+      });
+  }, [project.id, token, userRole]);
+
+  // Add or update note
+  const handleNoteSave = async () => {
+    setNoteLoading(true);
+    setNoteError(null);
+    try {
+      const url = noteId
+        ? `${API_BASE}/projects/supervisor-notes/${noteId}/`
+        : `${API_BASE}/projects/supervisor-notes/`;
+      const method = noteId ? 'PATCH' : 'POST';
+      const body = noteId
+        ? JSON.stringify({ note })
+        : JSON.stringify({ note, project: project.id });
+      const res = await fetch(url, {
+        method,
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body,
+      });
+      if (!res.ok) throw new Error('Failed to save note');
+      const data = await res.json();
+      setNote(data.note);
+      setNoteId(data.id);
+      setNoteEditing(false);
+    } catch (err) {
+      setNoteError('Could not save note.');
+    } finally {
+      setNoteLoading(false);
+    }
+  };
+
+  // Delete note
+  const handleNoteDelete = async () => {
+    if (!noteId) return;
+    if (!window.confirm('Delete your note for this project?')) return;
+    setNoteLoading(true);
+    setNoteError(null);
+    try {
+      const res = await fetch(`${API_BASE}/projects/supervisor-notes/${noteId}/`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error('Failed to delete note');
+      setNote('');
+      setNoteId(null);
+      setNoteEditing(false);
+    } catch (err) {
+      setNoteError('Could not delete note.');
+    } finally {
+      setNoteLoading(false);
+    }
+  };
+
   return (
     <div className="space-y-8">
       {/* Header */}
@@ -373,23 +456,6 @@ function ProjectOverview({ project }: { project: Project }) {
             <div className="flex justify-between items-center p-4 bg-white/70 rounded-2xl backdrop-blur-sm">
               <span className="text-slate-600 font-medium">End Date:</span>
               <span className="font-semibold text-slate-800">{new Date(project.estimated_end_date).toLocaleDateString()}</span>
-            </div>
-            <div className="flex justify-between items-center p-4 bg-white/70 rounded-2xl backdrop-blur-sm">
-              <span className="text-slate-600 font-medium">BOQ File:</span>
-              <span className="font-semibold">
-                {project.boq_file ? (
-                  <a
-                    href={`http://localhost:8000${project.boq_file}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-600 hover:text-blue-700 underline font-medium"
-                  >
-                    Download
-                  </a>
-                ) : (
-                  <span className="text-slate-400">Not available</span>
-                )}
-              </span>
             </div>
             <div className="flex justify-between items-center p-4 bg-white/70 rounded-2xl backdrop-blur-sm">
               <span className="text-slate-600 font-medium">Status:</span>
@@ -456,7 +522,7 @@ function ProjectOverview({ project }: { project: Project }) {
       </div>
 
       {/* Project Description */}
-      <div className="bg-gradient-to-br from-slate-50 to-indigo-50 border border-slate-200 rounded-3xl p-8 shadow-xl">
+      {/* <div className="bg-gradient-to-br from-slate-50 to-indigo-50 border border-slate-200 rounded-3xl p-8 shadow-xl">
         <div className="flex items-center gap-4 mb-6">
           <div className="p-3 bg-gradient-to-r from-indigo-600 to-purple-700 rounded-xl shadow-lg">
             <RiFileTextLine className="text-white text-xl" />
@@ -466,6 +532,138 @@ function ProjectOverview({ project }: { project: Project }) {
         <div className="bg-white/70 rounded-2xl p-6 backdrop-blur-sm">
           <p className="text-slate-700 leading-relaxed text-lg">{project.description}</p>
         </div>
+      </div> */}
+
+      {/* Site Supervisor Notes Section */}
+      <SiteSupervisorNotes projectId={project.id} />
+    </div>
+  );
+}
+
+function SiteSupervisorNotes({ projectId }: { projectId: string }) {
+  const token = useAuthStore((s) => s.token);
+  const userRole = typeof window !== 'undefined' ? localStorage.getItem('role') : null;
+  const [note, setNote] = useState<string>('');
+  const [noteId, setNoteId] = useState<string | null>(null);
+  const [noteLoading, setNoteLoading] = useState(false);
+  const [noteEditing, setNoteEditing] = useState(false);
+  const [noteError, setNoteError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (userRole !== 'SUPERVISOR' || !token || !projectId) return;
+    setNoteLoading(true);
+    fetch(`${API_BASE}/projects/supervisor-notes/?project=${projectId}`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data) && data.length > 0) {
+          setNote(data[0].note);
+          setNoteId(data[0].id);
+        } else {
+          setNote('');
+          setNoteId(null);
+        }
+        setNoteLoading(false);
+      })
+      .catch(() => {
+        setNote('');
+        setNoteId(null);
+        setNoteLoading(false);
+      });
+  }, [projectId, token, userRole]);
+
+  const handleNoteSave = async () => {
+    setNoteLoading(true);
+    setNoteError(null);
+    try {
+      const url = noteId
+        ? `${API_BASE}/projects/supervisor-notes/${noteId}/`
+        : `${API_BASE}/projects/supervisor-notes/`;
+      const method = noteId ? 'PATCH' : 'POST';
+      const body = noteId
+        ? JSON.stringify({ note })
+        : JSON.stringify({ note, project: projectId });
+      const res = await fetch(url, {
+        method,
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body,
+      });
+      if (!res.ok) throw new Error('Failed to save note');
+      const data = await res.json();
+      setNote(data.note);
+      setNoteId(data.id);
+      setNoteEditing(false);
+    } catch (err) {
+      setNoteError('Could not save note.');
+    } finally {
+      setNoteLoading(false);
+    }
+  };
+
+  const handleNoteDelete = async () => {
+    if (!noteId) return;
+    if (!window.confirm('Delete your note for this project?')) return;
+    setNoteLoading(true);
+    setNoteError(null);
+    try {
+      const res = await fetch(`${API_BASE}/projects/supervisor-notes/${noteId}/`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error('Failed to delete note');
+      setNote('');
+      setNoteId(null);
+      setNoteEditing(false);
+    } catch (err) {
+      setNoteError('Could not delete note.');
+    } finally {
+      setNoteLoading(false);
+    }
+  };
+
+  if (userRole !== 'SUPERVISOR') return null;
+
+  return (
+    <div className="bg-gradient-to-br from-green-50 to-emerald-50 border border-emerald-200 rounded-3xl p-8 shadow-xl mt-8">
+      <div className="flex items-center gap-4 mb-6">
+        <div className="p-3 bg-gradient-to-r from-emerald-600 to-green-700 rounded-xl shadow-lg">
+          <RiUserLine className="text-white text-xl" />
+        </div>
+        <h3 className="text-2xl font-bold text-emerald-800 flex items-center gap-2">
+          Site Supervisor Notes
+          {!noteEditing && (
+            <>
+              <button onClick={() => setNoteEditing(true)} className="ml-2 text-blue-600 hover:text-blue-800" title="Edit Note"><RiEditLine /></button>
+              {note && <button onClick={handleNoteDelete} className="ml-2 text-red-600 hover:text-red-800" title="Delete Note"><RiDeleteBinLine /></button>}
+            </>
+          )}
+        </h3>
+      </div>
+      <div className="bg-white/70 rounded-2xl p-6 backdrop-blur-sm">
+        {noteLoading ? (
+          <div className="text-gray-500">Loading...</div>
+        ) : noteEditing ? (
+          <div className="space-y-4">
+            <textarea
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              rows={3}
+              value={note}
+              onChange={e => setNote(e.target.value)}
+              disabled={noteLoading}
+            />
+            <div className="flex gap-2">
+              <button onClick={handleNoteSave} disabled={noteLoading} className="flex items-center gap-1 bg-blue-600 text-white px-4 py-2 rounded-xl hover:bg-blue-700 disabled:opacity-50"><RiCheckLine />Save</button>
+              <button onClick={() => setNoteEditing(false)} disabled={noteLoading} className="flex items-center gap-1 bg-gray-300 px-4 py-2 rounded-xl hover:bg-gray-400 disabled:opacity-50"><RiCloseLine />Cancel</button>
+            </div>
+            {noteError && <div className="text-red-600 text-sm">{noteError}</div>}
+          </div>
+        ) : (
+          <p className="text-emerald-900 leading-relaxed text-lg">{note || <span className="text-slate-400 italic">No notes added yet.</span>}</p>
+        )}
       </div>
     </div>
   );

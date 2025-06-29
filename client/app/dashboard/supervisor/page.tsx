@@ -1,7 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import axios from 'axios';
+import { useAuthStore } from '@/app/stores/useAuthStore';
 import {
   RiBuildingLine,
   RiTimeLine,
@@ -44,14 +46,7 @@ ChartJS.register(
   ArcElement
 );
 
-// Sample data
-const projectStats = {
-  total: 12,
-  ongoing: 5,
-  completed: 4,
-  upcoming: 3,
-};
-
+// Sample data for charts (keeping these as fallback)
 const monthlyProgress = {
   labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
   datasets: [
@@ -62,22 +57,6 @@ const monthlyProgress = {
       backgroundColor: 'rgba(59, 130, 246, 0.1)',
       tension: 0.4,
       fill: true,
-    },
-  ],
-};
-
-const projectTypes = {
-  labels: ['Residential', 'Commercial', 'Industrial'],
-  datasets: [
-    {
-      data: [45, 35, 20],
-      backgroundColor: [
-        'rgba(59, 130, 246, 0.8)',
-        'rgba(139, 92, 246, 0.8)',
-        'rgba(236, 72, 153, 0.8)',
-      ],
-      borderWidth: 2,
-      borderColor: '#ffffff',
     },
   ],
 };
@@ -99,44 +78,107 @@ const teamPerformance = {
   ],
 };
 
-const recentActivities = [
-  {
-    id: 1,
-    activity: 'Project milestone completed',
-    project: 'Modern Residential Complex',
-    time: '2 hours ago',
-    type: 'success',
-    icon: RiCheckLine,
-  },
-  {
-    id: 2,
-    activity: 'New team member added',
-    project: 'Tech Innovation Hub',
-    time: '5 hours ago',
-    type: 'info',
-    icon: RiTeamLine,
-  },
-  {
-    id: 3,
-    activity: 'Budget update approved',
-    project: 'City Center Mall',
-    time: '1 day ago',
-    type: 'warning',
-    icon: RiBarChartBoxLine,
-  },
-  {
-    id: 4,
-    activity: 'Site inspection scheduled',
-    project: 'Green Energy Plant',
-    time: '2 days ago',
-    type: 'primary',
-    icon: RiBuildingLine,
-  },
-];
-
+interface ProjectStats {
+  total: number;
+  ongoing: number;
+  completed: number;
+  upcoming: number;
+  average_progress: number;
+  project_types: Record<string, number>;
+  recent_activities: Array<{
+    id: string;
+    activity: string;
+    project: string;
+    time: string;
+    type: string;
+    progress: number;
+  }>;
+}
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://127.0.0.1:8000';
 export default function SupervisorDashboard() {
   const [selectedPeriod, setSelectedPeriod] = useState('monthly');
+  const [projectStats, setProjectStats] = useState<ProjectStats>({
+    total: 0,
+    ongoing: 0,
+    completed: 0,
+    upcoming: 0,
+    average_progress: 0,
+    project_types: {},
+    recent_activities: []
+  });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  
+  const token = useAuthStore((s) => s.token);
   const username = typeof window !== 'undefined' ? localStorage.getItem('username') : 'User';
+
+  useEffect(() => {
+    const fetchProjectStats = async () => {
+      if (!token) {
+        setError('No authentication token found');
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const response = await axios.get(`${API_BASE}/projects/supervisor_stats/`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setProjectStats(response.data);
+        setError(null);
+      } catch (err: any) {
+        console.error('Failed to fetch project stats:', err);
+        setError(err.response?.data?.error || 'Failed to fetch project statistics');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProjectStats();
+  }, [token]);
+
+  // Generate project types chart data from API response
+  const projectTypes = {
+    labels: Object.keys(projectStats.project_types),
+    datasets: [
+      {
+        data: Object.values(projectStats.project_types),
+        backgroundColor: [
+          'rgba(59, 130, 246, 0.8)',
+          'rgba(139, 92, 246, 0.8)',
+          'rgba(236, 72, 153, 0.8)',
+          'rgba(34, 197, 94, 0.8)',
+          'rgba(245, 158, 11, 0.8)',
+          'rgba(239, 68, 68, 0.8)',
+        ],
+        borderWidth: 2,
+        borderColor: '#ffffff',
+      },
+    ],
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 p-8 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 p-8 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-red-600 text-xl mb-4">⚠️</div>
+          <p className="text-red-600 font-semibold">Error: {error}</p>
+          <p className="text-gray-600 mt-2">Please try refreshing the page</p>
+        </div>
+      </div>
+    );
+  }
   
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 p-8">
@@ -157,7 +199,7 @@ export default function SupervisorDashboard() {
           <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
             <div className="flex items-center gap-6">
               <div className="p-4 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl shadow-xl">
-                <RiBuildingLine className="text-white text-3xl" />
+                <RiBuildingLine className="text-white text-2xl" />
               </div>
               <div className="space-y-3">
                 <div className="relative">
@@ -168,7 +210,7 @@ export default function SupervisorDashboard() {
                 </div>
                 <div className="flex items-center gap-3">
                   <div className="w-2 h-2 bg-gradient-to-r from-emerald-500 to-green-600 rounded-full animate-pulse"></div>
-                  <p className="text-xl text-slate-600 font-medium">
+                  <p className="text-base text-slate-600 font-medium">
                     Welcome back,{' '}
                     <span className="font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent animate-pulse">
                       {username}
@@ -199,11 +241,11 @@ export default function SupervisorDashboard() {
               </select>
               
               <button className="p-3 bg-white/70 backdrop-blur-sm border border-white/50 rounded-2xl hover:bg-white/90 transition-all duration-300 shadow-lg">
-                <RiNotificationLine className="text-2xl text-slate-600" />
+                <RiNotificationLine className="text-lg text-slate-600" />
               </button>
               
               <button className="p-3 bg-white/70 backdrop-blur-sm border border-white/50 rounded-2xl hover:bg-white/90 transition-all duration-300 shadow-lg">
-                <RiSettingsLine className="text-2xl text-slate-600" />
+                <RiSettingsLine className="text-lg text-slate-600" />
               </button>
 
               {/* Profile Picture */}
@@ -215,12 +257,16 @@ export default function SupervisorDashboard() {
                       alt="Site Supervisor"
                       className="w-full h-full object-cover rounded-2xl"
                       onError={(e) => {
-                        e.currentTarget.style.display = 'none';
-                        e.currentTarget.nextElementSibling.style.display = 'flex';
+                        const target = e.currentTarget as HTMLImageElement;
+                        target.style.display = 'none';
+                        const nextSibling = target.nextElementSibling as HTMLElement;
+                        if (nextSibling) {
+                          nextSibling.style.display = 'flex';
+                        }
                       }}
                     />
                     <div className="w-full h-full bg-gradient-to-br from-blue-100 to-indigo-200 rounded-2xl flex items-center justify-center" style={{ display: 'none' }}>
-                      <RiUserLine className="text-2xl text-blue-600" />
+                      <RiUserLine className="text-lg text-blue-600" />
                     </div>
                   </div>
                 </div>
@@ -236,12 +282,16 @@ export default function SupervisorDashboard() {
                           alt="Site Supervisor"
                           className="w-full h-full object-cover rounded-xl"
                           onError={(e) => {
-                            e.currentTarget.style.display = 'none';
-                            e.currentTarget.nextElementSibling.style.display = 'flex';
+                            const target = e.currentTarget as HTMLImageElement;
+                            target.style.display = 'none';
+                            const nextSibling = target.nextElementSibling as HTMLElement;
+                            if (nextSibling) {
+                              nextSibling.style.display = 'flex';
+                            }
                           }}
                         />
                         <div className="w-full h-full bg-gradient-to-br from-blue-100 to-indigo-200 rounded-xl flex items-center justify-center" style={{ display: 'none' }}>
-                          <RiUserLine className="text-lg text-blue-600" />
+                          <RiUserLine className="text-base text-blue-600" />
                         </div>
                       </div>
                     </div>
@@ -268,32 +318,28 @@ export default function SupervisorDashboard() {
               value: projectStats.total, 
               icon: RiBuildingLine, 
               color: 'blue',
-              change: '+12%',
-              trend: 'up'
+              
             },
             { 
               title: 'Ongoing', 
               value: projectStats.ongoing, 
               icon: RiTimeLine, 
               color: 'purple',
-              change: '+8%',
-              trend: 'up'
+              
             },
             { 
               title: 'Completed', 
               value: projectStats.completed, 
               icon: RiCheckLine, 
               color: 'green',
-              change: '+15%',
-              trend: 'up'
+              
             },
             { 
               title: 'Upcoming', 
               value: projectStats.upcoming, 
               icon: RiCalendarLine, 
               color: 'pink',
-              change: '-3%',
-              trend: 'down'
+              
             },
           ].map((stat, index) => (
             <motion.div
@@ -306,16 +352,9 @@ export default function SupervisorDashboard() {
             >
               <div className="flex items-center justify-between mb-4">
                 <div className={`p-3 bg-gradient-to-r from-${stat.color}-500 to-${stat.color}-600 rounded-2xl shadow-lg group-hover:scale-110 transition-transform duration-300`}>
-                  <stat.icon className="text-2xl text-white" />
+                  <stat.icon className="text-lg text-white" />
                 </div>
-                <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold ${
-                  stat.trend === 'up' 
-                    ? 'bg-green-100 text-green-700' 
-                    : 'bg-red-100 text-red-700'
-                }`}>
-                  {stat.trend === 'up' ? <RiArrowUpLine /> : <RiArrowDownLine />}
-                  {stat.change}
-                </div>
+                
               </div>
               <div>
                 <h3 className="text-3xl font-bold text-slate-800 mb-1">{stat.value}</h3>
@@ -338,7 +377,7 @@ export default function SupervisorDashboard() {
               <h2 className="text-2xl font-bold text-slate-800">Project Progress</h2>
               <div className="flex items-center gap-2 text-green-600 font-semibold">
                 <RiRidingLine />
-                +8.5% this month
+                {projectStats.average_progress}% average
               </div>
             </div>
             <Line
@@ -383,22 +422,28 @@ export default function SupervisorDashboard() {
           >
             <h2 className="text-2xl font-bold text-slate-800 mb-6">Project Types Distribution</h2>
             <div className="h-[300px] flex items-center justify-center">
-              <Doughnut
-                data={projectTypes}
-                options={{
-                  responsive: true,
-                  maintainAspectRatio: false,
-                  plugins: {
-                    legend: {
-                      position: 'bottom',
-                      labels: {
-                        padding: 20,
-                        usePointStyle: true,
+              {Object.keys(projectStats.project_types).length > 0 ? (
+                <Doughnut
+                  data={projectTypes}
+                  options={{
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                      legend: {
+                        position: 'bottom',
+                        labels: {
+                          padding: 20,
+                          usePointStyle: true,
+                        },
                       },
                     },
-                  },
-                }}
-              />
+                  }}
+                />
+              ) : (
+                <div className="text-center text-gray-500">
+                  <p>No project types data available</p>
+                </div>
+              )}
             </div>
           </motion.div>
 
@@ -449,29 +494,35 @@ export default function SupervisorDashboard() {
           >
             <h2 className="text-2xl font-bold text-slate-800 mb-6">Recent Activities</h2>
             <div className="space-y-6">
-              {recentActivities.map((activity, index) => (
-                <motion.div
-                  key={activity.id}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.8 + index * 0.1 }}
-                  className="flex items-start gap-4 p-4 bg-white/50 rounded-2xl hover:bg-white/70 transition-all duration-300"
-                >
-                  <div className={`p-2 rounded-xl ${
-                    activity.type === 'success' ? 'bg-green-100 text-green-600' :
-                    activity.type === 'info' ? 'bg-blue-100 text-blue-600' :
-                    activity.type === 'warning' ? 'bg-yellow-100 text-yellow-600' :
-                    'bg-indigo-100 text-indigo-600'
-                  }`}>
-                    <activity.icon className="text-lg" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-slate-800 font-semibold">{activity.activity}</p>
-                    <p className="text-sm text-slate-600">{activity.project}</p>
-                    <p className="text-xs text-slate-500 mt-1">{activity.time}</p>
-                  </div>
-                </motion.div>
-              ))}
+              {projectStats.recent_activities.length > 0 ? (
+                projectStats.recent_activities.map((activity, index) => (
+                  <motion.div
+                    key={activity.id}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.8 + index * 0.1 }}
+                    className="flex items-start gap-4 p-4 bg-white/50 rounded-2xl hover:bg-white/70 transition-all duration-300"
+                  >
+                    <div className={`p-2 rounded-xl ${
+                      activity.type === 'success' ? 'bg-green-100 text-green-600' :
+                      activity.type === 'info' ? 'bg-blue-100 text-blue-600' :
+                      activity.type === 'warning' ? 'bg-yellow-100 text-yellow-600' :
+                      'bg-indigo-100 text-indigo-600'
+                    }`}>
+                      <RiBuildingLine className="text-base" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-slate-800 font-semibold">{activity.activity}</p>
+                      <p className="text-sm text-slate-600">{activity.project}</p>
+                      <p className="text-xs text-slate-500 mt-1">{activity.time}</p>
+                    </div>
+                  </motion.div>
+                ))
+              ) : (
+                <div className="text-center text-gray-500 py-8">
+                  <p>No recent activities</p>
+                </div>
+              )}
             </div>
           </motion.div>
         </div>

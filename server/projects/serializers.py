@@ -1,8 +1,9 @@
 # projects/serializers.py
 from rest_framework import serializers
+from .models import SupervisorNote
 from django.contrib.auth.password_validation import validate_password
 from django.contrib.auth import get_user_model
-from .models import Project, Step, ProgressLog, Bill, Invoice, VRVideo
+from .models import Project, Step, ProgressLog, Bill, Invoice, VRVideo, SupervisorNote
 
 User = get_user_model()
 
@@ -233,3 +234,9 @@ class PasswordChangeSerializer(serializers.Serializer):
     def validate_new_password(self, value):
         validate_password(value)
         return value
+
+class SupervisorNoteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SupervisorNote
+        fields = '__all__'
+        read_only_fields = ['supervisor']
