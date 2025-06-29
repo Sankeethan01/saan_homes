@@ -327,7 +327,7 @@ export default function NewProjectPage() {
           animate={{ opacity: 1, y: 0 }}
           className="text-center mb-8"
         >
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2">
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-[#1b4965] bg-clip-text text-transparent mb-2">
             Create New Project
           </h1>
           <p className="text-gray-600 text-lg">Let's bring your construction project to life</p>
@@ -359,7 +359,7 @@ export default function NewProjectPage() {
                   >
                     <div className={`w-16 h-16 rounded-full flex items-center justify-center mb-2 transition-all duration-300 ${
                       isActive 
-                        ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg' 
+                        ? 'bg-gradient-to-r from-blue-500 to-[#1b4965] text-white shadow-lg' 
                         : isCompleted 
                           ? 'bg-green-500 text-white shadow-md' 
                           : canAccess
@@ -485,7 +485,7 @@ export default function NewProjectPage() {
                   disabled={!validateStep(currentStep)}
                   className={`flex items-center px-8 py-3 rounded-xl font-medium transition-all ${
                     validateStep(currentStep)
-                      ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white hover:shadow-lg hover:scale-105'
+                      ? 'bg-gradient-to-r from-blue-700 to-[#1b4965] text-white hover:shadow-lg hover:scale-105'
                       : 'bg-gray-100 text-gray-400 cursor-not-allowed'
                   }`}
                   whileHover={validateStep(currentStep) ? { scale: 1.05 } : {}}

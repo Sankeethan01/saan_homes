@@ -220,7 +220,7 @@ export default function ProjectsPage() {
   return (
     <div className="min-h-screen bg-white">
       {/* Performance Debug Info (remove in production) */}
-      {performanceInfo && process.env.NODE_ENV === 'development' && (
+      {/* {performanceInfo && process.env.NODE_ENV === 'development' && (
         <div className="bg-amber-50/80 backdrop-blur-sm border border-amber-200/50 rounded-xl p-3 text-xs mb-6 shadow-sm">
           <strong>⚡ Performance Debug:</strong> Mount: {performanceInfo.componentMount.toFixed(1)}ms | 
           Auth: {performanceInfo.authCheck.toFixed(1)}ms | 
@@ -228,7 +228,7 @@ export default function ProjectsPage() {
           Processing: {performanceInfo.dataProcessing.toFixed(1)}ms | 
           Render: {performanceInfo.rendering.toFixed(1)}ms
         </div>
-      )}
+      )} */}
       
       {/* Hero Header Section */}
       <div className="relative overflow-hidden bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg p-8 mb-8 border border-white/20">

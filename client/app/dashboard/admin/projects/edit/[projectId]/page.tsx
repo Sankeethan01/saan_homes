@@ -218,13 +218,13 @@ export default function EditProjectPage({ params }: { params: { projectId: strin
           <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-xl border border-white/20">
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2">
+                <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-[#1b4965] bg-clip-text text-transparent mb-2">
                   Edit Project
                 </h1>
                 <p className="text-gray-600">Update project details and settings</p>
               </div>
               <div className="hidden md:block">
-                <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
+                <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-[#1b4965] rounded-full flex items-center justify-center">
                   <FiSave className="w-8 h-8 text-white" />
                 </div>
               </div>
@@ -532,7 +532,7 @@ export default function EditProjectPage({ params }: { params: { projectId: strin
                 className={`px-8 py-3 rounded-xl text-white font-medium transition-all duration-200 flex items-center transform ${
                   saving
                     ? 'bg-gray-400 cursor-not-allowed'
-                    : 'bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 hover:scale-105 shadow-lg hover:shadow-xl'
+                    : 'bg-gradient-to-r from-blue-500 to-[#1b4965] hover:from-blue-600 hover:to-[#1b4965] hover:scale-105 shadow-lg hover:shadow-xl'
                 }`}
               >
                 {saving ? (

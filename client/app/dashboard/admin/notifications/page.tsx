@@ -5,17 +5,24 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import {
   RiMailLine,
-  RiDeleteBin6Line,
+  RiDeleteBinLine,
   RiRecycleLine,
   RiSendPlaneLine,
   RiEditLine,
   RiCheckLine,
   RiCloseLine,
-  RiArrowLeftLine,
-  RiArrowRightLine,
   RiAlertLine,
   RiEyeLine,
+  RiRestartLine,
+  RiNotificationLine,
+  RiUserLine,
+  RiToolsLine,
+  RiFileListLine,
+  RiTimeLine,
+  RiReplyLine,
+  RiSearchLine,
 } from 'react-icons/ri';
+import { FiBell, FiMail, FiClock, FiUser, FiTool, FiTrash2 } from 'react-icons/fi';
 
 interface ContactMessage {
   id: string;
@@ -62,24 +69,50 @@ const initialMessages: ContactMessage[] = [
     name: 'John Doe',
     email: 'john@example.com',
     subject: 'Project Inquiry',
-    message: 'I would like to know more about your construction services.',
+    message: 'I would like to know more about your construction services for a residential project.',
     date: '2024-03-15',
     status: 'unread',
   },
-  // Add more sample messages
+  {
+    id: '2',
+    name: 'Sarah Johnson',
+    email: 'sarah@example.com',
+    subject: 'Equipment Rental Question',
+    message: 'Do you have excavators available for rent next month?',
+    date: '2024-03-14',
+    status: 'read',
+  },
+  {
+    id: '3',
+    name: 'Mike Wilson',
+    email: 'mike@example.com',
+    subject: 'Service Pricing',
+    message: 'Could you provide a quote for commercial construction services?',
+    date: '2024-03-13',
+    status: 'replied',
+    reply: 'Thank you for your inquiry. We will send you a detailed quote within 24 hours.',
+  },
 ];
 
 const initialRentalRequests: RentalRequest[] = [
   {
     id: '1',
     customerName: 'Alice Smith',
-    equipmentName: 'Excavator',
+    equipmentName: 'Excavator CAT 320',
     startDate: '2024-03-20',
     endDate: '2024-03-25',
     status: 'pending',
     totalAmount: 2500,
   },
-  // Add more sample rental requests
+  {
+    id: '2',
+    customerName: 'Bob Johnson',
+    equipmentName: 'Concrete Mixer',
+    startDate: '2024-03-18',
+    endDate: '2024-03-22',
+    status: 'approved',
+    totalAmount: 800,
+  },
 ];
 
 const initialProjectAlerts: ProjectAlert[] = [
@@ -101,6 +134,15 @@ const initialProjectAlerts: ProjectAlert[] = [
     date: '2024-03-17',
     isRead: false,
   },
+  {
+    id: '3',
+    projectName: 'Residential Complex Phase 2',
+    supervisorName: 'David Brown',
+    action: 'Material Delivered',
+    details: 'All construction materials have been delivered to the site',
+    date: '2024-03-16',
+    isRead: true,
+  },
 ];
 
 export default function NotificationsPage() {
@@ -112,27 +154,32 @@ export default function NotificationsPage() {
   const [deletedItems, setDeletedItems] = useState<DeletedItem[]>([]);
   const [replyingTo, setReplyingTo] = useState<ContactMessage | null>(null);
   const [replyText, setReplyText] = useState('');
-  const [editingRental, setEditingRental] = useState<RentalRequest | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [actionLoading, setActionLoading] = useState(false);
 
-  // Calculate unread counts
+  // Calculate statistics
   const unreadMessages = messages.filter(msg => msg.status === 'unread').length;
   const unreadProjectAlerts = projectAlerts.filter(alert => !alert.isRead).length;
   const pendingRentals = rentalRequests.filter(req => req.status === 'pending').length;
+  const totalNotifications = unreadMessages + unreadProjectAlerts + pendingRentals;
 
   // Navigation handlers
   const handleViewProject = (projectName: string) => {
-    // Navigate to the project details page
     router.push(`/dashboard/admin/projects/${encodeURIComponent(projectName)}`);
   };
 
   const handleViewRental = (rentalId: string) => {
-    // Navigate to the rental details page
-    router.push(`/dashboard/admin/rentals/${rentalId}`);
+    router.push(`/dashboard/admin/equipments/rentalmanagment/${rentalId}`);
   };
 
   // Message handling functions
-  const handleMessageReply = (message: ContactMessage) => {
+  const handleMessageReply = async (message: ContactMessage) => {
     if (replyText.trim()) {
+      setActionLoading(true);
+      
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
       const updatedMessages = messages.map((msg) =>
         msg.id === message.id
           ? { ...msg, status: 'replied' as const, reply: replyText }
@@ -141,7 +188,14 @@ export default function NotificationsPage() {
       setMessages(updatedMessages);
       setReplyingTo(null);
       setReplyText('');
+      setActionLoading(false);
     }
+  };
+
+  const handleMarkMessageAsRead = (messageId: string) => {
+    setMessages(messages.map(msg => 
+      msg.id === messageId ? { ...msg, status: 'read' as const } : msg
+    ));
   };
 
   const handleDeleteMessage = (message: ContactMessage) => {
@@ -179,20 +233,6 @@ export default function NotificationsPage() {
     ]);
   };
 
-  // Recycle bin functions
-  const handleRestoreItem = (item: DeletedItem) => {
-    if (item.type === 'message') {
-      setMessages([...messages, item.content as ContactMessage]);
-    } else {
-      setRentalRequests([...rentalRequests, item.content as RentalRequest]);
-    }
-    setDeletedItems(deletedItems.filter((i) => i.id !== item.id));
-  };
-
-  const handlePermanentDelete = (id: string) => {
-    setDeletedItems(deletedItems.filter((item) => item.id !== id));
-  };
-
   // Project alert handling functions
   const handleMarkAlertAsRead = (alertId: string) => {
     setProjectAlerts(
@@ -215,451 +255,681 @@ export default function NotificationsPage() {
     ]);
   };
 
+  // Recycle bin functions
+  const handleRestoreItem = (item: DeletedItem) => {
+    if (item.type === 'message') {
+      setMessages([...messages, item.content as ContactMessage]);
+    } else if (item.type === 'rental') {
+      setRentalRequests([...rentalRequests, item.content as RentalRequest]);
+    } else {
+      setProjectAlerts([...projectAlerts, item.content as ProjectAlert]);
+    }
+    setDeletedItems(deletedItems.filter((i) => i.id !== item.id));
+  };
+
+  const handlePermanentDelete = (id: string) => {
+    setDeletedItems(deletedItems.filter((item) => item.id !== id));
+  };
+
+  // Filter functions
+  const getFilteredData = () => {
+    if (!searchTerm) {
+      return {
+        messages,
+        projectAlerts,
+        rentalRequests,
+        deletedItems
+      };
+    }
+
+    return {
+      messages: messages.filter(msg => 
+        msg.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        msg.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        msg.email.toLowerCase().includes(searchTerm.toLowerCase())
+      ),
+      projectAlerts: projectAlerts.filter(alert =>
+        alert.projectName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        alert.supervisorName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        alert.action.toLowerCase().includes(searchTerm.toLowerCase())
+      ),
+      rentalRequests: rentalRequests.filter(rental =>
+        rental.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        rental.equipmentName.toLowerCase().includes(searchTerm.toLowerCase())
+      ),
+      deletedItems
+    };
+  };
+
+  const filteredData = getFilteredData();
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'unread':
+      case 'pending':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'read':
+        return 'bg-blue-100 text-blue-800';
+      case 'replied':
+      case 'approved':
+        return 'bg-green-100 text-green-800';
+      case 'rejected':
+        return 'bg-red-100 text-red-800';
+      default:
+        return 'bg-slate-100 text-slate-800';
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
+
   return (
-    <div className="container mx-auto px-4 py-8">
-      {/* Tabs with Notification Counts */}
-      <div className="flex space-x-4 mb-6">
-        <button
-          onClick={() => setActiveTab('messages')}
-          className={`flex items-center px-4 py-2 rounded-lg relative ${
-            activeTab === 'messages'
-              ? 'bg-blue-600 text-white'
-              : 'bg-gray-100 text-gray-600'
-          }`}
-        >
-          <RiMailLine className="mr-2" />
-          Contact Messages
-          {unreadMessages > 0 && (
-            <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-              {unreadMessages}
-            </span>
-          )}
-        </button>
-        <button
-          onClick={() => setActiveTab('project-alerts')}
-          className={`flex items-center px-4 py-2 rounded-lg relative ${
-            activeTab === 'project-alerts'
-              ? 'bg-blue-600 text-white'
-              : 'bg-gray-100 text-gray-600'
-          }`}
-        >
-          <RiAlertLine className="mr-2" />
-          Project Alerts
-          {unreadProjectAlerts > 0 && (
-            <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-              {unreadProjectAlerts}
-            </span>
-          )}
-        </button>
-        <button
-          onClick={() => setActiveTab('rentals')}
-          className={`flex items-center px-4 py-2 rounded-lg relative ${
-            activeTab === 'rentals'
-              ? 'bg-blue-600 text-white'
-              : 'bg-gray-100 text-gray-600'
-          }`}
-        >
-          <RiEditLine className="mr-2" />
-          Rental Requests
-          {pendingRentals > 0 && (
-            <span className="absolute -top-2 -right-2 bg-yellow-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-              {pendingRentals}
-            </span>
-          )}
-        </button>
-        <button
-          onClick={() => setActiveTab('recycle')}
-          className={`flex items-center px-4 py-2 rounded-lg ${
-            activeTab === 'recycle'
-              ? 'bg-blue-600 text-white'
-              : 'bg-gray-100 text-gray-600'
-          }`}
-        >
-          <RiRecycleLine className="mr-2" />
-          Recycle Bin
-        </button>
+    <div className="space-y-6 px-4 py-8">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-[#1b4965] bg-clip-text text-transparent">
+            Notifications & Communications
+          </h1>
+          <p className="text-slate-600 mt-1">Manage messages, alerts, and rental requests</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 bg-white rounded-lg px-3 py-2 shadow-sm border border-slate-200">
+            <FiBell className="w-4 h-4 text-slate-400" />
+            <span className="text-sm font-medium text-slate-600">Total Pending:</span>
+            <span className="text-sm font-bold text-blue-600">{totalNotifications}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Statistics Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-slate-600">Unread Messages</p>
+              <p className="text-2xl font-bold text-slate-900">{unreadMessages}</p>
+            </div>
+            <div className="p-3 bg-blue-100 rounded-lg">
+              <FiMail className="w-6 h-6 text-blue-600" />
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-slate-600">Project Alerts</p>
+              <p className="text-2xl font-bold text-slate-900">{unreadProjectAlerts}</p>
+            </div>
+            <div className="p-3 bg-orange-100 rounded-lg">
+              <RiAlertLine className="w-6 h-6 text-orange-600" />
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-slate-600">Pending Rentals</p>
+              <p className="text-2xl font-bold text-slate-900">{pendingRentals}</p>
+            </div>
+            <div className="p-3 bg-purple-100 rounded-lg">
+              <FiTool className="w-6 h-6 text-purple-600" />
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-slate-600">Deleted Items</p>
+              <p className="text-2xl font-bold text-slate-900">{deletedItems.length}</p>
+            </div>
+            <div className="p-3 bg-red-100 rounded-lg">
+              <FiTrash2 className="w-6 h-6 text-red-600" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Search Bar */}
+      <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+        <div className="relative">
+          <RiSearchLine className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
+          <input
+            type="text"
+            placeholder="Search notifications, messages, or alerts..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          />
+        </div>
+      </div>
+
+      {/* Navigation Tabs */}
+      <div className="bg-white rounded-xl p-2 shadow-sm border border-slate-200">
+        <div className="flex space-x-2">
+          <button
+            onClick={() => setActiveTab('messages')}
+            className={`flex items-center px-4 py-3 rounded-lg font-medium transition-all relative ${
+              activeTab === 'messages'
+                ? 'bg-gradient-to-r from-blue-500 to-[#1b4965] text-white shadow-sm'
+                : 'text-slate-600 hover:bg-slate-100'
+            }`}
+          >
+            <RiMailLine className="w-4 h-4 mr-2" />
+            Contact Messages
+            {unreadMessages > 0 && (
+              <span className="ml-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                {unreadMessages}
+              </span>
+            )}
+          </button>
+
+          <button
+            onClick={() => setActiveTab('project-alerts')}
+            className={`flex items-center px-4 py-3 rounded-lg font-medium transition-all relative ${
+              activeTab === 'project-alerts'
+                ? 'bg-gradient-to-r from-blue-500 to-[#1b4965] text-white shadow-sm'
+                : 'text-slate-600 hover:bg-slate-100'
+            }`}
+          >
+            <RiAlertLine className="w-4 h-4 mr-2" />
+            Project Alerts
+            {unreadProjectAlerts > 0 && (
+              <span className="ml-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                {unreadProjectAlerts}
+              </span>
+            )}
+          </button>
+
+          <button
+            onClick={() => setActiveTab('rentals')}
+            className={`flex items-center px-4 py-3 rounded-lg font-medium transition-all relative ${
+              activeTab === 'rentals'
+                ? 'bg-gradient-to-r from-blue-500 to-[#1b4965] text-white shadow-sm'
+                : 'text-slate-600 hover:bg-slate-100'
+            }`}
+          >
+            <RiToolsLine className="w-4 h-4 mr-2" />
+            Rental Requests
+            {pendingRentals > 0 && (
+              <span className="ml-2 bg-yellow-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                {pendingRentals}
+              </span>
+            )}
+          </button>
+
+          <button
+            onClick={() => setActiveTab('recycle')}
+            className={`flex items-center px-4 py-3 rounded-lg font-medium transition-all ${
+              activeTab === 'recycle'
+                ? 'bg-gradient-to-r from-blue-500 to-[#1b4965] text-white shadow-sm'
+                : 'text-slate-600 hover:bg-slate-100'
+            }`}
+          >
+            <RiRecycleLine className="w-4 h-4 mr-2" />
+            Recycle Bin
+            {deletedItems.length > 0 && (
+              <span className="ml-2 bg-slate-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                {deletedItems.length}
+              </span>
+            )}
+          </button>
+        </div>
       </div>
 
       {/* Content */}
-      <div className="bg-white rounded-lg shadow-sm">
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200">
         <AnimatePresence mode="wait">
+          {/* Contact Messages */}
           {activeTab === 'messages' && (
             <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="overflow-x-auto"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="p-6"
             >
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      From
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Subject
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Date
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Status
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {messages.map((message) => (
-                    <tr key={message.id}>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex flex-col">
-                          <span className="font-medium">{message.name}</span>
-                          <span className="text-sm text-gray-500">{message.email}</span>
+              {filteredData.messages.length > 0 ? (
+                <div className="space-y-4">
+                  {filteredData.messages.map((message, index) => (
+                    <motion.div
+                      key={message.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.05 * index }}
+                      className={`p-4 rounded-lg border transition-all hover:shadow-md ${
+                        message.status === 'unread' ? 'bg-blue-50 border-blue-200' : 'bg-white border-slate-200'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-[#1b4965] rounded-full flex items-center justify-center">
+                              <span className="text-white font-medium text-sm">
+                                {message.name.split(' ').map(n => n[0]).join('')}
+                              </span>
+                            </div>
+                            <div className="flex-1">
+                              <h3 className="font-semibold text-slate-900">{message.name}</h3>
+                              <p className="text-sm text-slate-500">{message.email}</p>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-sm font-medium text-slate-900">{message.subject}</p>
+                              <p className="text-xs text-slate-500">{formatDate(message.date)}</p>
+                            </div>
+                            <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(message.status)}`}>
+                              {message.status}
+                            </span>
+                          </div>
+                          
+                          <p className="text-slate-600 mb-3">{message.message}</p>
+                          
+                          {message.reply && (
+                            <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-3">
+                              <p className="text-sm font-medium text-green-800 mb-1">Your Reply:</p>
+                              <p className="text-green-700">{message.reply}</p>
+                            </div>
+                          )}
                         </div>
-                      </td>
-                      <td className="px-6 py-4">{message.subject}</td>
-                      <td className="px-6 py-4 whitespace-nowrap">{message.date}</td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span
-                          className={`px-2 py-1 text-xs rounded-full ${
-                            message.status === 'unread'
-                              ? 'bg-red-100 text-red-800'
-                              : message.status === 'read'
-                              ? 'bg-yellow-100 text-yellow-800'
-                              : 'bg-green-100 text-green-800'
-                          }`}
+                      </div>
+                      
+                      <div className="flex items-center gap-2 mt-3 pt-3 border-t border-slate-200">
+                        {message.status === 'unread' && (
+                          <button
+                            onClick={() => handleMarkMessageAsRead(message.id)}
+                            className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors text-sm font-medium"
+                          >
+                            <RiEyeLine className="w-4 h-4" />
+                            Mark as Read
+                          </button>
+                        )}
+                        <button
+                          onClick={() => setReplyingTo(message)}
+                          className="flex items-center gap-2 px-3 py-1.5 bg-green-50 text-green-600 hover:bg-green-100 rounded-lg transition-colors text-sm font-medium"
                         >
-                          {message.status}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex space-x-2">
-                          <button
-                            onClick={() => setReplyingTo(message)}
-                            className="text-blue-600 hover:text-blue-800"
-                          >
-                            <RiSendPlaneLine />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteMessage(message)}
-                            className="text-red-600 hover:text-red-800"
-                          >
-                            <RiDeleteBin6Line />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
+                          <RiReplyLine className="w-4 h-4" />
+                          Reply
+                        </button>
+                        <button
+                          onClick={() => handleDeleteMessage(message)}
+                          className="flex items-center gap-2 px-3 py-1.5 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg transition-colors text-sm font-medium"
+                        >
+                          <RiDeleteBinLine className="w-4 h-4" />
+                          Delete
+                        </button>
+                      </div>
+                    </motion.div>
                   ))}
-                </tbody>
-              </table>
+                </div>
+              ) : (
+                <div className="text-center py-16">
+                  <div className="w-24 h-24 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                    <FiMail className="w-12 h-12 text-slate-400" />
+                  </div>
+                  <h3 className="text-xl font-semibold text-slate-900 mb-2">No messages found</h3>
+                  <p className="text-slate-500">
+                    {searchTerm ? 'No messages match your search criteria.' : 'No contact messages received yet.'}
+                  </p>
+                </div>
+              )}
             </motion.div>
           )}
 
+          {/* Project Alerts */}
           {activeTab === 'project-alerts' && (
             <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="overflow-x-auto"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="p-6"
             >
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Project
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Supervisor
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Action
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Date
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Status
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {projectAlerts.map((alert) => (
-                    <tr key={alert.id} className={!alert.isRead ? 'bg-blue-50' : ''}>
-                      <td className="px-6 py-4">
-                        <span className="font-medium">{alert.projectName}</span>
-                      </td>
-                      <td className="px-6 py-4">{alert.supervisorName}</td>
-                      <td className="px-6 py-4">
-                        <div className="flex flex-col">
-                          <span className="font-medium">{alert.action}</span>
-                          <span className="text-sm text-gray-500">{alert.details}</span>
+              {filteredData.projectAlerts.length > 0 ? (
+                <div className="space-y-4">
+                  {filteredData.projectAlerts.map((alert, index) => (
+                    <motion.div
+                      key={alert.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.05 * index }}
+                      className={`p-4 rounded-lg border transition-all hover:shadow-md ${
+                        !alert.isRead ? 'bg-orange-50 border-orange-200' : 'bg-white border-slate-200'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-red-500 rounded-full flex items-center justify-center">
+                              <RiAlertLine className="w-5 h-5 text-white" />
+                            </div>
+                            <div className="flex-1">
+                              <h3 className="font-semibold text-slate-900">{alert.projectName}</h3>
+                              <p className="text-sm text-slate-500">Supervisor: {alert.supervisorName}</p>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-sm font-medium text-slate-900">{alert.action}</p>
+                              <p className="text-xs text-slate-500">{formatDate(alert.date)}</p>
+                            </div>
+                            <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                              alert.isRead ? 'bg-slate-100 text-slate-800' : 'bg-orange-100 text-orange-800'
+                            }`}>
+                              {alert.isRead ? 'Read' : 'New'}
+                            </span>
+                          </div>
+                          
+                          <p className="text-slate-600 mb-3">{alert.details}</p>
                         </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">{alert.date}</td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span
-                          className={`px-2 py-1 text-xs rounded-full ${
-                            alert.isRead
-                              ? 'bg-gray-100 text-gray-800'
-                              : 'bg-blue-100 text-blue-800'
-                          }`}
+                      </div>
+                      
+                      <div className="flex items-center gap-2 mt-3 pt-3 border-t border-slate-200">
+                        <button
+                          onClick={() => handleViewProject(alert.projectName)}
+                          className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors text-sm font-medium"
                         >
-                          {alert.isRead ? 'Read' : 'New'}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex space-x-2">
+                          <RiEyeLine className="w-4 h-4" />
+                          View Project
+                        </button>
+                        {!alert.isRead && (
                           <button
-                            onClick={() => handleViewProject(alert.projectName)}
-                            className="text-green-600 hover:text-green-800"
-                            title="View Project"
+                            onClick={() => handleMarkAlertAsRead(alert.id)}
+                            className="flex items-center gap-2 px-3 py-1.5 bg-green-50 text-green-600 hover:bg-green-100 rounded-lg transition-colors text-sm font-medium"
                           >
-                            <RiEyeLine />
+                            <RiCheckLine className="w-4 h-4" />
+                            Mark as Read
                           </button>
-                          {!alert.isRead && (
-                            <button
-                              onClick={() => handleMarkAlertAsRead(alert.id)}
-                              className="text-blue-600 hover:text-blue-800"
-                              title="Mark as Read"
-                            >
-                              <RiCheckLine />
-                            </button>
-                          )}
-                          <button
-                            onClick={() => handleDeleteProjectAlert(alert)}
-                            className="text-red-600 hover:text-red-800"
-                            title="Delete Alert"
-                          >
-                            <RiDeleteBin6Line />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
+                        )}
+                        <button
+                          onClick={() => handleDeleteProjectAlert(alert)}
+                          className="flex items-center gap-2 px-3 py-1.5 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg transition-colors text-sm font-medium"
+                        >
+                          <RiDeleteBinLine className="w-4 h-4" />
+                          Delete
+                        </button>
+                      </div>
+                    </motion.div>
                   ))}
-                </tbody>
-              </table>
+                </div>
+              ) : (
+                <div className="text-center py-16">
+                  <div className="w-24 h-24 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                    <RiAlertLine className="w-12 h-12 text-slate-400" />
+                  </div>
+                  <h3 className="text-xl font-semibold text-slate-900 mb-2">No project alerts</h3>
+                  <p className="text-slate-500">
+                    {searchTerm ? 'No alerts match your search criteria.' : 'No project alerts at the moment.'}
+                  </p>
+                </div>
+              )}
             </motion.div>
           )}
 
+          {/* Rental Requests */}
           {activeTab === 'rentals' && (
             <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="overflow-x-auto"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="p-6"
             >
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Customer
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Equipment
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Dates
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Amount
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Status
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {rentalRequests.map((rental) => (
-                    <tr key={rental.id}>
-                      <td className="px-6 py-4">{rental.customerName}</td>
-                      <td className="px-6 py-4">{rental.equipmentName}</td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex flex-col">
-                          <span>Start: {rental.startDate}</span>
-                          <span>End: {rental.endDate}</span>
+              {filteredData.rentalRequests.length > 0 ? (
+                <div className="space-y-4">
+                  {filteredData.rentalRequests.map((rental, index) => (
+                    <motion.div
+                      key={rental.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.05 * index }}
+                      className={`p-4 rounded-lg border transition-all hover:shadow-md ${
+                        rental.status === 'pending' ? 'bg-yellow-50 border-yellow-200' : 'bg-white border-slate-200'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full flex items-center justify-center">
+                              <FiTool className="w-5 h-5 text-white" />
+                            </div>
+                            <div className="flex-1">
+                              <h3 className="font-semibold text-slate-900">{rental.equipmentName}</h3>
+                              <p className="text-sm text-slate-500">Customer: {rental.customerName}</p>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-sm font-medium text-slate-900">${rental.totalAmount}</p>
+                              <p className="text-xs text-slate-500">{formatDate(rental.startDate)} - {formatDate(rental.endDate)}</p>
+                            </div>
+                            <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(rental.status)}`}>
+                              {rental.status}
+                            </span>
+                          </div>
+                          
+                          <div className="grid grid-cols-2 gap-4 text-sm">
+                            <div>
+                              <span className="text-slate-500">Start Date:</span>
+                              <span className="ml-2 font-medium">{formatDate(rental.startDate)}</span>
+                            </div>
+                            <div>
+                              <span className="text-slate-500">End Date:</span>
+                              <span className="ml-2 font-medium">{formatDate(rental.endDate)}</span>
+                            </div>
+                          </div>
                         </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        ${rental.totalAmount}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span
-                          className={`px-2 py-1 text-xs rounded-full ${
-                            rental.status === 'pending'
-                              ? 'bg-yellow-100 text-yellow-800'
-                              : rental.status === 'approved'
-                              ? 'bg-green-100 text-green-800'
-                              : 'bg-red-100 text-red-800'
-                          }`}
+                      </div>
+                      
+                      <div className="flex items-center gap-2 mt-3 pt-3 border-t border-slate-200">
+                        <button
+                          onClick={() => handleViewRental(rental.id)}
+                          className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors text-sm font-medium"
                         >
-                          {rental.status}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex space-x-2">
-                          <button
-                            onClick={() => handleViewRental(rental.id)}
-                            className="text-green-600 hover:text-green-800"
-                            title="View Rental Details"
-                          >
-                            <RiEyeLine />
-                          </button>
-                          {rental.status === 'pending' && (
-                            <>
-                              <button
-                                onClick={() => handleUpdateRentalStatus(rental.id, 'approved')}
-                                className="text-green-600 hover:text-green-800"
-                                title="Approve Rental"
-                              >
-                                <RiCheckLine />
-                              </button>
-                              <button
-                                onClick={() => handleUpdateRentalStatus(rental.id, 'rejected')}
-                                className="text-red-600 hover:text-red-800"
-                                title="Reject Rental"
-                              >
-                                <RiCloseLine />
-                              </button>
-                            </>
-                          )}
-                          <button
-                            onClick={() => handleDeleteRental(rental)}
-                            className="text-red-600 hover:text-red-800"
-                            title="Delete Rental"
-                          >
-                            <RiDeleteBin6Line />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
+                          <RiEyeLine className="w-4 h-4" />
+                          View Details
+                        </button>
+                        {rental.status === 'pending' && (
+                          <>
+                            <button
+                              onClick={() => handleUpdateRentalStatus(rental.id, 'approved')}
+                              className="flex items-center gap-2 px-3 py-1.5 bg-green-50 text-green-600 hover:bg-green-100 rounded-lg transition-colors text-sm font-medium"
+                            >
+                              <RiCheckLine className="w-4 h-4" />
+                              Approve
+                            </button>
+                            <button
+                              onClick={() => handleUpdateRentalStatus(rental.id, 'rejected')}
+                              className="flex items-center gap-2 px-3 py-1.5 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg transition-colors text-sm font-medium"
+                            >
+                              <RiCloseLine className="w-4 h-4" />
+                              Reject
+                            </button>
+                          </>
+                        )}
+                        <button
+                          onClick={() => handleDeleteRental(rental)}
+                          className="flex items-center gap-2 px-3 py-1.5 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg transition-colors text-sm font-medium"
+                        >
+                          <RiDeleteBinLine className="w-4 h-4" />
+                          Delete
+                        </button>
+                      </div>
+                    </motion.div>
                   ))}
-                </tbody>
-              </table>
+                </div>
+              ) : (
+                <div className="text-center py-16">
+                  <div className="w-24 h-24 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                    <FiTool className="w-12 h-12 text-slate-400" />
+                  </div>
+                  <h3 className="text-xl font-semibold text-slate-900 mb-2">No rental requests</h3>
+                  <p className="text-slate-500">
+                    {searchTerm ? 'No rental requests match your search criteria.' : 'No rental requests at the moment.'}
+                  </p>
+                </div>
+              )}
             </motion.div>
           )}
 
+          {/* Recycle Bin */}
           {activeTab === 'recycle' && (
             <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="overflow-x-auto"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="p-6"
             >
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Type
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Content
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Deleted At
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {deletedItems.map((item) => (
-                    <tr key={item.id}>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span
-                          className={`px-2 py-1 text-xs rounded-full ${
-                            item.type === 'message'
-                              ? 'bg-blue-100 text-blue-800'
-                              : item.type === 'rental'
-                              ? 'bg-purple-100 text-purple-800'
-                              : 'bg-pink-100 text-pink-800'
-                          }`}
-                        >
-                          {item.type === 'message' ? 'Contact Message' : item.type === 'rental' ? 'Rental Request' : 'Project Alert'}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4">
-                        {item.type === 'message'
-                          ? (item.content as ContactMessage).subject
-                          : item.type === 'rental'
-                          ? `${(item.content as RentalRequest).equipmentName} - ${
-                              (item.content as RentalRequest).customerName
-                            }`
-                          : `${(item.content as ProjectAlert).projectName} - ${
-                              (item.content as ProjectAlert).supervisorName
-                            }`}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        {new Date(item.deletedAt).toLocaleDateString()}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex space-x-2">
-                          <button
-                            onClick={() => handleRestoreItem(item)}
-                            className="text-green-600 hover:text-green-800"
-                          >
-                            <RiArrowLeftLine />
-                          </button>
-                          <button
-                            onClick={() => handlePermanentDelete(item.id)}
-                            className="text-red-600 hover:text-red-800"
-                          >
-                            <RiDeleteBin6Line />
-                          </button>
+              {deletedItems.length > 0 ? (
+                <div className="space-y-4">
+                  {deletedItems.map((item, index) => (
+                    <motion.div
+                      key={item.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.05 * index }}
+                      className="p-4 rounded-lg border border-slate-200 bg-slate-50 transition-all hover:shadow-md"
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <div className="w-10 h-10 bg-slate-400 rounded-full flex items-center justify-center">
+                              <FiTrash2 className="w-5 h-5 text-white" />
+                            </div>
+                            <div className="flex-1">
+                              <h3 className="font-semibold text-slate-900">
+                                {item.type === 'message' && (item.content as ContactMessage).subject}
+                                {item.type === 'rental' && `${(item.content as RentalRequest).equipmentName} - ${(item.content as RentalRequest).customerName}`}
+                                {item.type === 'project-alert' && `${(item.content as ProjectAlert).projectName} - ${(item.content as ProjectAlert).supervisorName}`}
+                              </h3>
+                              <p className="text-sm text-slate-500">
+                                Deleted on {formatDate(item.deletedAt)}
+                              </p>
+                            </div>
+                            <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                              item.type === 'message' ? 'bg-blue-100 text-blue-800' :
+                              item.type === 'rental' ? 'bg-purple-100 text-purple-800' :
+                              'bg-orange-100 text-orange-800'
+                            }`}>
+                              {item.type === 'message' ? 'Message' : item.type === 'rental' ? 'Rental' : 'Alert'}
+                            </span>
+                          </div>
                         </div>
-                      </td>
-                    </tr>
+                      </div>
+                      
+                      <div className="flex items-center gap-2 mt-3 pt-3 border-t border-slate-200">
+                        <button
+                          onClick={() => handleRestoreItem(item)}
+                          className="flex items-center gap-2 px-3 py-1.5 bg-green-50 text-green-600 hover:bg-green-100 rounded-lg transition-colors text-sm font-medium"
+                        >
+                          <RiRestartLine className="w-4 h-4" />
+                          Restore
+                        </button>
+                        <button
+                          onClick={() => handlePermanentDelete(item.id)}
+                          className="flex items-center gap-2 px-3 py-1.5 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg transition-colors text-sm font-medium"
+                        >
+                          <RiDeleteBinLine className="w-4 h-4" />
+                          Delete Permanently
+                        </button>
+                      </div>
+                    </motion.div>
                   ))}
-                </tbody>
-              </table>
+                </div>
+              ) : (
+                <div className="text-center py-16">
+                  <div className="w-24 h-24 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                    <FiTrash2 className="w-12 h-12 text-slate-400" />
+                  </div>
+                  <h3 className="text-xl font-semibold text-slate-900 mb-2">Recycle bin is empty</h3>
+                  <p className="text-slate-500">No deleted items to display.</p>
+                </div>
+              )}
             </motion.div>
           )}
         </AnimatePresence>
       </div>
 
       {/* Reply Modal */}
-      {replyingTo && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-lg">
-            <h2 className="text-xl font-bold mb-4">Reply to {replyingTo.name}</h2>
-            <div className="mb-4">
-              <p className="text-gray-600 mb-2">Original Message:</p>
-              <p className="bg-gray-50 p-3 rounded">{replyingTo.message}</p>
-            </div>
-            <textarea
-              value={replyText}
-              onChange={(e) => setReplyText(e.target.value)}
-              placeholder="Type your reply..."
-              className="w-full p-3 border rounded mb-4 h-32"
-            />
-            <div className="flex justify-end gap-4">
-              <button
-                onClick={() => {
-                  setReplyingTo(null);
-                  setReplyText('');
-                }}
-                className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => handleMessageReply(replyingTo)}
-                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-              >
-                Send Reply
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <AnimatePresence>
+        {replyingTo && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+            onClick={() => setReplyingTo(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="p-6 border-b border-slate-200">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-[#1b4965] bg-clip-text text-transparent">
+                    Reply to {replyingTo.name}
+                  </h2>
+                  <button
+                    onClick={() => {
+                      setReplyingTo(null);
+                      setReplyText('');
+                    }}
+                    className="p-2 text-slate-400 hover:text-slate-600 rounded-lg"
+                    title="Close modal"
+                  >
+                    <RiCloseLine className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="p-6 space-y-4">
+                <div className="bg-slate-50 rounded-lg p-4">
+                  <p className="text-sm font-medium text-slate-700 mb-2">Original Message:</p>
+                  <p className="text-slate-600">{replyingTo.message}</p>
+                </div>
+
+                <div>
+                  <label htmlFor="reply-text" className="block text-sm font-medium text-slate-700 mb-2">
+                    Your Reply
+                  </label>
+                  <textarea
+                    id="reply-text"
+                    value={replyText}
+                    onChange={(e) => setReplyText(e.target.value)}
+                    placeholder="Type your reply..."
+                    className="w-full p-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent h-32"
+                    disabled={actionLoading}
+                  />
+                </div>
+
+                <div className="flex gap-3 pt-4 border-t border-slate-200">
+                  <button
+                    onClick={() => {
+                      setReplyingTo(null);
+                      setReplyText('');
+                    }}
+                    className="flex-1 px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+                    disabled={actionLoading}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => handleMessageReply(replyingTo)}
+                    className="flex-1 px-4 py-2 bg-gradient-to-r from-blue-500 to-[#1b4965] text-white rounded-lg hover:from-blue-600 hover:to-[#1b4965] transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                    disabled={actionLoading || !replyText.trim()}
+                  >
+                    <RiSendPlaneLine className="w-4 h-4" />
+                    {actionLoading ? 'Sending...' : 'Send Reply'}
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
