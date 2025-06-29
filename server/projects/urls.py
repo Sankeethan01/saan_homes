@@ -8,6 +8,7 @@ from projects.views import (
     BillViewSet,
     InvoiceViewSet,
     VRVideoViewSet,
+    SupervisorNoteViewSet,
 )
 
 router = DefaultRouter()
@@ -17,8 +18,10 @@ router.register(r"logs", ProgressLogViewSet)
 router.register(r"bills", BillViewSet)
 router.register(r"invoices", InvoiceViewSet)
 router.register(r"vr-videos", VRVideoViewSet)
+router.register(r"supervisor-notes", SupervisorNoteViewSet, basename="supervisornote")
 
 urlpatterns = [
     path("", include(router.urls)),
     path('api/profile/', ProfileView.as_view()),
+    
 ]

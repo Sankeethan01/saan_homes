@@ -163,3 +163,18 @@ class VRVideo(models.Model):
     title = models.CharField(max_length=200)
     video = models.FileField(upload_to="vr/")
     uploaded = models.DateTimeField(auto_now_add=True)
+
+
+class SupervisorNote(models.Model):
+    project = models.ForeignKey(Project, related_name='supervisor_notes', on_delete=models.CASCADE)
+    supervisor = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, limit_choices_to={"role": "SUPERVISOR"})
+    note = models.TextField(blank=True)
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ("project", "supervisor")
+        ordering = ["-updated"]
+
+    def __str__(self):
+        return f"Note by {self.supervisor} on {self.project}"

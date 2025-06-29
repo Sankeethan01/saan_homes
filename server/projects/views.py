@@ -21,6 +21,7 @@ from .models import (
     Bill,
     Invoice,
     VRVideo,
+    SupervisorNote,
 )
 from .serializers import (
     ProjectSerializer,
@@ -29,6 +30,7 @@ from .serializers import (
     BillSerializer,
     InvoiceSerializer,
     VRVideoSerializer,
+    SupervisorNoteSerializer,
 )
 
 
@@ -808,6 +810,87 @@ class ProjectViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(projects, many=True)
         return Response(serializer.data)
 
+    @action(detail=False, methods=['get'])
+    def supervisor_stats(self, request):
+        """
+        Get project statistics for supervisor dashboard
+        """
+        if request.user.role != "SUPERVISOR":
+            return Response(
+                {"error": "Only supervisors can access this endpoint"}, 
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        # Get all projects assigned to this supervisor with prefetched steps
+        projects = Project.objects.filter(supervisor=request.user, is_deleted=False).prefetch_related('steps')
+        
+        # Calculate statistics
+        total_projects = projects.count()
+        ongoing_projects = projects.filter(is_completed=False).count()
+        completed_projects = projects.filter(is_completed=True).count()
+        
+        # Calculate upcoming projects (projects that haven't started yet)
+        today = timezone.now().date()
+        upcoming_projects = projects.filter(start_date__gt=today).count()
+        
+        # Calculate project types distribution
+        project_types = {}
+        for project in projects:
+            project_type = project.project_type
+            if project_type in project_types:
+                project_types[project_type] += 1
+            else:
+                project_types[project_type] = 1
+        
+        # Calculate average progress using the same logic as serializer
+        total_progress = 0
+        projects_with_progress = 0
+        for project in projects:
+            steps = project.steps.all()
+            total_steps = len(steps)
+            if total_steps > 0:
+                completed_steps = sum(1 for step in steps if step.is_approved)
+                progress = int((completed_steps / total_steps) * 100)
+                total_progress += progress
+                projects_with_progress += 1
+        
+        average_progress = total_progress / projects_with_progress if projects_with_progress > 0 else 0
+        
+        # Get recent activities (last 5 projects updated)
+        recent_projects = projects.order_by('-updated')[:5]
+        recent_activities = []
+        
+        for project in recent_projects:
+            # Calculate progress for this project
+            steps = project.steps.all()
+            total_steps = len(steps)
+            progress = 0
+            if total_steps > 0:
+                completed_steps = sum(1 for step in steps if step.is_approved)
+                progress = int((completed_steps / total_steps) * 100)
+            
+            activity = {
+                'id': str(project.id),
+                'activity': f'Project "{project.name}" updated',
+                'project': project.name,
+                'time': project.updated.strftime('%Y-%m-%d %H:%M'),
+                'type': 'info',
+                'progress': progress
+            }
+            recent_activities.append(activity)
+        
+        stats = {
+            'total': total_projects,
+            'ongoing': ongoing_projects,
+            'completed': completed_projects,
+            'upcoming': upcoming_projects,
+            'average_progress': round(average_progress, 1),
+            'project_types': project_types,
+            'recent_activities': recent_activities
+        }
+        
+        return Response(stats)
+
 
 class StepViewSet(viewsets.ModelViewSet):
     queryset = Step.objects.select_related("project").all()
@@ -890,3 +973,27 @@ class VRVideoViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAdminOrSupervisorOrReadOnly]
     filter_backends = [OrderingFilter]
     ordering = ["-uploaded"]
+
+
+class SupervisorNoteViewSet(viewsets.ModelViewSet):
+    serializer_class = SupervisorNoteSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        project_id = self.request.query_params.get('project')
+        queryset = SupervisorNote.objects.all()
+
+        if user.role == 'SUPERVISOR':
+            queryset = queryset.filter(supervisor=user)
+
+        if project_id:
+            queryset = queryset.filter(project__id=project_id)
+
+        return queryset
+
+    def perform_create(self, serializer):
+        serializer.save(supervisor=self.request.user)
+
+    def perform_update(self, serializer):
+        serializer.save(supervisor=self.request.user)

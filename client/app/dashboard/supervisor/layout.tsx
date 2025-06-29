@@ -34,11 +34,13 @@ const navItems: NavItem[] = [
     title: 'Projects',
     path: '/dashboard/supervisor/projects',
     icon: <RiBuildingLine className="text-xl" />,
-    subItems: [
-      { title: 'Project 1', path: '/dashboard/supervisor/projects/1' },
-      { title: 'Project 2', path: '/dashboard/supervisor/projects/2' },
-      { title: 'Project 3', path: '/dashboard/supervisor/projects/3' }
-    ]
+    
+  },
+  {
+    title: 'Bills',
+    path: '/dashboard/supervisor/bills',
+    icon: <RiBuildingLine className="text-xl" />,
+    
   },
   {
     title: 'Notifications',
