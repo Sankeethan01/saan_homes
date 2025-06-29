@@ -12,6 +12,9 @@ import {
   RiMailLine,
   RiPhoneLine,
   RiUserLine,
+  RiTimeLine,
+  RiMapPinLine,
+  RiShieldCheckLine,
 } from "react-icons/ri";
 import "react-calendar/dist/Calendar.css";
 import ChatBotRentalsPortfolio from "@/app/components/Portfolio/Rentals/ChatBot";
@@ -101,16 +104,16 @@ export default function RentalEquipmentPage() {
   };
 
   return (
-    <main className="min-h-screen bg-gray-50">
+    <main className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       {/* Navigation Buttons */}
       <div className="fixed top-8 left-8 z-50">
         <Link href="/equipments">
           <motion.button
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.95 }}
-            className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-lg hover:shadow-xl"
+            className="w-14 h-14 bg-white rounded-full flex items-center justify-center shadow-xl hover:shadow-2xl border-2 border-[#1b4965]/10"
           >
-            <RiArrowLeftLine className="text-gray-700 text-2xl" />
+            <RiArrowLeftLine className="text-[#1b4965] text-2xl" />
           </motion.button>
         </Link>
       </div>
@@ -118,18 +121,29 @@ export default function RentalEquipmentPage() {
       {/* ChatBot */}
       <ChatBotRentalsPortfolio />
 
-      {/* Home Icon */}
-      <HomeButton />
+      <div className="container mx-auto px-4 py-16">
+        {/* Header Section */}
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-center mb-12"
+        >
+          <h1 className="text-4xl md:text-5xl font-bold text-[#1b4965] mb-4">
+            Equipment Rental
+          </h1>
+          <p className="text-gray-600 text-lg max-w-2xl mx-auto">
+            Professional construction equipment for your project needs
+          </p>
+        </motion.div>
 
-      <div className="container mx-auto px-4 py-12">
         {/* Step 1: Equipment Details and Calendar */}
         {step === 1 && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
             {/* Equipment Details */}
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="bg-white rounded-2xl shadow-xl overflow-hidden"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="bg-white rounded-3xl shadow-2xl overflow-hidden border border-gray-100"
             >
               <div className="relative h-96">
                 <Image
@@ -138,84 +152,92 @@ export default function RentalEquipmentPage() {
                   fill
                   className="object-cover"
                 />
-                <div className="absolute top-4 right-4">
+                <div className="absolute top-6 right-6">
                   <span
-                    className={`px-4 py-2 rounded-full text-sm font-medium ${
+                    className={`px-6 py-3 rounded-full text-sm font-semibold shadow-lg ${
                       equipment.availability
-                        ? "bg-green-100 text-green-600"
-                        : "bg-red-100 text-red-600"
+                        ? "bg-green-500 text-white"
+                        : "bg-red-500 text-white"
                     }`}
                   >
                     {equipment.availability ? "Available" : "Not Available"}
                   </span>
                 </div>
+                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-6">
+                  <h2 className="text-2xl font-bold text-white">
+                    {equipment.name}
+                  </h2>
+                  <p className="text-gray-200">{equipment.category}</p>
+                </div>
               </div>
+              
               <div className="p-8">
-                <h1 className="text-3xl font-bold text-gray-800 mb-4">
-                  {equipment.name}
-                </h1>
-                <p className="text-gray-600 mb-6">{equipment.description}</p>
+                <p className="text-gray-600 mb-8 text-lg leading-relaxed">
+                  {equipment.description}
+                </p>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <p className="text-sm text-gray-600">Daily Rate</p>
-                    <p className="text-2xl font-bold text-gray-800">
-                      ${equipment.dailyRate}
-                    </p>
+                {/* Pricing Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                  <div className="bg-gradient-to-br from-[#1b4965] to-[#1b4965]/90 p-6 rounded-2xl text-white text-center shadow-lg">
+                    <div className="text-3xl font-bold mb-2">${equipment.dailyRate}</div>
+                    <div className="text-sm opacity-90">Daily Rate</div>
                   </div>
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <p className="text-sm text-gray-600">Weekly Rate</p>
-                    <p className="text-2xl font-bold text-gray-800">
-                      ${equipment.weeklyRate}
-                    </p>
+                  <div className="bg-gradient-to-br from-[#1b4965]/80 to-[#1b4965]/70 p-6 rounded-2xl text-white text-center shadow-lg">
+                    <div className="text-3xl font-bold mb-2">${equipment.weeklyRate}</div>
+                    <div className="text-sm opacity-90">Weekly Rate</div>
                   </div>
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <p className="text-sm text-gray-600">Monthly Rate</p>
-                    <p className="text-2xl font-bold text-gray-800">
-                      ${equipment.monthlyRate}
-                    </p>
+                  <div className="bg-gradient-to-br from-[#1b4965]/60 to-[#1b4965]/50 p-6 rounded-2xl text-white text-center shadow-lg">
+                    <div className="text-3xl font-bold mb-2">${equipment.monthlyRate}</div>
+                    <div className="text-sm opacity-90">Monthly Rate</div>
                   </div>
                 </div>
 
-                <div className="space-y-3">
-                  <h2 className="text-xl font-semibold text-gray-800">
+                {/* Features */}
+                <div className="space-y-4">
+                  <h3 className="text-2xl font-bold text-[#1b4965] mb-6 flex items-center">
+                    <RiShieldCheckLine className="mr-3 text-2xl" />
                     Features & Specifications
-                  </h2>
-                  {equipment.features.map((feature, index) => (
-                    <div
-                      key={index}
-                      className="flex items-center text-gray-600"
-                    >
-                      <RiCheckLine className="text-green-500 mr-2" />
-                      {feature}
-                    </div>
-                  ))}
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {equipment.features.map((feature, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center p-4 bg-gray-50 rounded-xl"
+                      >
+                        <RiCheckLine className="text-green-500 mr-3 text-xl" />
+                        <span className="text-gray-700 font-medium">{feature}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             </motion.div>
 
             {/* Calendar and Booking Section */}
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.2 }}
-              className="bg-white rounded-2xl shadow-xl p-8"
+              className="bg-white rounded-3xl shadow-2xl p-8 border border-gray-100"
             >
-              <h2 className="text-2xl font-semibold text-gray-800 mb-6">
-                Check Availability
-              </h2>
+              <div className="text-center mb-8">
+                <h2 className="text-3xl font-bold text-[#1b4965] mb-2">
+                  Check Availability
+                </h2>
+                <p className="text-gray-600">Select your preferred rental date</p>
+              </div>
 
               <div className="mb-8">
                 <Calendar
                   onChange={handleDateChange}
                   value={selectedDate}
                   minDate={new Date()}
-                  className="w-full rounded-lg border-none shadow-md"
-                  tileClassName="text-sm p-2"
-                  prevLabel={<span className="text-gray-600">‹</span>}
-                  nextLabel={<span className="text-gray-600">›</span>}
+                  className="w-full rounded-2xl border-2 border-gray-200 shadow-lg p-4"
+                  tileClassName="text-sm p-3 rounded-lg hover:bg-[#1b4965] hover:text-white transition-all"
+                  prevLabel={<span className="text-[#1b4965] text-xl">‹</span>}
+                  nextLabel={<span className="text-[#1b4965] text-xl">›</span>}
                   navigationLabel={({ date }) => (
-                    <span className="text-gray-800 font-semibold">
+                    <span className="text-[#1b4965] font-bold text-lg">
                       {date.toLocaleString("default", {
                         month: "long",
                         year: "numeric",
@@ -226,22 +248,29 @@ export default function RentalEquipmentPage() {
               </div>
 
               {selectedDate && (
-                <div className="mb-6 p-4 bg-blue-50 rounded-lg">
-                  <p className="text-blue-800">
-                    Selected Date: {selectedDate.toLocaleDateString()}
-                  </p>
-                </div>
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="mb-8 p-6 bg-gradient-to-r from-[#1b4965] to-[#1b4965]/90 rounded-2xl text-white"
+                >
+                  <div className="flex items-center justify-center">
+                    <RiCalendarLine className="text-2xl mr-3" />
+                    <p className="text-lg font-semibold">
+                      Selected: {selectedDate.toLocaleDateString()}
+                    </p>
+                  </div>
+                </motion.div>
               )}
 
               <motion.button
                 onClick={handleProceedToBooking}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                className="w-full bg-gradient-to-r from-blue-600 to-red-700 text-white py-4 rounded-lg font-medium hover:from-blue-700 hover:to-red-800 transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
+                className="w-full bg-gradient-to-r from-[#1b4965] to-[#1b4965]/90 text-white py-5 rounded-2xl font-semibold text-lg hover:from-[#1b4965]/90 hover:to-[#1b4965] transition-all duration-300 shadow-xl hover:shadow-2xl flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
                 disabled={!equipment.availability}
               >
-                <RiCalendarLine className="text-xl" />
-                Book Now
+                <RiCalendarLine className="text-2xl" />
+                Proceed to Booking
               </motion.button>
             </motion.div>
           </div>
@@ -252,27 +281,30 @@ export default function RentalEquipmentPage() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="max-w-2xl mx-auto bg-white rounded-2xl shadow-xl p-8"
+            className="max-w-3xl mx-auto bg-white rounded-3xl shadow-2xl p-10 border border-gray-100"
           >
-            <h2 className="text-2xl font-semibold text-gray-800 mb-6">
-              Booking Details
-            </h2>
+            <div className="text-center mb-10">
+              <h2 className="text-3xl font-bold text-[#1b4965] mb-2">
+                Booking Details
+              </h2>
+              <p className="text-gray-600">Please provide your information to complete the booking</p>
+            </div>
 
-            <form onSubmit={handleSubmitBooking} className="space-y-6">
-              <div className="space-y-4">
+            <form onSubmit={handleSubmitBooking} className="space-y-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-semibold text-gray-700 mb-3">
                     Full Name
                   </label>
                   <div className="relative">
-                    <RiUserLine className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                    <RiUserLine className="absolute left-4 top-1/2 transform -translate-y-1/2 text-[#1b4965]" />
                     <input
                       type="text"
                       value={formData.name}
                       onChange={(e) =>
                         setFormData({ ...formData, name: e.target.value })
                       }
-                      className="w-full pl-12 pr-4 py-3 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full pl-12 pr-4 py-4 rounded-xl border-2 border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#1b4965] focus:border-[#1b4965] transition-all"
                       required
                       placeholder="Enter your full name"
                     />
@@ -280,72 +312,70 @@ export default function RentalEquipmentPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Email
+                  <label className="block text-sm font-semibold text-gray-700 mb-3">
+                    Email Address
                   </label>
                   <div className="relative">
-                    <RiMailLine className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                    <RiMailLine className="absolute left-4 top-1/2 transform -translate-y-1/2 text-[#1b4965]" />
                     <input
-                      placeholder="Enter your Email"
+                      placeholder="Enter your email"
                       type="email"
                       value={formData.email}
                       onChange={(e) =>
                         setFormData({ ...formData, email: e.target.value })
                       }
-                      className="w-full pl-12 pr-4 py-3 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full pl-12 pr-4 py-4 rounded-xl border-2 border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#1b4965] focus:border-[#1b4965] transition-all"
                       required
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Phone
+                  <label className="block text-sm font-semibold text-gray-700 mb-3">
+                    Phone Number
                   </label>
                   <div className="relative">
-                    <RiPhoneLine className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                    <RiPhoneLine className="absolute left-4 top-1/2 transform -translate-y-1/2 text-[#1b4965]" />
                     <input
                       type="tel"
                       value={formData.phone}
                       onChange={(e) =>
                         setFormData({ ...formData, phone: e.target.value })
                       }
-                      className="w-full pl-12 pr-4 py-3 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full pl-12 pr-4 py-4 rounded-xl border-2 border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#1b4965] focus:border-[#1b4965] transition-all"
                       required
-                      placeholder="Enter your Phone number"
+                      placeholder="Enter your phone number"
                     />
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label htmlFor="rentalPeriod" className="block text-sm font-medium text-gray-700 mb-1">
-                      Rental Period
-                    </label>
-                    <select
-                      id="rentalPeriod"
-                      name="rentalPeriod"
-                      aria-label="Rental Period"
-                      value={formData.rentalPeriod}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          rentalPeriod: e.target.value,
-                        })
-                      }
-                      className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      required
-                    >
-                      <option value="daily">Daily</option>
-                      <option value="weekly">Weekly</option>
-                      <option value="monthly">Monthly</option>
-                    </select>
-                  </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-3">
+                    Rental Period
+                  </label>
+                  <select
+                    value={formData.rentalPeriod}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        rentalPeriod: e.target.value,
+                      })
+                    }
+                    className="w-full px-4 py-4 rounded-xl border-2 border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#1b4965] focus:border-[#1b4965] transition-all"
+                    required
+                  >
+                    <option value="daily">Daily</option>
+                    <option value="weekly">Weekly</option>
+                    <option value="monthly">Monthly</option>
+                  </select>
+                </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Duration
-                    </label>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-3">
+                    Duration
+                  </label>
+                  <div className="relative">
+                    <RiTimeLine className="absolute left-4 top-1/2 transform -translate-y-1/2 text-[#1b4965]" />
                     <input
                       type="number"
                       min="1"
@@ -353,40 +383,39 @@ export default function RentalEquipmentPage() {
                       onChange={(e) =>
                         setFormData({ ...formData, duration: e.target.value })
                       }
-                      className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full pl-12 pr-4 py-4 rounded-xl border-2 border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#1b4965] focus:border-[#1b4965] transition-all"
                       placeholder={`Number of ${formData.rentalPeriod}`}
                       required
                     />
                   </div>
                 </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Special Requirements
-                  </label>
-                  <textarea
-                    value={formData.specialRequirements}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        specialRequirements: e.target.value,
-                      })
-                    }
-                    className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    rows={4}
-                    placeholder="Enter any special requirements"
-                    title="Special Requirements"
-                  />
-                </div>
               </div>
 
-              <div className="flex gap-4">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-3">
+                  Special Requirements
+                </label>
+                <textarea
+                  value={formData.specialRequirements}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      specialRequirements: e.target.value,
+                    })
+                  }
+                  className="w-full px-4 py-4 rounded-xl border-2 border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#1b4965] focus:border-[#1b4965] transition-all"
+                  rows={4}
+                  placeholder="Enter any special requirements or additional notes"
+                />
+              </div>
+
+              <div className="flex gap-6 pt-6">
                 <motion.button
                   type="button"
                   onClick={() => setStep(1)}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  className="flex-1 py-3 rounded-lg border-2 border-gray-200 font-medium hover:bg-gray-50 transition-colors"
+                  className="flex-1 py-4 rounded-xl border-2 border-[#1b4965] text-[#1b4965] font-semibold hover:bg-[#1b4965] hover:text-white transition-all duration-300"
                 >
                   Back
                 </motion.button>
@@ -394,9 +423,9 @@ export default function RentalEquipmentPage() {
                   type="submit"
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  className="flex-1 bg-gradient-to-r from-blue-600 to-red-700 text-white py-3 rounded-lg font-medium hover:from-blue-700 hover:to-red-800 transition-all duration-300"
+                  className="flex-1 bg-gradient-to-r from-[#1b4965] to-[#1b4965]/90 text-white py-4 rounded-xl font-semibold hover:from-[#1b4965]/90 hover:to-[#1b4965] transition-all duration-300 shadow-lg"
                 >
-                  Next
+                  Continue to Review
                 </motion.button>
               </div>
             </form>
@@ -408,72 +437,75 @@ export default function RentalEquipmentPage() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="max-w-2xl mx-auto bg-white rounded-2xl shadow-xl p-8"
+            className="max-w-3xl mx-auto bg-white rounded-3xl shadow-2xl p-10 border border-gray-100"
           >
-            <h2 className="text-2xl font-semibold text-gray-800 mb-6">
-              Confirm Booking
-            </h2>
+            <div className="text-center mb-10">
+              <h2 className="text-3xl font-bold text-[#1b4965] mb-2">
+                Review & Confirm
+              </h2>
+              <p className="text-gray-600">Please review your booking details before confirming</p>
+            </div>
 
-            <div className="space-y-4 mb-6">
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <h3 className="font-semibold text-gray-800 mb-2">
+            <div className="space-y-6 mb-10">
+              <div className="bg-gradient-to-r from-[#1b4965] to-[#1b4965]/90 p-6 rounded-2xl text-white">
+                <h3 className="font-bold text-xl mb-4 flex items-center">
+                  <RiShieldCheckLine className="mr-3" />
                   Equipment Details
                 </h3>
-                <p className="text-gray-600">{equipment.name}</p>
-                <p className="text-gray-600">Category: {equipment.category}</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <p><strong>Equipment:</strong> {equipment.name}</p>
+                  <p><strong>Category:</strong> {equipment.category}</p>
+                </div>
               </div>
 
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <h3 className="font-semibold text-gray-800 mb-2">
+              <div className="bg-gray-50 p-6 rounded-2xl">
+                <h3 className="font-bold text-xl mb-4 text-[#1b4965] flex items-center">
+                  <RiCalendarLine className="mr-3" />
                   Rental Details
                 </h3>
-                <p className="text-gray-600">
-                  Start Date: {selectedDate?.toLocaleDateString()}
-                </p>
-                <p className="text-gray-600">
-                  Duration: {formData.duration} {formData.rentalPeriod}
-                </p>
-                <p className="text-gray-600">
-                  Rate: $
-                  {equipment[`${formData.rentalPeriod}Rate` as keyof Equipment]}
-                </p>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <p><strong>Start Date:</strong> {selectedDate?.toLocaleDateString()}</p>
+                  <p><strong>Duration:</strong> {formData.duration} {formData.rentalPeriod}</p>
+                  <p><strong>Rate:</strong> ${equipment[`${formData.rentalPeriod}Rate` as keyof Equipment]}</p>
+                </div>
               </div>
 
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <h3 className="font-semibold text-gray-800 mb-2">
+              <div className="bg-gray-50 p-6 rounded-2xl">
+                <h3 className="font-bold text-xl mb-4 text-[#1b4965] flex items-center">
+                  <RiUserLine className="mr-3" />
                   Contact Information
                 </h3>
-                <p className="text-gray-600">Name: {formData.name}</p>
-                <p className="text-gray-600">Email: {formData.email}</p>
-                <p className="text-gray-600">Phone: {formData.phone}</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <p><strong>Name:</strong> {formData.name}</p>
+                  <p><strong>Email:</strong> {formData.email}</p>
+                  <p><strong>Phone:</strong> {formData.phone}</p>
+                </div>
               </div>
 
               {formData.specialRequirements && (
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <h3 className="font-semibold text-gray-800 mb-2">
+                <div className="bg-gray-50 p-6 rounded-2xl">
+                  <h3 className="font-bold text-xl mb-4 text-[#1b4965]">
                     Special Requirements
                   </h3>
-                  <p className="text-gray-600">
-                    {formData.specialRequirements}
-                  </p>
+                  <p className="text-gray-700">{formData.specialRequirements}</p>
                 </div>
               )}
             </div>
 
-            <div className="flex gap-4">
+            <div className="flex gap-6">
               <motion.button
                 onClick={() => setStep(2)}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                className="flex-1 py-3 rounded-lg border-2 border-gray-200 font-medium hover:bg-gray-50 transition-colors"
+                className="flex-1 py-4 rounded-xl border-2 border-[#1b4965] text-[#1b4965] font-semibold hover:bg-[#1b4965] hover:text-white transition-all duration-300"
               >
-                Back
+                Back to Edit
               </motion.button>
               <motion.button
                 onClick={handleConfirmBooking}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                className="flex-1 bg-gradient-to-r from-blue-600 to-red-700 text-white py-3 rounded-lg font-medium hover:from-blue-700 hover:to-red-800 transition-all duration-300"
+                className="flex-1 bg-gradient-to-r from-[#1b4965] to-[#1b4965]/90 text-white py-4 rounded-xl font-semibold hover:from-[#1b4965]/90 hover:to-[#1b4965] transition-all duration-300 shadow-lg"
               >
                 Confirm Booking
               </motion.button>

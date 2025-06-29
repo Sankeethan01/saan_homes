@@ -29,7 +29,7 @@ export default function ChatBotRentalsPortfolio() {
     const interval = setInterval(() => {
       if (!isOpen) {
         setShowPopUp(true);
-        setTimeout(() => setShowPopUp(false), 3000); // Show for 3 seconds
+        setTimeout(() => setShowPopUp(false), 2000); // Show for 3 seconds
       }
     }, 3000); // Pop up every 3 seconds
 
