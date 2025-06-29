@@ -521,18 +521,7 @@ function ProjectOverview({ project }: { project: Project }) {
         </div>
       </div>
 
-      {/* Project Description */}
-      {/* <div className="bg-gradient-to-br from-slate-50 to-indigo-50 border border-slate-200 rounded-3xl p-8 shadow-xl">
-        <div className="flex items-center gap-4 mb-6">
-          <div className="p-3 bg-gradient-to-r from-indigo-600 to-purple-700 rounded-xl shadow-lg">
-            <RiFileTextLine className="text-white text-xl" />
-          </div>
-          <h3 className="text-2xl font-bold text-slate-800">Project Description</h3>
-        </div>
-        <div className="bg-white/70 rounded-2xl p-6 backdrop-blur-sm">
-          <p className="text-slate-700 leading-relaxed text-lg">{project.description}</p>
-        </div>
-      </div> */}
+      
 
       {/* Site Supervisor Notes Section */}
       <SiteSupervisorNotes projectId={project.id} />
