@@ -105,7 +105,7 @@ const EquipmentRentalsPortfolio = () => {
           transition={{ delay: 0.5 }}
           className="text-center mt-8"
         >
-          <Link href="/rentals">
+          <Link href="/equipments">
           <motion.button
                 whileHover={{ scale: 1.08 }}
                 whileTap={{ scale: 0.97 }}
