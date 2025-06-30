@@ -11,6 +11,7 @@ from .serializers import (
     PaymentSerializer,
 )
 from notifications.models import RentalRequest
+from django.db.models import Q
 
 
 # ──────────────────────────────────────────────
@@ -89,6 +90,104 @@ class EquipmentViewSet(viewsets.ModelViewSet):
         ).values('id', 'start_date', 'end_date', 'status')
         
         return Response(list(active_bookings))
+
+    @action(detail=False, methods=['post'], permission_classes=[permissions.AllowAny])
+    def chatbot_recommendations(self, request):
+        """
+        Chatbot endpoint to get equipment recommendations based on user requirements
+        """
+        try:
+            # Get user requirements from request
+            requirements = request.data
+            
+            # Start with all available equipment
+            queryset = Equipment.objects.filter(availability_status='AVAILABLE')
+            
+            # Filter by category if specified
+            if 'category' in requirements:
+                queryset = queryset.filter(category__slug=requirements['category'])
+            
+            # Filter by project type/usage
+            if 'project_type' in requirements:
+                project_type = requirements['project_type'].lower()
+                if 'construction' in project_type or 'building' in project_type:
+                    queryset = queryset.filter(category__name__icontains='construction')
+                elif 'excavation' in project_type or 'digging' in project_type:
+                    queryset = queryset.filter(name__icontains='excavator')
+                elif 'concrete' in project_type or 'mixing' in project_type:
+                    queryset = queryset.filter(name__icontains='mixer')
+                elif 'landscaping' in project_type or 'garden' in project_type:
+                    queryset = queryset.filter(Q(name__icontains='mower') | Q(name__icontains='trimmer'))
+            
+            # Filter by budget range
+            if 'max_budget' in requirements:
+                max_budget = float(requirements['max_budget'])
+                queryset = queryset.filter(daily_rate__lte=max_budget)
+            
+            # Filter by rental duration for best pricing
+            if 'duration' in requirements:
+                duration = int(requirements['duration'])
+                if duration >= 30:
+                    # Prioritize equipment with monthly rates
+                    queryset = queryset.filter(monthly_rate__isnull=False)
+                elif duration >= 7:
+                    # Prioritize equipment with weekly rates
+                    queryset = queryset.filter(weekly_rate__isnull=False)
+            
+            # Filter by location/delivery requirements
+            if 'needs_delivery' in requirements and requirements['needs_delivery']:
+                queryset = queryset.filter(delivery_available=True)
+            
+            # Filter by special requirements
+            if 'operator_license' in requirements and not requirements['operator_license']:
+                queryset = queryset.filter(operator_license_required=False)
+            
+            # Order by popularity and condition
+            queryset = queryset.order_by('-popularity_score', '-condition_rating')[:5]
+            
+            # Serialize the results
+            serializer = EquipmentSerializer(queryset, many=True)
+            
+            return Response({
+                'recommendations': serializer.data,
+                'count': queryset.count(),
+                'message': f'Found {queryset.count()} equipment options matching your requirements'
+            })
+            
+        except Exception as e:
+            return Response(
+                {'error': 'Unable to process request', 'details': str(e)}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+    @action(detail=False, methods=['get'], permission_classes=[permissions.AllowAny])
+    def chatbot_categories(self, request):
+        """
+        Get all equipment categories for chatbot options
+        """
+        categories = Category.objects.all().order_by('name')
+        return Response([{
+            'id': cat.id,
+            'name': cat.name,
+            'slug': cat.slug,
+            'equipment_count': cat.equipments.filter(availability_status='AVAILABLE').count()
+        } for cat in categories])
+
+    @action(detail=False, methods=['get'], permission_classes=[permissions.AllowAny])
+    def chatbot_project_types(self, request):
+        """
+        Get common project types for chatbot options
+        """
+        project_types = [
+            {'id': 'construction', 'name': 'Construction & Building', 'description': 'Building construction, renovation'},
+            {'id': 'excavation', 'name': 'Excavation & Earthwork', 'description': 'Digging, trenching, site preparation'},
+            {'id': 'concrete', 'name': 'Concrete Work', 'description': 'Concrete mixing, pouring, finishing'},
+            {'id': 'landscaping', 'name': 'Landscaping & Gardening', 'description': 'Lawn care, garden maintenance'},
+            {'id': 'demolition', 'name': 'Demolition', 'description': 'Structure demolition, debris removal'},
+            {'id': 'road_work', 'name': 'Road Work', 'description': 'Road construction, paving, maintenance'},
+            {'id': 'utility', 'name': 'Utility Work', 'description': 'Electrical, plumbing, HVAC installation'}
+        ]
+        return Response(project_types)
 
 
 class BookingViewSet(viewsets.ModelViewSet):
