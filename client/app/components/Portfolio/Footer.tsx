@@ -22,17 +22,17 @@ export default function Footer() {
               SAAN Excellence Engineering PVT LTD.
             </h1>
             <p className="text-gray-300 font-medium w-75 text-justify">
-            At SAAN Homes, we don’t just construct buildings, we bring your dreams to life, one brick at a time. Our work is fueled by a passion for innovation and a commitment to excellence in every detail.
+            At SAAN Homes, we don't just construct buildings, we bring your dreams to life, one brick at a time. Our work is fueled by a passion for innovation and a commitment to excellence in every detail.
             </p>
             
             <div className="flex space-x-4">
-              <Link href="https://www.facebook.com/SAANENGINEERING" className="hover:text-[#1b4965] transition-colors">
+              <Link href="https://www.facebook.com/SAANENGINEERING" className="transition-transform duration-200 hover:scale-110">
                 <FaFacebookF size={30} />
               </Link>
-              <Link href="https://www.instagram.com/saanengineering/" className="hover:text-[#1b4965] transition-colors">
+              <Link href="https://www.instagram.com/saanengineering/" className="transition-transform duration-200 hover:scale-110">
                 <FaInstagram size={30} />
               </Link>
-              <Link href="https://www.youtube.com/@saanexcellenceengineering3662" className="hover:text-[#1b4965] transition-colors">
+              <Link href="https://www.youtube.com/@saanexcellenceengineering3662" className="transition-transform duration-200 hover:scale-110">
                 <FaYoutube size={30} />
               </Link>
             </div>
@@ -44,28 +44,28 @@ export default function Footer() {
             <ul className="space-y-2 mt-5">
               
               <li>
-                <Link href="/services" className="hover:text-blue-500 transition-colors">
+                <Link href="/services" className="transition-transform duration-200 hover:scale-110">
                   Services
                 </Link>
               </li>
               <li>
-                <Link href="/projects" className="hover:text-blue-500 transition-colors">
+                <Link href="/projects" className="transition-transform duration-200 hover:scale-110">
                   Projects
                 </Link>
               </li>
               <li>
-                <Link href="/equipments" className="hover:text-blue-500 transition-colors">
+                <Link href="/equipments" className="transition-transform duration-200 hover:scale-110">
                   Rentals
                 </Link>
               </li>
               <li>
-                <Link href="/aboutus" className="hover:text-blue-500 transition-colors">
+                <Link href="/aboutus" className="transition-transform duration-200 hover:scale-110">
                   About Us
                 </Link>
               </li>
               
               <li>
-                <Link href="/dashboard/login" className="hover:text-blue-500 transition-colors">
+                <Link href="/dashboard/login" className="transition-transform duration-200 hover:scale-110">
                   Login
                 </Link>
               </li>
@@ -77,17 +77,17 @@ export default function Footer() {
             <h3 className="text-white text-xl font-semibold mb-4">Projects</h3>
             <ul className="space-y-2 mt-5 justify-center-safe ">
               <li>
-                <Link href="/projects/ongoing" className="hover:text-blue-500 transition-colors">
+                <Link href="/projects/ongoing" className="transition-transform duration-200 hover:scale-110">
                   Ongoing Projects
                 </Link>
               </li>
               <li>
-                <Link href="/projects/completed" className="hover:text-blue-500 transition-colors">
+                <Link href="/projects/completed" className="transition-transform duration-200 hover:scale-110">
                   Completed Projects
                 </Link>
               </li>
               <li>
-                <Link href="/projects/upcoming" className="hover:text-blue-500 transition-colors">
+                <Link href="/projects/upcoming" className="transition-transform duration-200 hover:scale-110">
                   Upcoming Projects
                 </Link>
               </li>
