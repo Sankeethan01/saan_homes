@@ -1,5 +1,6 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import React, { useState } from 'react';
+import { FaQuoteRight } from 'react-icons/fa';
 
 const testimonials = [
   {
@@ -76,7 +77,7 @@ const ClientTestimonialsPortfolio = () => {
       </motion.div>
       <div className="max-w-3xl mx-auto flex flex-col items-center px-4">
         
-        <div className="text-center text-[8rem] text-blue-400 mb-[-3.5rem]">&ldquo;</div>
+        <div className="text-center text-[8rem] text-[#1b4965] mb-20"><FaQuoteRight size={35} /></div>
         <div className="flex flex-col items-center justify-center h-36 md:h-40 min-h-[144px] max-h-[160px]">
           <AnimatePresence mode="wait">
             <motion.p
@@ -94,7 +95,7 @@ const ClientTestimonialsPortfolio = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="font-semibold text-[#1b4965] text-lg"
+            className="font-semibold text-[#1b4965] text-lg mt-5"
           >
             {testimonials[selected].name}
           </motion.div>
