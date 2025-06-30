@@ -50,7 +50,7 @@ const CallActionsRentalsPortfolio = () => {
             transition={{ delay: 0.2 }}
             className="flex flex-col md:flex-row gap-4 justify-center"
           >
-            <Link href="/login">
+            <Link href="/dashboard/login">
             <motion.button
                 whileHover={{ scale: 1.08 }}
                 whileTap={{ scale: 0.97 }}
