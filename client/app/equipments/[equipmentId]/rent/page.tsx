@@ -23,6 +23,7 @@ import {
   RiIdCardLine,
 } from "react-icons/ri";
 import { useAuthStore } from "@/app/stores/useAuthStore";
+import { fetchWithAuth } from "@/app/utils/auth";
 import ChatBotRentalsPortfolio from "@/app/components/Portfolio/Rentals/ChatBot";
 
 interface Equipment {
@@ -70,6 +71,13 @@ interface BookingData {
   projectDetails: string;
 }
 
+interface ExistingBooking {
+  id: string;
+  start_date: string;
+  end_date: string;
+  status: 'PENDING' | 'APPROVED' | 'PAID' | 'REJECTED' | 'CANCELLED';
+}
+
 export default function RentEquipmentPage() {
   const router = useRouter();
   const params = useParams();
@@ -77,6 +85,7 @@ export default function RentEquipmentPage() {
   const { token } = useAuthStore();
   
   const [equipment, setEquipment] = useState<Equipment | null>(null);
+  const [existingBookings, setExistingBookings] = useState<ExistingBooking[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -107,28 +116,48 @@ export default function RentEquipmentPage() {
     }
   }, [token, router, params.equipmentId]);
 
-  // Fetch equipment details
+  // Fetch equipment details and existing bookings
   useEffect(() => {
-    const fetchEquipment = async () => {
+    const fetchData = async () => {
       if (!params.equipmentId) return;
       
       try {
         setLoading(true);
         const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api';
         
-        const response = await fetch(`${apiBaseUrl}/equipments/equipment/${params.equipmentId}/`, {
+        // Fetch equipment details
+        const equipmentResponse = await fetch(`${apiBaseUrl}/equipments/equipment/${params.equipmentId}/`, {
           headers: {
             'Content-Type': 'application/json',
             'Accept': 'application/json'
           }
         });
 
-        if (!response.ok) {
-          throw new Error(`Failed to fetch equipment: ${response.statusText}`);
+        if (!equipmentResponse.ok) {
+          throw new Error(`Failed to fetch equipment: ${equipmentResponse.statusText}`);
         }
 
-        const data = await response.json();
-        setEquipment(data);
+        const equipmentData = await equipmentResponse.json();
+        setEquipment(equipmentData);
+
+        // Fetch existing bookings for this equipment to check availability
+        try {
+          const bookingsResponse = await fetch(`${apiBaseUrl}/equipments/equipment/${params.equipmentId}/bookings/`, {
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json'
+            }
+          });
+
+          if (bookingsResponse.ok) {
+            const bookingsData = await bookingsResponse.json();
+            setExistingBookings(bookingsData);
+          }
+        } catch (bookingError) {
+          console.warn('Could not fetch existing bookings:', bookingError);
+          // Continue without booking data - availability check will be disabled
+        }
+
       } catch (err) {
         console.error('Error fetching equipment:', err);
         setError(err instanceof Error ? err.message : 'Failed to fetch equipment data');
@@ -137,8 +166,22 @@ export default function RentEquipmentPage() {
       }
     };
 
-    fetchEquipment();
+    fetchData();
   }, [params.equipmentId]);
+
+  // Check if a date range conflicts with existing bookings
+  const isDateRangeAvailable = (startDate: string, endDate: string): boolean => {
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    
+    return !existingBookings.some(booking => {
+      const bookingStart = new Date(booking.start_date);
+      const bookingEnd = new Date(booking.end_date);
+      
+      // Check if ranges overlap
+      return start <= bookingEnd && end >= bookingStart;
+    });
+  };
 
   const calculateTotalCost = () => {
     if (!equipment || !bookingData.duration) return 0;
@@ -177,8 +220,43 @@ export default function RentEquipmentPage() {
   const handleSubmitBooking = async () => {
     if (!equipment || !token) return;
 
+    // Validate required fields based on current step
+    if (currentStep === 3) {
+      // Validate emergency contact
+      if (!bookingData.emergencyContact.name || !bookingData.emergencyContact.phone || !bookingData.emergencyContact.relationship) {
+        setError('Please fill in all emergency contact fields');
+        return;
+      }
+
+      // Validate operator license if required
+      if (equipment.rental_requirements.operator_license_required && !bookingData.operatorLicense) {
+        setError('Operator license is required for this equipment');
+        return;
+      }
+
+      // Validate insurance if required
+      if (equipment.rental_requirements.insurance_required && !bookingData.insuranceProvider) {
+        setError('Insurance information is required for this equipment');
+        return;
+      }
+
+      // Validate delivery address if delivery is required
+      if (bookingData.deliveryRequired && !bookingData.deliveryAddress) {
+        setError('Please provide a delivery address');
+        return;
+      }
+    }
+
+    // Check availability before submitting
+    if (!isDateRangeAvailable(bookingData.startDate, bookingData.endDate)) {
+      setError('Selected dates are not available. Please choose different dates.');
+      return;
+    }
+
     try {
       setSubmitting(true);
+      setError(null);
+      
       const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api';
       
       const bookingPayload = {
@@ -188,19 +266,15 @@ export default function RentEquipmentPage() {
         notes: `${bookingData.notes}\n\nProject Details: ${bookingData.projectDetails}\n\nDelivery Required: ${bookingData.deliveryRequired ? 'Yes' : 'No'}${bookingData.deliveryRequired ? `\nDelivery Address: ${bookingData.deliveryAddress}` : ''}\n\nEmergency Contact: ${bookingData.emergencyContact.name} (${bookingData.emergencyContact.relationship}) - ${bookingData.emergencyContact.phone}${bookingData.operatorLicense ? `\nOperator License: ${bookingData.operatorLicense}` : ''}${bookingData.insuranceProvider ? `\nInsurance Provider: ${bookingData.insuranceProvider}` : ''}`,
       };
 
-      const response = await fetch(`${apiBaseUrl}/equipments/bookings/`, {
+      // Use the fetchWithAuth utility to handle authentication properly
+      const response = await fetchWithAuth(`${apiBaseUrl}/equipments/bookings/`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
         body: JSON.stringify(bookingPayload),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.detail || 'Failed to create booking');
+        throw new Error(errorData.detail || errorData.message || 'Failed to create booking');
       }
 
       const booking = await response.json();
@@ -398,6 +472,39 @@ export default function RentEquipmentPage() {
                       {bookingData.duration} day{bookingData.duration > 1 ? 's' : ''}
                     </p>
                   </div>
+
+                  {/* Availability Status */}
+                  {bookingData.startDate && bookingData.endDate && (
+                    <div className={`p-6 rounded-2xl border ${
+                      isDateRangeAvailable(bookingData.startDate, bookingData.endDate)
+                        ? 'bg-green-50 border-green-200'
+                        : 'bg-red-50 border-red-200'
+                    }`}>
+                      <div className="flex items-center mb-4">
+                        {isDateRangeAvailable(bookingData.startDate, bookingData.endDate) ? (
+                          <>
+                            <RiCheckLine className="text-green-600 text-2xl mr-3" />
+                            <h3 className="text-xl font-bold text-green-800">Dates Available ✅</h3>
+                          </>
+                        ) : (
+                          <>
+                            <RiAlertLine className="text-red-600 text-2xl mr-3" />
+                            <h3 className="text-xl font-bold text-red-800">Dates Not Available ❌</h3>
+                          </>
+                        )}
+                      </div>
+                      <p className={`text-sm ${
+                        isDateRangeAvailable(bookingData.startDate, bookingData.endDate)
+                          ? 'text-green-700'
+                          : 'text-red-700'
+                      }`}>
+                        {isDateRangeAvailable(bookingData.startDate, bookingData.endDate)
+                          ? 'Selected dates are available for booking'
+                          : 'Selected dates conflict with existing bookings. Please choose different dates.'
+                        }
+                      </p>
+                    </div>
+                  )}
 
                   <div className="p-6 bg-green-50 rounded-2xl border border-green-200">
                     <div className="flex items-center mb-4">
@@ -707,10 +814,25 @@ export default function RentEquipmentPage() {
 
                 {currentStep < steps.length - 1 ? (
                   <motion.button
-                    onClick={() => setCurrentStep(currentStep + 1)}
+                    onClick={() => {
+                      // Validate current step before proceeding
+                      if (currentStep === 0) {
+                        // Check if dates are available
+                        if (!isDateRangeAvailable(bookingData.startDate, bookingData.endDate)) {
+                          setError('Selected dates are not available. Please choose different dates.');
+                          return;
+                        }
+                      }
+                      setError(null);
+                      setCurrentStep(currentStep + 1);
+                    }}
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
-                    className="px-6 py-3 bg-gradient-to-r from-[#1b4965] to-[#1b4965]/90 text-white rounded-xl font-semibold hover:from-[#1b4965]/90 hover:to-[#1b4965] transition-all duration-300 shadow-lg"
+                    disabled={
+                      currentStep === 0 && 
+                      (!bookingData.startDate || !bookingData.endDate || !isDateRangeAvailable(bookingData.startDate, bookingData.endDate))
+                    }
+                    className="px-6 py-3 bg-gradient-to-r from-[#1b4965] to-[#1b4965]/90 text-white rounded-xl font-semibold hover:from-[#1b4965]/90 hover:to-[#1b4965] transition-all duration-300 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Next
                   </motion.button>
@@ -719,7 +841,7 @@ export default function RentEquipmentPage() {
                     onClick={handleSubmitBooking}
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
-                    disabled={submitting}
+                    disabled={submitting || !isDateRangeAvailable(bookingData.startDate, bookingData.endDate)}
                     className="px-8 py-3 bg-gradient-to-r from-green-600 to-green-500 text-white rounded-xl font-semibold hover:from-green-500 hover:to-green-600 transition-all duration-300 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                   >
                     {submitting ? (

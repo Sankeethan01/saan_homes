@@ -161,8 +161,18 @@ class BookingSerializer(serializers.ModelSerializer):
         read_only_fields = ("id", "created", "status", "user")
 
     def validate(self, attrs):
-        if attrs["end_date"] < attrs["start_date"]:
-            raise serializers.ValidationError("End date must be after start date.")
+        # Only validate dates if both are present (for partial updates)
+        if "end_date" in attrs and "start_date" in attrs:
+            if attrs["end_date"] < attrs["start_date"]:
+                raise serializers.ValidationError("End date must be after start date.")
+        elif "end_date" in attrs and not "start_date" in attrs:
+            # If only end_date is being updated, check against existing start_date
+            if self.instance and attrs["end_date"] < self.instance.start_date:
+                raise serializers.ValidationError("End date must be after start date.")
+        elif "start_date" in attrs and not "end_date" in attrs:
+            # If only start_date is being updated, check against existing end_date
+            if self.instance and self.instance.end_date < attrs["start_date"]:
+                raise serializers.ValidationError("End date must be after start date.")
         return attrs
     
     def get_total_cost(self, obj):

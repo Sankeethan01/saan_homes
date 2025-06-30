@@ -20,116 +20,55 @@ import Image from 'next/image';
 import { useRouter, useParams } from 'next/navigation';
 import { useAuthStore } from '@/app/stores/useAuthStore';
 
-interface Rental {
+interface Booking {
   id: string;
-  equipment: string;
-  equipmentImage: string;
-  project: string;
-  customer: string;
-  customerEmail: string;
-  customerPhone: string;
-  status: 'Pending' | 'Approved' | 'Booked' | 'Completed';
-  startDate: string;
-  endDate: string;
-  dailyRate: number;
-  totalAmount: number;
-  handedOver: boolean;
-  payment: {
-    paid: boolean;
-    amount: number;
-    method: string;
-    dueDate: string;
-  };
-  createdAt: string;
-  notes?: string;
-  address?: string;
+  equipment: number;
+  equipment_name: string;
+  equipment_image: string;
+  equipment_daily_rate: string;
+  user: number;
+  user_name: string;
+  user_email: string;
+  status: 'PENDING' | 'APPROVED' | 'PAID' | 'CANCELLED' | 'COMPLETED';
+  start_date: string;
+  end_date: string;
+  project_name: string;
+  project_description: string;
+  delivery_address: string;
+  delivery_required: boolean;
+  safety_requirements: string;
+  emergency_contact_name: string;
+  emergency_contact_phone: string;
+  total_cost: string;
+  duration: number;
+  created: string;
 }
 
-// Mock data - in real app this would come from API
-const mockRentals: Rental[] = [
-  {
-    id: '1',
-    equipment: 'Excavator CAT 320D',
-    equipmentImage: '/assets/images/cmixer.jpg',
-    project: 'High-Rise Apartment Complex',
-    customer: 'John Smith',
-    customerEmail: 'john.smith@example.com',
-    customerPhone: '+1 (555) 123-4567',
-    status: 'Pending',
-    startDate: '2024-06-10',
-    endDate: '2024-06-15',
-    dailyRate: 500,
-    totalAmount: 2500,
-    handedOver: false,
-    payment: { paid: false, amount: 2500, method: 'Bank Transfer', dueDate: '2024-06-09' },
-    createdAt: '2024-06-05',
-    notes: 'Customer needs equipment for foundation work. Urgent request.',
-    address: '123 Construction Ave, Building City, BC 12345',
-  },
-  {
-    id: '2',
-    equipment: 'Concrete Mixer',
-    equipmentImage: '/assets/images/cmixer.jpg',
-    project: 'Commercial Office Building',
-    customer: 'Sarah Johnson',
-    customerEmail: 'sarah.j@company.com',
-    customerPhone: '+1 (555) 987-6543',
-    status: 'Approved',
-    startDate: '2024-06-12',
-    endDate: '2024-06-18',
-    dailyRate: 150,
-    totalAmount: 900,
-    handedOver: false,
-    payment: { paid: false, amount: 900, method: 'Cash', dueDate: '2024-06-11' },
-    createdAt: '2024-06-06',
-    notes: 'Regular customer with good payment history.',
-    address: '456 Business Blvd, Commerce City, CC 67890',
-  },
-  {
-    id: '3',
-    equipment: 'Power Drill Set',
-    equipmentImage: '/assets/images/cmixer.jpg',
-    project: 'Residential Housing Development',
-    customer: 'Mike Wilson',
-    customerEmail: 'mike.w@builders.com',
-    customerPhone: '+1 (555) 456-7890',
-    status: 'Booked',
-    startDate: '2024-06-20',
-    endDate: '2024-06-22',
-    dailyRate: 45,
-    totalAmount: 90,
-    handedOver: true,
-    payment: { paid: true, amount: 90, method: 'Card', dueDate: '2024-06-19' },
-    createdAt: '2024-06-15',
-    notes: 'Equipment handed over on time. Customer satisfied.',
-    address: '789 Residential St, Home Town, HT 11111',
-  },
-  {
-    id: '4',
-    equipment: 'Lawn Mower',
-    equipmentImage: '/assets/images/cmixer.jpg',
-    project: 'Landscaping Project',
-    customer: 'Emma Davis',
-    customerEmail: 'emma.davis@landscape.com',
-    customerPhone: '+1 (555) 321-0987',
-    status: 'Completed',
-    startDate: '2024-05-01',
-    endDate: '2024-05-05',
-    dailyRate: 75,
-    totalAmount: 375,
-    handedOver: true,
-    payment: { paid: true, amount: 375, method: 'Bank Transfer', dueDate: '2024-04-30' },
-    createdAt: '2024-04-25',
-    notes: 'Project completed successfully. Equipment returned in good condition.',
-    address: '321 Garden Way, Green Valley, GV 22222',
-  },
-];
+// API utility function
+const fetchWithAuth = async (url: string, options: RequestInit = {}) => {
+  const token = useAuthStore.getState().token;
+  
+  const response = await fetch(url, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+      ...options.headers,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+
+  return response.json();
+};
 
 export default function RentalDetailPage() {
   const params = useParams();
   const router = useRouter();
   const token = useAuthStore((s) => s.token);
-  const [rental, setRental] = useState<Rental | null>(null);
+  const [booking, setBooking] = useState<Booking | null>(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
 
@@ -139,23 +78,39 @@ export default function RentalDetailPage() {
       return;
     }
 
-    // Find rental by ID - in real app this would be an API call
-    const foundRental = mockRentals.find(r => r.id === params.rentalId);
-    setRental(foundRental || null);
-    setLoading(false);
+    fetchBookingDetails();
   }, [params.rentalId, token, router]);
 
+  const fetchBookingDetails = async () => {
+    try {
+      setLoading(true);
+      const data = await fetchWithAuth(`http://localhost:8000/api/equipments/bookings/${params.rentalId}/`);
+      setBooking(data);
+    } catch (error) {
+      console.error('Error fetching booking details:', error);
+      setBooking(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleApproveRental = async () => {
-    if (!rental) return;
+    if (!booking) return;
     setActionLoading(true);
     
     try {
-      // API call would go here
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
+      const updatedBooking = await fetchWithAuth(
+        `http://localhost:8000/api/equipments/bookings/${params.rentalId}/`,
+        {
+          method: 'PATCH',
+          body: JSON.stringify({ status: 'APPROVED' }),
+        }
+      );
       
-      setRental({ ...rental, status: 'Approved' });
+      setBooking(updatedBooking);
       alert('Rental approved successfully!');
-    } catch (error) {
+    } catch (err) {
+      console.error('Error approving rental:', err);
       alert('Error approving rental. Please try again.');
     } finally {
       setActionLoading(false);
@@ -163,16 +118,22 @@ export default function RentalDetailPage() {
   };
 
   const handleRejectRental = async () => {
-    if (!rental) return;
+    if (!booking) return;
     setActionLoading(true);
     
     try {
-      // API call would go here
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
+      await fetchWithAuth(
+        `http://localhost:8000/api/equipments/bookings/${params.rentalId}/`,
+        {
+          method: 'PATCH',
+          body: JSON.stringify({ status: 'CANCELLED' }),
+        }
+      );
       
       alert('Rental rejected successfully!');
       router.back();
-    } catch (error) {
+    } catch (err) {
+      console.error('Error rejecting rental:', err);
       alert('Error rejecting rental. Please try again.');
     } finally {
       setActionLoading(false);
@@ -189,14 +150,16 @@ export default function RentalDetailPage() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'Pending':
+      case 'PENDING':
         return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'Approved':
+      case 'APPROVED':
         return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'Booked':
+      case 'PAID':
         return 'bg-purple-100 text-purple-800 border-purple-200';
-      case 'Completed':
+      case 'COMPLETED':
         return 'bg-green-100 text-green-800 border-green-200';
+      case 'CANCELLED':
+        return 'bg-red-100 text-red-800 border-red-200';
       default:
         return 'bg-slate-100 text-slate-800 border-slate-200';
     }
@@ -210,7 +173,7 @@ export default function RentalDetailPage() {
     );
   }
 
-  if (!rental) {
+  if (!booking) {
     return (
       <div className="space-y-6 px-4 py-8">
         <div className="text-center">
@@ -218,7 +181,7 @@ export default function RentalDetailPage() {
             <RiAlertLine className="w-12 h-12 text-slate-400" />
           </div>
           <h3 className="text-xl font-semibold text-slate-900 mb-2">Rental not found</h3>
-          <p className="text-slate-500 mb-6">The rental you&apos;re looking for doesn&apos;t exist or has been removed.</p>
+          <p className="text-slate-500 mb-6">The rental you&rsquo;re looking for doesn&rsquo;t exist or has been removed.</p>
           <button
             onClick={() => router.back()}
             className="px-4 py-2 bg-gradient-to-r from-blue-500 to-[#1b4965] text-white rounded-lg hover:from-blue-600 hover:to-[#1b4965] transition-colors"
@@ -245,10 +208,10 @@ export default function RentalDetailPage() {
           <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-[#1b4965] bg-clip-text text-transparent">
             Rental Details
           </h1>
-          <p className="text-slate-600 mt-1">Manage rental request #{rental.id}</p>
+          <p className="text-slate-600 mt-1">Manage rental request #{booking.id}</p>
         </div>
-        <span className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-medium border ${getStatusColor(rental.status)}`}>
-          {rental.status}
+        <span className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-medium border ${getStatusColor(booking.status)}`}>
+          {booking.status}
         </span>
       </div>
 
@@ -265,23 +228,23 @@ export default function RentalDetailPage() {
             <div className="flex items-start gap-4">
               <div className="relative w-24 h-24 bg-slate-100 rounded-lg overflow-hidden flex-shrink-0">
                 <Image
-                  src={rental.equipmentImage}
-                  alt={rental.equipment}
+                  src={booking.equipment_image || '/assets/images/cmixer.jpg'}
+                  alt={booking.equipment_name}
                   fill
                   className="object-cover"
                 />
               </div>
               
               <div className="flex-1">
-                <h3 className="text-xl font-semibold text-slate-900 mb-2">{rental.equipment}</h3>
+                <h3 className="text-xl font-semibold text-slate-900 mb-2">{booking.equipment_name}</h3>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <p className="text-sm text-slate-500">Daily Rate</p>
-                    <p className="font-semibold text-slate-900">${rental.dailyRate}/day</p>
+                    <p className="font-semibold text-slate-900">${booking.equipment_daily_rate}/day</p>
                   </div>
                   <div>
                     <p className="text-sm text-slate-500">Total Amount</p>
-                    <p className="font-semibold text-slate-900">${rental.totalAmount}</p>
+                    <p className="font-semibold text-slate-900">${booking.total_cost}</p>
                   </div>
                 </div>
               </div>
@@ -298,47 +261,54 @@ export default function RentalDetailPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <p className="text-sm text-slate-500 mb-1">Project</p>
-                <p className="font-semibold text-slate-900">{rental.project}</p>
+                <p className="font-semibold text-slate-900">{booking.project_name}</p>
               </div>
               
               <div>
                 <p className="text-sm text-slate-500 mb-1">Rental Period</p>
-                <p className="font-semibold text-slate-900">{rental.startDate} to {rental.endDate}</p>
+                <p className="font-semibold text-slate-900">{booking.start_date} to {booking.end_date}</p>
               </div>
               
               <div>
                 <p className="text-sm text-slate-500 mb-1">Duration</p>
                 <p className="font-semibold text-slate-900">
-                  {Math.ceil((new Date(rental.endDate).getTime() - new Date(rental.startDate).getTime()) / (1000 * 60 * 60 * 24))} days
+                  {booking.duration} days
                 </p>
               </div>
               
               <div>
                 <p className="text-sm text-slate-500 mb-1">
-                  {rental.status === 'Booked' ? 'Days Remaining' : 
-                   rental.status === 'Completed' ? 'Completed' : 'Starts In'}
+                  {booking.status === 'PAID' ? 'Days Remaining' : 
+                   booking.status === 'COMPLETED' ? 'Completed' : 'Starts In'}
                 </p>
                 <p className="font-semibold text-slate-900">
-                  {rental.status === 'Completed' 
+                  {booking.status === 'COMPLETED' 
                     ? 'Project finished' 
-                    : `${calculateDaysRemaining(rental.status === 'Booked' ? rental.endDate : rental.startDate)} days`}
+                    : `${calculateDaysRemaining(booking.status === 'PAID' ? booking.end_date : booking.start_date)} days`}
                 </p>
               </div>
               
-              {rental.address && (
+              {booking.delivery_address && (
                 <div className="md:col-span-2">
-                  <p className="text-sm text-slate-500 mb-1">Project Address</p>
+                  <p className="text-sm text-slate-500 mb-1">Delivery Address</p>
                   <p className="font-semibold text-slate-900 flex items-center gap-2">
                     <RiMapPinLine className="w-4 h-4 text-slate-400" />
-                    {rental.address}
+                    {booking.delivery_address}
                   </p>
                 </div>
               )}
               
-              {rental.notes && (
+              {booking.project_description && (
                 <div className="md:col-span-2">
-                  <p className="text-sm text-slate-500 mb-1">Notes</p>
-                  <p className="text-slate-700 bg-slate-50 p-3 rounded-lg">{rental.notes}</p>
+                  <p className="text-sm text-slate-500 mb-1">Project Description</p>
+                  <p className="text-slate-700 bg-slate-50 p-3 rounded-lg">{booking.project_description}</p>
+                </div>
+              )}
+
+              {booking.safety_requirements && (
+                <div className="md:col-span-2">
+                  <p className="text-sm text-slate-500 mb-1">Safety Requirements</p>
+                  <p className="text-slate-700 bg-slate-50 p-3 rounded-lg">{booking.safety_requirements}</p>
                 </div>
               )}
             </div>
@@ -355,7 +325,7 @@ export default function RentalDetailPage() {
               <div>
                 <p className="text-sm text-slate-500 mb-1">Payment Status</p>
                 <div className="flex items-center gap-2">
-                  {rental.payment.paid ? (
+                  {booking.status === 'PAID' || booking.status === 'COMPLETED' ? (
                     <>
                       <FiCheck className="w-4 h-4 text-green-600" />
                       <span className="font-semibold text-green-600">Paid</span>
@@ -370,35 +340,19 @@ export default function RentalDetailPage() {
               </div>
               
               <div>
-                <p className="text-sm text-slate-500 mb-1">Payment Method</p>
-                <p className="font-semibold text-slate-900">{rental.payment.method}</p>
+                <p className="text-sm text-slate-500 mb-1">Total Amount</p>
+                <p className="font-semibold text-slate-900">${booking.total_cost}</p>
               </div>
               
               <div>
-                <p className="text-sm text-slate-500 mb-1">Amount</p>
-                <p className="font-semibold text-slate-900">${rental.payment.amount}</p>
+                <p className="text-sm text-slate-500 mb-1">Duration</p>
+                <p className="font-semibold text-slate-900">{booking.duration} days</p>
               </div>
               
               <div>
-                <p className="text-sm text-slate-500 mb-1">Due Date</p>
-                <p className="font-semibold text-slate-900">{rental.payment.dueDate}</p>
+                <p className="text-sm text-slate-500 mb-1">Daily Rate</p>
+                <p className="font-semibold text-slate-900">${booking.equipment_daily_rate}/day</p>
               </div>
-            </div>
-          </div>
-
-          {/* Equipment Calendar Placeholder */}
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
-            <h2 className="text-lg font-semibold text-slate-900 mb-4 flex items-center gap-2">
-              <RiCalendarEventLine className="w-5 h-5 text-blue-600" />
-              Equipment Calendar
-            </h2>
-            
-            <div className="bg-slate-50 rounded-lg p-8 text-center">
-              <RiCalendarEventLine className="w-12 h-12 text-slate-400 mx-auto mb-4" />
-              <p className="text-slate-600">Equipment calendar will be displayed here</p>
-              <p className="text-sm text-slate-500 mt-2">
-                Showing availability for {rental.equipment}
-              </p>
             </div>
           </div>
         </div>
@@ -415,30 +369,35 @@ export default function RentalDetailPage() {
             <div className="space-y-4">
               <div>
                 <p className="text-sm text-slate-500 mb-1">Name</p>
-                <p className="font-semibold text-slate-900">{rental.customer}</p>
+                <p className="font-semibold text-slate-900">{booking.user_name}</p>
               </div>
               
               <div>
                 <p className="text-sm text-slate-500 mb-1">Email</p>
                 <a 
-                  href={`mailto:${rental.customerEmail}`}
+                  href={`mailto:${booking.user_email}`}
                   className="font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-2"
                 >
                   <RiMailLine className="w-4 h-4" />
-                  {rental.customerEmail}
+                  {booking.user_email}
                 </a>
               </div>
               
-              <div>
-                <p className="text-sm text-slate-500 mb-1">Phone</p>
-                <a 
-                  href={`tel:${rental.customerPhone}`}
-                  className="font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-2"
-                >
-                  <RiPhoneLine className="w-4 h-4" />
-                  {rental.customerPhone}
-                </a>
-              </div>
+              {booking.emergency_contact_name && (
+                <div>
+                  <p className="text-sm text-slate-500 mb-1">Emergency Contact</p>
+                  <p className="font-semibold text-slate-900">{booking.emergency_contact_name}</p>
+                  {booking.emergency_contact_phone && (
+                    <a 
+                      href={`tel:${booking.emergency_contact_phone}`}
+                      className="font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-2 mt-1"
+                    >
+                      <RiPhoneLine className="w-4 h-4" />
+                      {booking.emergency_contact_phone}
+                    </a>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 
@@ -446,7 +405,7 @@ export default function RentalDetailPage() {
           <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
             <h2 className="text-lg font-semibold text-slate-900 mb-4">Actions</h2>
             
-            {rental.status === 'Pending' && (
+            {booking.status === 'PENDING' && (
               <div className="space-y-3">
                 <button
                   onClick={handleApproveRental}
@@ -466,54 +425,40 @@ export default function RentalDetailPage() {
                 </button>
               </div>
             )}
-
-            {rental.status === 'Approved' && (
-              <div className="space-y-3">
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <p className="text-sm text-blue-800">
-                    <strong>Next Steps:</strong> Waiting for customer payment. 
-                    Once payment is confirmed, status will change to "Booked".
-                  </p>
+            
+            {booking.status === 'APPROVED' && (
+              <div className="text-center">
+                <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <FiCalendar className="w-8 h-8 text-blue-600" />
                 </div>
-                {!rental.payment.paid && (
-                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                    <p className="text-sm text-yellow-800 flex items-center gap-2">
-                      <RiAlertLine className="w-4 h-4" />
-                      Payment pending - Due: {rental.payment.dueDate}
-                    </p>
-                  </div>
-                )}
+                <p className="text-slate-600 mb-4">Rental has been approved. Waiting for customer payment.</p>
               </div>
             )}
-
-            {rental.status === 'Booked' && (
-              <div className="space-y-3">
-                <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
-                  <p className="text-sm text-purple-800">
-                    <strong>Active Rental:</strong> Equipment is currently rented. 
-                    Monitor return date and condition.
-                  </p>
+            
+            {booking.status === 'PAID' && (
+              <div className="text-center">
+                <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <FiDollarSign className="w-8 h-8 text-purple-600" />
                 </div>
-                <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
-                  <p className="text-sm text-slate-700">
-                    <strong>Handed Over:</strong> {rental.handedOver ? (
-                      <span className="text-green-600 font-semibold">Yes</span>
-                    ) : (
-                      <span className="text-red-600 font-semibold">No</span>
-                    )}
-                  </p>
-                </div>
+                <p className="text-slate-600 mb-4">Payment received. Equipment ready for pickup/delivery.</p>
               </div>
             )}
-
-            {rental.status === 'Completed' && (
-              <div className="space-y-3">
-                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                  <p className="text-sm text-green-800">
-                    <strong>Completed:</strong> Rental has been successfully completed. 
-                    Equipment returned and payment processed.
-                  </p>
+            
+            {booking.status === 'COMPLETED' && (
+              <div className="text-center">
+                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <FiCheck className="w-8 h-8 text-green-600" />
                 </div>
+                <p className="text-slate-600 mb-4">Rental completed successfully.</p>
+              </div>
+            )}
+            
+            {booking.status === 'CANCELLED' && (
+              <div className="text-center">
+                <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <RiCloseLine className="w-8 h-8 text-red-600" />
+                </div>
+                <p className="text-slate-600 mb-4">Rental has been cancelled.</p>
               </div>
             )}
           </div>
@@ -527,47 +472,41 @@ export default function RentalDetailPage() {
             
             <div className="space-y-4">
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                  <FiCalendar className="w-4 h-4 text-blue-600" />
-                </div>
+                <div className="w-3 h-3 bg-blue-600 rounded-full"></div>
                 <div>
-                  <p className="font-medium text-slate-900">Request Created</p>
-                  <p className="text-sm text-slate-500">{rental.createdAt}</p>
+                  <p className="text-sm font-medium text-slate-900">Booking Created</p>
+                  <p className="text-xs text-slate-500">{new Date(booking.created).toLocaleDateString()}</p>
                 </div>
               </div>
               
-              {rental.status !== 'Pending' && (
+              {booking.status !== 'PENDING' && (
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-                    <FiCheck className="w-4 h-4 text-green-600" />
-                  </div>
+                  <div className={`w-3 h-3 rounded-full ${booking.status === 'CANCELLED' ? 'bg-red-600' : 'bg-green-600'}`}></div>
                   <div>
-                    <p className="font-medium text-slate-900">Request Approved</p>
-                    <p className="text-sm text-slate-500">Status updated to approved</p>
+                    <p className="text-sm font-medium text-slate-900">
+                      {booking.status === 'CANCELLED' ? 'Cancelled' : 'Approved'}
+                    </p>
+                    <p className="text-xs text-slate-500">Status updated</p>
                   </div>
                 </div>
               )}
               
-              {(rental.status === 'Booked' || rental.status === 'Completed') && (
+              {(booking.status === 'PAID' || booking.status === 'COMPLETED') && (
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
-                    <FiDollarSign className="w-4 h-4 text-purple-600" />
-                  </div>
+                  <div className="w-3 h-3 bg-purple-600 rounded-full"></div>
                   <div>
-                    <p className="font-medium text-slate-900">Payment Confirmed</p>
-                    <p className="text-sm text-slate-500">Rental confirmed and booked</p>
+                    <p className="text-sm font-medium text-slate-900">Payment Received</p>
+                    <p className="text-xs text-slate-500">Customer paid</p>
                   </div>
                 </div>
               )}
               
-              {rental.status === 'Completed' && (
+              {booking.status === 'COMPLETED' && (
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-                    <FiCheck className="w-4 h-4 text-green-600" />
-                  </div>
+                  <div className="w-3 h-3 bg-green-600 rounded-full"></div>
                   <div>
-                    <p className="font-medium text-slate-900">Rental Completed</p>
-                    <p className="text-sm text-slate-500">Equipment returned successfully</p>
+                    <p className="text-sm font-medium text-slate-900">Rental Completed</p>
+                    <p className="text-xs text-slate-500">Equipment returned</p>
                   </div>
                 </div>
               )}
