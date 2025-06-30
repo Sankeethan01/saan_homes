@@ -10,6 +10,7 @@ from .serializers import (
     BookingSerializer,
     PaymentSerializer,
 )
+from notifications.models import RentalRequest
 
 
 # ──────────────────────────────────────────────
@@ -76,6 +77,19 @@ class EquipmentViewSet(viewsets.ModelViewSet):
         
         return queryset
 
+    @action(detail=True, methods=['get'], permission_classes=[permissions.AllowAny])
+    def bookings(self, request, pk=None):
+        """Get all active bookings for this equipment to check availability"""
+        equipment = self.get_object()
+        
+        # Get all active bookings (not cancelled or rejected)
+        active_bookings = Booking.objects.filter(
+            equipment=equipment,
+            status__in=['PENDING', 'APPROVED', 'PAID']
+        ).values('id', 'start_date', 'end_date', 'status')
+        
+        return Response(list(active_bookings))
+
 
 class BookingViewSet(viewsets.ModelViewSet):
     queryset = Booking.objects.select_related("equipment", "user").all()
@@ -84,9 +98,39 @@ class BookingViewSet(viewsets.ModelViewSet):
     filter_backends = [OrderingFilter]
     ordering = ["-created"]
 
+    def get_queryset(self):
+        """Allow filtering by equipment for availability checking"""
+        queryset = super().get_queryset()
+        equipment_id = self.request.query_params.get('equipment')
+        
+        if equipment_id:
+            queryset = queryset.filter(equipment_id=equipment_id)
+            
+        return queryset
+
     # Automatically assign booking.user = request.user on create
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        booking = serializer.save(user=self.request.user)
+        
+        # Create a rental request notification for admins
+        RentalRequest.objects.create(
+            booking=booking,
+            is_handled=False
+        )
+
+    def perform_update(self, serializer):
+        """Handle status updates and create notifications"""
+        old_status = self.get_object().status
+        booking = serializer.save()
+        
+        # If status changed, create appropriate notifications
+        if old_status != booking.status:
+            if booking.status == 'APPROVED':
+                # Notify customer that booking is approved
+                pass  # For now, we'll handle this in frontend
+            elif booking.status == 'REJECTED':
+                # Notify customer that booking is rejected
+                pass  # For now, we'll handle this in frontend
 
     @action(detail=True, methods=['patch'], permission_classes=[permissions.IsAuthenticated])
     def pay(self, request, pk=None):
