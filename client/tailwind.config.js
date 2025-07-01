@@ -26,6 +26,9 @@ module.exports = {
           950: '#0d2938',
         },
       },
+      backgroundImage: {
+        'gradient-radial': 'radial-gradient(ellipse at 20% 40%, #f3f8ff 60%, #f8fafc 100%)',
+      },
     },
   },
   plugins: [],

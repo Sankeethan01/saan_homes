@@ -45,6 +45,7 @@ const HeroPortfolio = () => {
         </motion.p>
         {/* Stats Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 w-full max-w-md mb-10">
+
           <div className="flex flex-col items-center justify-center p-6 rounded-2xl shadow-2xl" style={{ boxShadow: '0 8px 32px 0 #1b263bcc', background: 'rgba(255,255,255,0.6)', backdropFilter: 'blur(8px)' }}>
             <div className="text-3xl md:text-4.5xl font-bold text-[#1b4965]">{expCount}<span className="text-[#1b4965]">+</span></div>
             <div className="text-gray-400 text-sm md:text-base mt-1 text-center">Experience</div>
@@ -65,17 +66,8 @@ const HeroPortfolio = () => {
           <ThreeDViewer />
         </div>
         {/* Diagonal overlay for style */}
-        <div
-          className="absolute inset-0 clip-diagonal z-[-1]"
-          style={{ backgroundColor: '#1b4965', opacity: 1 }}
-        />
+        <div className="absolute inset-0 bg-[#1b4965] opacity-100 z-[-1] [clip-path:polygon(20%_0,100%_0,100%_100%,0_100%)]" />
       </div>
-      {/* Custom diagonal clip-path style */}
-      <style>{`
-        .clip-diagonal {
-          clip-path: polygon(20% 0, 100% 0, 100% 100%, 0 100%);
-        }
-      `}</style>
     </section>
   );
 };
