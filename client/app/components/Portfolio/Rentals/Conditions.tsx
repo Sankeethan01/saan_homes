@@ -18,7 +18,7 @@ const ConditionsRentalsPortfolio = () => {
               Rental Conditions
             </motion.h2>
             <div className="lg:col-start-3 lg:row-start-1 text-center mt-26 mb-4">
-              <span className="text-lg text-gray-500 font-medium"> "Know the terms before you rent" </span>
+              <span className="text-lg text-gray-500 font-medium"> &quot;Know the terms before you rent&quot; </span>
             </div>
             {[
               {

@@ -3,6 +3,7 @@
 import { motion } from 'framer-motion';
 import { useState } from 'react';
 import { AnimatePresence } from 'framer-motion';
+import Image from 'next/image';
 
 const faqs = [
   {
@@ -66,16 +67,20 @@ const FAQRentalsPortfolio = () => {
   return (
     <section className="py-16 bg-white relative overflow-hidden">
       {/* Left bottom decorative image */}
-      <img
+      <Image
         src="/assets/images/bg04.png"
         alt="Left Decoration"
+        width={960}
+        height={400}
         className="absolute left-[-6rem] bottom-0 w-[36rem] md:w-[60rem] pointer-events-none select-none opacity-60"
         style={{ zIndex: 0 }}
       />
       {/* Right bottom decorative image */}
-      <img
+      <Image
         src="/assets/images/bg04.png"
         alt="Right Decoration"
+        width={960}
+        height={400}
         className="absolute right-[-6rem] bottom-0 w-[36rem] md:w-[60rem] pointer-events-none select-none opacity-60"
         style={{ zIndex: 0 }}
       />

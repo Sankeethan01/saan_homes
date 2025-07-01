@@ -96,7 +96,7 @@ export default function ChatBotRentalsPortfolio() {
     if (isOpen && messages.length === 0) {
       initializeChatbot();
     }
-  }, [isOpen]);
+  }, [isOpen, messages.length]);
 
   // Periodic pop-up animation
   useEffect(() => {
@@ -152,7 +152,8 @@ export default function ChatBotRentalsPortfolio() {
   const fetchCategories = async () => {
     try {
       setLoading(true);
-      const response = await fetch('http://localhost:8000/api/equipments/categories/');
+      const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://127.0.0.1:8000/api';
+      const response = await fetch(`${apiBaseUrl}/equipments/categories/`);
       if (response.ok) {
         const data = await response.json();
         setCategories(data);
@@ -179,7 +180,8 @@ export default function ChatBotRentalsPortfolio() {
   const fetchAllEquipment = async () => {
     try {
       setLoading(true);
-      const response = await fetch('http://localhost:8000/api/equipments/equipments/');
+      const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://127.0.0.1:8000/api';
+      const response = await fetch(`${apiBaseUrl}/equipments/equipments/`);
       if (response.ok) {
         const data = await response.json();
         setAllEquipment(data.results || data);
@@ -191,51 +193,12 @@ export default function ChatBotRentalsPortfolio() {
     }
   };
 
-  const fetchEquipmentByCategory = async (categoryId: number) => {
-    try {
-      setLoading(true);
-      const response = await fetch(`http://localhost:8000/api/equipments/equipments/?category=${categoryId}`);
-      if (response.ok) {
-        const data = await response.json();
-        setEquipmentList(data.results || data);
-        return data.results || data;
-      }
-    } catch (error) {
-      console.error('Failed to fetch equipment:', error);
-    } finally {
-      setLoading(false);
-    }
-    
-    // Fallback equipment
-    // const fallbackEquipment = [
-    //   {
-    //     id: '1',
-    //     name: 'Excavator CAT 320D',
-    //     description: 'Heavy-duty excavator',
-    //     category_name: 'Construction Equipment',
-    //     image: '/assets/images/cmixer.jpg',
-    //     pricing: { daily_rate: 500, weekly_rate: 3000, monthly_rate: 10000 },
-    //     is_available: true,
-    //     availability_status: 'AVAILABLE'
-    //   },
-    //   {
-    //     id: '2',
-    //     name: 'Concrete Mixer',
-    //     description: 'Professional concrete mixer',
-    //     category_name: 'Construction Equipment',
-    //     image: '/assets/images/cmixer.jpg',
-    //     pricing: { daily_rate: 150, weekly_rate: 900, monthly_rate: 3000 },
-    //     is_available: true,
-    //     availability_status: 'AVAILABLE'
-    //   }
-    // ];
-    // setEquipmentList(fallbackEquipment);
-    // return fallbackEquipment;
-  };
+
 
   const checkAvailability = async (equipmentId: string, startDate: string, endDate: string) => {
     try {
-      const response = await fetch(`http://localhost:8000/api/equipments/equipments/${equipmentId}/bookings/`);
+      const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://127.0.0.1:8000/api';
+      const response = await fetch(`${apiBaseUrl}/equipments/equipments/${equipmentId}/bookings/`);
       if (response.ok) {
         const bookings = await response.json();
         

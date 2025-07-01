@@ -33,7 +33,7 @@ const HeroCompletedProjectsPortfolio = () => {
             </span>
           </h1>
           <p className="text-xl text-white/90 w-120 leading-relaxed mt-10 mb-3 text-justify">
-            Take a look at the milestones we've proudly delivered. From residential homes to commercial spaces, each project is a testament to our commitment to quality, precision, and client satisfaction. Explore the structures that speak for our craftsmanship and vision of SAAN Excellence Engineering PVT LTD.
+            Take a look at the milestones we&apos;ve proudly delivered. From residential homes to commercial spaces, each project is a testament to our commitment to quality, precision, and client satisfaction. Explore the structures that speak for our craftsmanship and vision of SAAN Excellence Engineering PVT LTD.
           </p>
 
         </div>

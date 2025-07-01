@@ -1,9 +1,8 @@
-'use client'; // Required if you're using Next.js App Router
+'use client'; 
 
 import React, { Suspense, useState, useEffect, useRef } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, useGLTF, Environment, PresentationControls } from '@react-three/drei';
-import { Vector3 } from 'three';
 
 interface ModelProps {
   url: string;
@@ -16,10 +15,11 @@ const Model: React.FC<ModelProps> = ({ url, scale = 1, position = [0, 0, 0], rot
   const { scene } = useGLTF(url);
   
   // Enable shadows for all meshes in the scene
-  scene.traverse((child: any) => {
-    if (child.isMesh) {
-      child.castShadow = true;
-      child.receiveShadow = true;
+  scene.traverse((child) => {
+    if ('isMesh' in child && child.isMesh) {
+      const mesh = child as { castShadow: boolean; receiveShadow: boolean };
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
     }
   });
   
@@ -46,7 +46,7 @@ const ThreeDCanvas: React.FC = () => (
     gl={{ 
       antialias: true, 
       alpha: true,
-      powerPreference: "high-performance", // Optimize for performance
+      powerPreference: "high-performance", 
       stencil: false, // Disable stencil buffer for better performance
       depth: true
     }}
@@ -89,7 +89,7 @@ const ThreeDCanvas: React.FC = () => (
       rotation={[0, -Math.PI / 4, 0]}
       polar={[-Math.PI / 4, Math.PI / 4]}
       azimuth={[-Math.PI / 4, Math.PI / 4]}
-      config={{ mass: 2, tension: 400 }} // Smoother interactions
+
     >
       <OrbitControls 
         enableZoom={false}
@@ -125,13 +125,14 @@ const ThreeDViewer: React.FC = () => {
       }
     );
 
-    if (containerRef.current) {
-      observer.observe(containerRef.current);
+    const currentRef = containerRef.current;
+    if (currentRef) {
+      observer.observe(currentRef);
     }
 
     return () => {
-      if (containerRef.current) {
-        observer.unobserve(containerRef.current);
+      if (currentRef) {
+        observer.unobserve(currentRef);
       }
     };
   }, []);

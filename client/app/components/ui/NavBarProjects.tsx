@@ -49,6 +49,7 @@ const NavBarProjects: React.FC<NavBarProps> = ({ showOnScroll = true }) => {
           {/* Back button */}
           <button
             onClick={handleGoBack}
+            title="Go back"
             className="w-12 h-12 bg-[#1b4965] rounded-full flex items-center justify-center shadow-lg hover:shadow-xl cursor-pointer transition-all duration-200 hover:scale-105"
           >
             <RiArrowLeftLine className="text-white text-2xl" />

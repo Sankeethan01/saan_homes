@@ -33,16 +33,8 @@ const HeroSkeleton = () => (
       <div className="w-full h-full flex items-center justify-center">
         <div className="w-64 h-64 bg-gray-200 rounded-lg animate-pulse"></div>
       </div>
-      <div
-        className="absolute inset-0 clip-diagonal z-[-1]"
-        style={{ backgroundColor: '#1b4965', opacity: 1 }}
-      />
+      <div className="absolute inset-0 bg-[#1b4965] opacity-100 z-[-1] [clip-path:polygon(20%_0,100%_0,100%_100%,0_100%)]" />
     </div>
-    <style>{`
-      .clip-diagonal {
-        clip-path: polygon(20% 0, 100% 0, 100% 100%, 0 100%);
-      }
-    `}</style>
   </div>
 );
 

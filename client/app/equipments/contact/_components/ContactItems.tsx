@@ -2,16 +2,11 @@
 
 import { contactItems } from '@/app/constants/Equipments/ContactInformation';
 import { motion } from 'framer-motion';
+import React from 'react';
 
 export default function ContactItems() {
   return (
-    <section
-      className="py-8"
-      style={{
-        background:
-          'radial-gradient(ellipse at 50% 50%, #f3f8ff 60%, #f8fafc 100%)',
-      }}
-    >
+    <section className="py-8 bg-gradient-radial from-blue-50 via-slate-50 to-slate-100">
       <div className="container mx-auto pt-4 px-4">        
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
           {contactItems.map(({ icon: Icon, title, lines, delay }, i) => (
@@ -38,7 +33,7 @@ export default function ContactItems() {
                 transition={{ duration: 0.6, type: "spring" }}
                 className="mb-4"
               >
-                <Icon className="text-4xl text-[#1b4965]" />
+                {React.createElement(Icon, { className: "text-4xl text-[#1b4965]" })}
               </motion.div>
               <motion.h3 
                 className="text-xl font-semibold mb-2 text-[#1b4965]"

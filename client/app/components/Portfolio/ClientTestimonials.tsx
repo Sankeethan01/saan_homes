@@ -1,6 +1,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import React, { useState } from 'react';
 import { FaQuoteRight } from 'react-icons/fa';
+import Image from 'next/image';
 
 const testimonials = [
   {
@@ -58,7 +59,7 @@ const ClientTestimonialsPortfolio = () => {
   const [selected, setSelected] = useState(0);
 
   return (
-    <section className="py-2" style={{ background: 'radial-gradient(ellipse at 20% 40%, #f3f8ff 60%, #f8fafc 100%)' }}>
+    <section className="py-2 bg-gradient-radial from-blue-50 via-slate-50 to-slate-100">
       {/* Heading/Tagline Section */}
       <motion.div className="text-center max-w-3xl mx-auto mb-2">
         <motion.h2 
@@ -83,8 +84,7 @@ const ClientTestimonialsPortfolio = () => {
             <motion.p
               key={selected}
               {...fadeInUp}
-              className="text-gray-600 text-lg md:text-xl mb-10 text-justify flex items-center h-full"
-              style={{ minHeight: 70, height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              className="text-gray-600 text-lg md:text-xl mb-10 text-justify flex items-center justify-center h-full min-h-[70px]"
             >
               {testimonials[selected].feedback.split(' ').slice(0, 50).join(' ')}
               {testimonials[selected].feedback.split(' ').length > 50 ? '...' : ''}
@@ -108,14 +108,15 @@ const ClientTestimonialsPortfolio = () => {
               key={t.name}
               onMouseEnter={() => setSelected(idx)}
               onFocus={() => setSelected(idx)}
-              className={`rounded-full border-2 transition-all duration-300 focus:outline-none ${selected === idx ? 'border-[#1b4965] shadow-lg' : 'border-transparent opacity-70 hover:opacity-100'}`}
-              style={{ width: 72, height: 72 }}
+              className={`rounded-full border-2 transition-all duration-300 focus:outline-none w-[72px] h-[72px] ${selected === idx ? 'border-[#1b4965] shadow-lg' : 'border-transparent opacity-70 hover:opacity-100'}`}
               tabIndex={0}
               aria-label={`Show testimonial from ${t.name}`}
             >
-              <img
+              <Image
                 src={t.avatar}
                 alt={t.name}
+                width={72}
+                height={72}
                 className="w-full h-full rounded-full object-cover"
               />
             </button>

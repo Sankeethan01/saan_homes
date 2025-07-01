@@ -59,7 +59,7 @@ const TestimonialsRentalsPortfolio = () => {
                     <p className="text-sm text-gray-600">{testimonial.company}</p>
                   </div>
                 </div>
-                <p className="text-gray-600 italic">"{testimonial.testimonial}"</p>
+                <p className="text-gray-600 italic">&quot;{testimonial.testimonial}&quot;</p>
               </motion.div>
             ))}
           </div>

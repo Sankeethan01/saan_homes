@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { FiMapPin, FiMaximize2, FiX } from 'react-icons/fi';
 
@@ -54,6 +54,7 @@ const geocodeLocation = async (query: string): Promise<{ lat: number; lng: numbe
 };
 
 export default function OpenStreetMap({ address, location, height = '300px', className = '' }: OpenStreetMapProps) {
+  const heightClass = height === '300px' ? 'h-[300px]' : 'h-full';
   const [coordinates, setCoordinates] = useState<{ lat: number; lng: number }>(DEFAULT_COORDINATES);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -106,7 +107,7 @@ export default function OpenStreetMap({ address, location, height = '300px', cla
 
   if (!isClient) {
     return (
-      <div className={`relative bg-gray-100 rounded-xl overflow-hidden ${className}`} style={{ height }}>
+      <div className={`relative bg-gray-100 rounded-xl overflow-hidden ${heightClass} ${className}`}>
         <div className="flex items-center justify-center h-full">
           <div className="text-center">
             <FiMapPin className="w-8 h-8 text-gray-400 mx-auto mb-2" />
@@ -128,12 +129,11 @@ export default function OpenStreetMap({ address, location, height = '300px', cla
         </div>
       )}
       
-      <MapContainer
-        center={[coordinates.lat, coordinates.lng]}
-        zoom={15}
-        style={{ height: '100%', width: '100%' }}
-        className="rounded-xl"
-      >
+              <MapContainer
+          center={[coordinates.lat, coordinates.lng]}
+          zoom={15}
+          className="h-full w-full rounded-xl"
+        >
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -182,7 +182,7 @@ export default function OpenStreetMap({ address, location, height = '300px', cla
   return (
     <>
       {/* Regular Map */}
-      <div className={`relative bg-gray-100 rounded-xl overflow-hidden ${className}`} style={{ height }}>
+      <div className={`relative bg-gray-100 rounded-xl overflow-hidden ${heightClass} ${className}`}>
         <MapComponent />
       </div>
 

@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import React from 'react';
 import { motion } from 'framer-motion';
+import Image from 'next/image';
 
 const fadeInUp = {
   initial: { opacity: 0, y: 40 },
@@ -49,12 +50,7 @@ const services = [
 
 const OurServicesPortfolio = () => {
   return (
-    <section
-      className="py-15 md:py-20"
-      style={{
-        background: 'radial-gradient(ellipse at 20% 40%, #f3f8ff 60%, #f8fafc 100%)'
-      }}
-    >
+    <section className="py-15 md:py-20 bg-gradient-radial from-blue-50 via-slate-50 to-slate-100">
       <div className="max-w-6xl mx-auto flex flex-col md:flex-row gap-12 px-4 items-end">
         {/* Left Section: Heading + Button + 2 Grids */}
         <div className="flex flex-col justify-between h-full text-left w-full md:w-1/2">
@@ -92,19 +88,13 @@ const OurServicesPortfolio = () => {
             <motion.div
               {...gridFadeInUp}
               whileHover={{ scale: 1.05 }}
-              className="relative flex flex-col items-center justify-end bg-white rounded-xl shadow-lg transition-all duration-300 min-h-[290px] min-w-[290px] w-[290px] h-[290px] border border-blue-100 cursor-pointer overflow-hidden"
-              style={{ transition: 'background 0.3s' }}
-              onMouseEnter={(e) =>
-                (e.currentTarget.style.background = '#1b4965')
-              }
-              onMouseLeave={(e) =>
-                (e.currentTarget.style.background = 'white')
-              }
+              className="relative flex flex-col items-center justify-end bg-white hover:bg-[#1b4965] rounded-xl shadow-lg transition-all duration-300 min-h-[290px] min-w-[290px] w-[290px] h-[290px] border border-blue-100 cursor-pointer overflow-hidden"
             >
-              <img
+              <Image
                 src={services[5].image}
                 alt={services[5].label}
-                className="w-full h-full p-0 object-contain z-10"
+                fill
+                className="p-0 object-contain z-10"
               />
               <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#1b4965] opacity-0 hover:opacity-85 transition-opacity duration-300 z-20 text-center px-4">
                 <div className="text-white text-xl font-bold mb-2">
@@ -120,19 +110,13 @@ const OurServicesPortfolio = () => {
             <motion.div
               {...gridFadeInUp}
               whileHover={{ scale: 1.05 }}
-              className="relative flex flex-col items-center justify-end bg-white rounded-xl shadow-lg transition-all duration-300 min-h-[290px] min-w-[290px] w-[290px] h-[290px] border border-blue-100 cursor-pointer overflow-hidden"
-              style={{ transition: 'background 0.3s' }}
-              onMouseEnter={(e) =>
-                (e.currentTarget.style.background = '#1b4965')
-              }
-              onMouseLeave={(e) =>
-                (e.currentTarget.style.background = 'white')
-              }
+              className="relative flex flex-col items-center justify-end bg-white hover:bg-[#1b4965] rounded-xl shadow-lg transition-all duration-300 min-h-[290px] min-w-[290px] w-[290px] h-[290px] border border-blue-100 cursor-pointer overflow-hidden"
             >
-              <img
+              <Image
                 src={services[2].image}
                 alt={services[2].label}
-                className="w-full h-full p-0 object-contain z-10"
+                fill
+                className="p-0 object-contain z-10"
               />
               <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#1b4965] opacity-0 hover:opacity-85 transition-opacity duration-300 z-20 text-center px-4">
                 <div className="text-white text-xl font-bold mb-2">
@@ -155,19 +139,13 @@ const OurServicesPortfolio = () => {
                 key={service.label}
                 {...gridFadeInUp}
                 whileHover={{ scale: 1.05 }}
-                className="relative flex flex-col items-center justify-center bg-white rounded-xl shadow-lg transition-all duration-300 min-h-[290px] min-w-[290px] w-[290px] h-[290px] border border-blue-100 cursor-pointer overflow-hidden"
-                style={{ transition: 'background 0.3s' }}
-                onMouseEnter={(e) =>
-                  (e.currentTarget.style.background = '#1b4965')
-                }
-                onMouseLeave={(e) =>
-                  (e.currentTarget.style.background = 'white')
-                }
+                className="relative flex flex-col items-center justify-center bg-white hover:bg-[#1b4965] rounded-xl shadow-lg transition-all duration-300 min-h-[290px] min-w-[290px] w-[290px] h-[290px] border border-blue-100 cursor-pointer overflow-hidden"
               >
-                <img
+                <Image
                   src={service.image}
                   alt={service.label}
-                  className="w-full h-full p-0 object-contain z-10"
+                  fill
+                  className="p-0 object-contain z-10"
                 />
                 <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#1b4965] opacity-0 hover:opacity-85 transition-opacity duration-300 z-20 text-center px-4">
                   <div className="text-white text-xl font-bold mb-2">

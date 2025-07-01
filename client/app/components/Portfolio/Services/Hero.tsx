@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { RiHome5Line, RiHomeSmileLine, RiPaletteLine, RiLeafLine } from 'react-icons/ri';
+import { RiHomeSmileLine, RiPaletteLine, RiLeafLine } from 'react-icons/ri';
 
 const HeroServicesPortfolio = () => {
   return (
