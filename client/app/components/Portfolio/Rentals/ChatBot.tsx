@@ -164,14 +164,14 @@ export default function ChatBotRentalsPortfolio() {
     }
     
     // Fallback categories
-    const fallbackCategories = [
-      { id: 1, name: 'Construction Equipment', slug: 'construction', equipment_count: 5 },
-      { id: 2, name: 'Excavation Tools', slug: 'excavation', equipment_count: 3 },
-      { id: 3, name: 'Concrete Mixers', slug: 'concrete', equipment_count: 4 },
-      { id: 4, name: 'Landscaping Tools', slug: 'landscaping', equipment_count: 6 }
-    ];
-    setCategories(fallbackCategories);
-    return fallbackCategories;
+    // const fallbackCategories = [
+    //   { id: 1, name: 'Construction Equipment', slug: 'construction', equipment_count: 5 },
+    //   { id: 2, name: 'Excavation Tools', slug: 'excavation', equipment_count: 3 },
+    //   { id: 3, name: 'Concrete Mixers', slug: 'concrete', equipment_count: 4 },
+    //   { id: 4, name: 'Landscaping Tools', slug: 'landscaping', equipment_count: 6 }
+    // ];
+    // setCategories(fallbackCategories);
+    // return fallbackCategories;
   };
 
   const fetchEquipmentByCategory = async (categoryId: number) => {
@@ -190,30 +190,30 @@ export default function ChatBotRentalsPortfolio() {
     }
     
     // Fallback equipment
-    const fallbackEquipment = [
-      {
-        id: '1',
-        name: 'Excavator CAT 320D',
-        description: 'Heavy-duty excavator',
-        category_name: 'Construction Equipment',
-        image: '/assets/images/cmixer.jpg',
-        pricing: { daily_rate: 500, weekly_rate: 3000, monthly_rate: 10000 },
-        is_available: true,
-        availability_status: 'AVAILABLE'
-      },
-      {
-        id: '2',
-        name: 'Concrete Mixer',
-        description: 'Professional concrete mixer',
-        category_name: 'Construction Equipment',
-        image: '/assets/images/cmixer.jpg',
-        pricing: { daily_rate: 150, weekly_rate: 900, monthly_rate: 3000 },
-        is_available: true,
-        availability_status: 'AVAILABLE'
-      }
-    ];
-    setEquipmentList(fallbackEquipment);
-    return fallbackEquipment;
+    // const fallbackEquipment = [
+    //   {
+    //     id: '1',
+    //     name: 'Excavator CAT 320D',
+    //     description: 'Heavy-duty excavator',
+    //     category_name: 'Construction Equipment',
+    //     image: '/assets/images/cmixer.jpg',
+    //     pricing: { daily_rate: 500, weekly_rate: 3000, monthly_rate: 10000 },
+    //     is_available: true,
+    //     availability_status: 'AVAILABLE'
+    //   },
+    //   {
+    //     id: '2',
+    //     name: 'Concrete Mixer',
+    //     description: 'Professional concrete mixer',
+    //     category_name: 'Construction Equipment',
+    //     image: '/assets/images/cmixer.jpg',
+    //     pricing: { daily_rate: 150, weekly_rate: 900, monthly_rate: 3000 },
+    //     is_available: true,
+    //     availability_status: 'AVAILABLE'
+    //   }
+    // ];
+    // setEquipmentList(fallbackEquipment);
+    // return fallbackEquipment;
   };
 
   const checkAvailability = async (equipmentId: string, startDate: string, endDate: string) => {
@@ -593,7 +593,7 @@ The remaining amount will be due after admin approval. Would you like to proceed
   return (
     <>
       {/* Chat Bot Button with Pop-up Animation */}
-      <div className="fixed bottom-5 right-8 z-50">
+      <div className="fixed bottom-5 right-8 z-70">
         {/* Pop-up Message */}
         <AnimatePresence>
           {showPopUp && (
@@ -601,11 +601,12 @@ The remaining amount will be due after admin approval. Would you like to proceed
               initial={{ opacity: 0, y: 20, scale: 0.8 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 20, scale: 0.8 }}
-              className="absolute bottom-16 right-0 bg-white border border-[#1b4965] rounded-lg shadow-lg p-3 mb-2 w-48"
+              className="absolute bottom-16 right-0 bg-white border-[#1b4965] rounded-lg shadow-lg p-3 mb-2 w-31"
             >
               <div className="text-sm text-gray-800 font-medium">
-                Need equipment? I can guide you step by step! 🔧
+                Can I help you?
               </div>
+              {/* Arrow pointing down */}
               <div className="absolute top-full right-6 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-white"></div>
             </motion.div>
           )}
@@ -628,7 +629,7 @@ The remaining amount will be due after admin approval. Would you like to proceed
             setIsOpen(true);
             setShowPopUp(false);
           }}
-          className="w-14 h-14 bg-gradient-to-r from-[#1b4965] to-blue-600 rounded-full flex items-center justify-center shadow-lg hover:shadow-xl transition-all duration-300"
+          className="w-14 h-14 bg-[#1b4965] rounded-full flex items-center justify-center shadow-lg hover:shadow-xl transition-all duration-300"
         >
           <RiCustomerService2Fill className="text-white text-2xl" />
         </motion.button>
@@ -641,10 +642,10 @@ The remaining amount will be due after admin approval. Would you like to proceed
             initial={{ opacity: 0, y: 100 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 100 }}
-            className="fixed bottom-24 right-8 z-50 w-96 max-w-[calc(100vw-2rem)] bg-white rounded-2xl shadow-2xl overflow-hidden"
+            className="fixed bottom-24 right-8 z-70 w-96 max-w-[calc(100vw-2rem)] bg-white rounded-2xl shadow-2xl overflow-hidden"
           >
             {/* Header */}
-            <div className="bg-gradient-to-r from-[#1b4965] to-blue-600 p-4 flex items-center justify-between">
+            <div className="bg-[#1b4965] p-4 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <RiCustomerService2Fill className="text-white text-2xl" />
                 <div>
@@ -677,7 +678,7 @@ The remaining amount will be due after admin approval. Would you like to proceed
                       className={`p-3 rounded-2xl ${
                         message.isBot
                           ? 'bg-white text-slate-800 shadow-sm border'
-                          : 'bg-gradient-to-r from-[#1b4965] to-blue-600 text-white'
+                          : 'bg-[#1b4965] text-white'
                       }`}
                     >
                       <p className="text-sm leading-relaxed whitespace-pre-line">{message.text}</p>
