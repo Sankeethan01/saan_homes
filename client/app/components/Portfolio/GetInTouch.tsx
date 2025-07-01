@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { FaFacebookF, FaLandmark, FaMailBulk, FaPhone} from 'react-icons/fa';
+import { FaLandmark, FaMailBulk, FaPhone} from 'react-icons/fa';
 import { useState, useRef, useEffect } from 'react';
 
 const fadeInUp = {
@@ -116,7 +116,7 @@ const GetInTouchPortfolio = () => {
                   Get in Touch
                 </h2>
                 <p className="text-gray-600 text-lg leading-relaxed">
-                  Ready to bring your vision to life? We're here to help you every step of the way. 
+                  Ready to bring your vision to life? We&apos;re here to help you every step of the way. 
                   From initial consultation to project completion, our team of experts is committed 
                   to delivering excellence in every detail.
                 </p>

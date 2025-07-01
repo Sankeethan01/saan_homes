@@ -35,7 +35,7 @@ const ContactForm = () =>  {
       // Here you would typically make an API call to your backend
       await new Promise(resolve => setTimeout(resolve, 1500));
       setSubmitStatus('success');
-    } catch (error) {
+    } catch {
       setSubmitStatus('error');
     } finally {
       setIsSubmitting(false);
@@ -186,7 +186,7 @@ const ContactForm = () =>  {
                     >
                       ✅
                     </motion.div>
-                    <p>Thank you for your inquiry! We'll get back to you soon.</p>
+                    <p>Thank you for your inquiry! We&apos;ll get back to you soon.</p>
                   </motion.div>
                 )}
 

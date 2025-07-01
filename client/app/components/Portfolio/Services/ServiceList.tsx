@@ -1,7 +1,6 @@
 import { motion } from 'framer-motion';
 import Image from 'next/image';
 import { useState } from 'react';
-import Link from 'next/link';
 
 const services = [
   {
@@ -161,11 +160,6 @@ const services = [
 
 const ServiceListServicesPortfolio = () => {
 const [activeImageIndex, setActiveImageIndex] = useState(0);
-const fadeInUp = {
-    initial: { opacity: 0, y: 60 },
-    animate: { opacity: 1, y: 0 },
-    transition: { duration: 0.6 }
-  };
 
   return (
      <section className="py-20 bg-white" >
@@ -221,6 +215,8 @@ const fadeInUp = {
                   {service.images.map((_, imgIndex) => (
                     <button
                       key={imgIndex}
+                      type="button"
+                      title={`View image ${imgIndex + 1}`}
                       onClick={() => setActiveImageIndex(imgIndex)}
                       className={`w-2 h-2 rounded-full transition-all duration-300 ${
                         activeImageIndex === imgIndex ? 'bg-white w-6' : 'bg-white/60'

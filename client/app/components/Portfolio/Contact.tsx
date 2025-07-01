@@ -78,7 +78,7 @@ const ContactPortfolio = () => {
                   Get In Touch
                 </h3>
                 <p className="text-gray-600 text-sm">
-                  We'd love to hear from you!
+                  We&apos;d love to hear from you!
                 </p>
               </motion.div>
 
@@ -145,7 +145,7 @@ const ContactPortfolio = () => {
                 className="mt-6 text-center"
               >
                 <p className="text-xs text-gray-500">
-                  We'll get back to you within 24 hours
+                  We&apos;ll get back to you within 24 hours
                 </p>
               </motion.div>
             </motion.div>

@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { RiHome5Line, RiBuilding4Line, RiTimeLine, RiCheckLine, RiCalendarLine, RiTeamLine, RiMapPinLine, RiArrowRightLine, RiHomeSmileLine, RiPaletteLine, RiLeafLine } from 'react-icons/ri';
+import { RiBuilding4Line, RiTimeLine, RiCheckLine, RiCalendarLine, RiTeamLine, RiMapPinLine, RiArrowRightLine,} from 'react-icons/ri';
 import Footer from '../components/Portfolio/Footer';
 import HeroProjectsPortfolio from '../components/Portfolio/Projects/Hero';
 import NavBar from '../components/ui/NavBar';
@@ -200,6 +200,7 @@ export default function ProjectsPage() {
 
   useEffect(() => {
     const handleScroll = () => {
+      console.log(showNavbar);
       setShowNavbar(window.scrollY > 10);
     };
     window.addEventListener('scroll', handleScroll);
@@ -275,7 +276,7 @@ export default function ProjectsPage() {
       
         <NavBar />
 
-      <main className="min-h-screen" style={{ background: 'radial-gradient(ellipse at 20% 40%, #f3f8ff 60%, #f8fafc 100%), radial-gradient(ellipse at 80% 60%, #ffe5ec 0%, #f8fafc 100%)' }}>
+      <main className="min-h-screen bg-gradient-radial from-blue-50 via-slate-50 to-slate-100">
         {/* Hero Section */}
         <HeroProjectsPortfolio />
 
@@ -476,7 +477,7 @@ export default function ProjectsPage() {
                   <div className="mt-12 text-center">
                     <h3 className="font-bold text-lg text-[#1b4965]">{testimonial.name}</h3>
                     <p className="text-gray-500 text-sm mb-4">{testimonial.position}</p>
-                    <p className="text-gray-700 italic mb-4">"{testimonial.quote}"</p>
+                    <p className="text-gray-700 italic mb-4">&quot;{testimonial.quote}&quot;</p>
                     <div className="flex justify-center text-yellow-400 mb-2">
                       {[...Array(testimonial.rating)].map((_, i) => (
                         <span key={i} className="text-xl">⭐</span>

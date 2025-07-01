@@ -55,7 +55,7 @@ const ProjectListOngoingProjectsPortfolio = () =>  {
     <section className="py-16 bg-[#f1f4f7]">
       <div className="container mx-auto px-4">
         <div className="space-y-16">
-          {ongoingProjects.map((project, index) => (
+          {ongoingProjects.map((project) => (
             <motion.div
               key={project.id}
               initial={{ opacity: 0, y: 50 }}

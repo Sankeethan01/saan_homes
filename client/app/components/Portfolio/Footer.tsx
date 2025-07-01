@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { FaFacebookF, FaInstagram, FaTwitter, FaYoutube } from 'react-icons/fa';
+import { FaFacebookF, FaInstagram, FaYoutube } from 'react-icons/fa';
 
 export default function Footer() {
   return (
@@ -22,7 +22,7 @@ export default function Footer() {
               SAAN Excellence Engineering PVT LTD.
             </h1>
             <p className="text-gray-300 font-medium w-75 text-justify">
-            At SAAN Homes, we don't just construct buildings, we bring your dreams to life, one brick at a time. Our work is fueled by a passion for innovation and a commitment to excellence in every detail.
+            At SAAN Homes, we don&apos;t just construct buildings, we bring your dreams to life, one brick at a time. Our work is fueled by a passion for innovation and a commitment to excellence in every detail.
             </p>
             
             <div className="flex space-x-4">

@@ -1,15 +1,18 @@
 import { motion } from 'framer-motion';
-import { RiHome5Line, RiSearchLine, RiFilter3Line, RiCalendarLine, RiTimeLine, RiMessage2Line, RiUser3Line, RiHomeSmileLine, RiPaletteLine, RiLeafLine, RiToolsLine } from 'react-icons/ri';
+import { RiCalendarLine, RiMessage2Line, RiToolsLine } from 'react-icons/ri';
+import Image from 'next/image';
 
 const HeroRentalsPortfolio = () => {
   return (
      <section className="relative h-[100vh] pt-0 m-0">
         <div className="absolute inset-0">
-          <img
+          <Image
             src="/assets/images/hero_rental.png"
             alt="Rental Hero Background"
-            className="w-full h-full object-cover object-center"
+            fill
+            className="object-cover object-center"
             style={{ zIndex: 0 }}
+            priority
           />
           
         </div>

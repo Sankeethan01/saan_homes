@@ -46,18 +46,18 @@ const HeroPortfolio = () => {
         {/* Stats Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 w-full max-w-md mb-10">
 
-          <div className="flex flex-col items-center justify-center p-6 rounded-2xl shadow-2xl" style={{ boxShadow: '0 8px 32px 0 #1b263bcc', background: 'rgba(255,255,255,0.6)', backdropFilter: 'blur(8px)' }}>
-            <div className="text-3xl md:text-4.5xl font-bold text-[#1b4965]">{expCount}<span className="text-[#1b4965]">+</span></div>
-            <div className="text-gray-400 text-sm md:text-base mt-1 text-center">Experience</div>
-          </div>
-          <div className="flex flex-col items-center justify-center p-6 rounded-2xl shadow-2xl" style={{ boxShadow: '0 8px 32px 0 #1b263bcc', background: 'rgba(255,255,255,0.6)', backdropFilter: 'blur(8px)' }}>
-            <div className="text-3xl md:text-4.5xl font-bold text-[#1b4965]">{projCount}<span className="text-[#1b4965]">+</span></div>
-            <div className="text-gray-400 text-sm md:text-base mt-1 text-center">Services</div>
-          </div>
-          <div className="flex flex-col items-center justify-center p-6 rounded-2xl shadow-2xl" style={{ boxShadow: '0 8px 32px 0 #1b263bcc', background: 'rgba(255,255,255,0.6)', backdropFilter: 'blur(8px)' }}>
-            <div className="text-3xl md:text-4.5xl font-bold text-[#1b4965]">{awardCount}<span className="text-[#1b4965]">+</span></div>
-            <div className="text-gray-400 text-sm md:text-base mt-1 text-center">Completed Projects</div>
-          </div>
+                     <div className="flex flex-col items-center justify-center p-6 rounded-2xl bg-white/60 backdrop-blur-sm shadow-[0_8px_32px_0_rgba(27,38,59,0.8)]">
+             <div className="text-3xl md:text-4.5xl font-bold text-[#1b4965]">{expCount}<span className="text-[#1b4965]">+</span></div>
+             <div className="text-gray-400 text-sm md:text-base mt-1 text-center">Experience</div>
+           </div>
+           <div className="flex flex-col items-center justify-center p-6 rounded-2xl bg-white/60 backdrop-blur-sm shadow-[0_8px_32px_0_rgba(27,38,59,0.8)]">
+             <div className="text-3xl md:text-4.5xl font-bold text-[#1b4965]">{projCount}<span className="text-[#1b4965]">+</span></div>
+             <div className="text-gray-400 text-sm md:text-base mt-1 text-center">Services</div>
+           </div>
+           <div className="flex flex-col items-center justify-center p-6 rounded-2xl bg-white/60 backdrop-blur-sm shadow-[0_8px_32px_0_rgba(27,38,59,0.8)]">
+             <div className="text-3xl md:text-4.5xl font-bold text-[#1b4965]">{awardCount}<span className="text-[#1b4965]">+</span></div>
+             <div className="text-gray-400 text-sm md:text-base mt-1 text-center">Completed Projects</div>
+           </div>
         </div>
       </div>
       {/* Right: Image */}

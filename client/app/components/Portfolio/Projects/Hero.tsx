@@ -1,23 +1,21 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { useState } from 'react';
+import { RiHomeSmileLine, RiPaletteLine, RiLeafLine } from 'react-icons/ri';
 import Image from 'next/image';
-import Link from 'next/link';
-import { RiHome5Line, RiBuilding4Line, RiTimeLine, RiCheckLine, RiCalendarLine, RiTeamLine, RiMapPinLine, RiArrowRightLine, RiHomeSmileLine, RiPaletteLine, RiLeafLine } from 'react-icons/ri';
-
-
 
 const HeroProjectsPortfolio = () => {
    
   return (
     <section className="relative h-[100vh] pt-0 m-0">
         <div className="absolute inset-0">
-          <img
+          <Image
             src="/assets/images/hero_project.png"
             alt="Project Hero Background"
-            className="w-full h-full object-cover object-center"
+            fill
+            className="object-cover object-center"
             style={{ zIndex: 0 }}
+            priority
           />
           
         </div>

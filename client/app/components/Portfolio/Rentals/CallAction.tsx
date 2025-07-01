@@ -2,6 +2,7 @@
 
 import { motion } from 'framer-motion';
 import Link from 'next/link';
+import Image from 'next/image';
 
 
 const CallActionsRentalsPortfolio = () => {
@@ -9,23 +10,30 @@ const CallActionsRentalsPortfolio = () => {
   return (
     <section className="py-16  relative overflow-hidden">
       {/* White texture image overlay */}
-      <img
+      <Image
         src="/assets/images/bg01.jpeg"
         alt="White Texture"
-        className="absolute inset-0 w-full h-full object-cover opacity-30 pointer-events-none"
+        fill
+        className="object-cover opacity-30 pointer-events-none"
         style={{ zIndex: 0 }}
       />
       
       {/* Right bottom animated image */}
-      <motion.img
-        src="/assets/images/bg02.png"
-        alt="Right Decoration"
+      <motion.div
         initial={{ opacity: 0, y: 100 }}
         whileInView={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8, type: 'spring', delay: 0.1 }}
         className="absolute right-0 bottom-0 w-[32rem] md:w-[48rem] pointer-events-none select-none"
         style={{ zIndex: 1 }}
-      />
+      >
+        <Image
+          src="/assets/images/bg02.png"
+          alt="Right Decoration"
+          width={768}
+          height={400}
+          className="w-full h-auto"
+        />
+      </motion.div>
       
       <div className="container mx-auto px-4 relative z-10">
         <div className="text-center text-[#1b4965]">
