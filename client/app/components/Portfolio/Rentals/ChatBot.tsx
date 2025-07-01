@@ -88,6 +88,7 @@ export default function ChatBotRentalsPortfolio() {
   const [chatState, setChatState] = useState<ChatState>({ step: CONVERSATION_STEPS.WELCOME });
   const [categories, setCategories] = useState<Category[]>([]);
   const [equipmentList, setEquipmentList] = useState<Equipment[]>([]);
+  const [allEquipment, setAllEquipment] = useState<Equipment[]>([]);
   const [loading, setLoading] = useState(false);
 
   // Initialize chatbot
@@ -155,6 +156,7 @@ export default function ChatBotRentalsPortfolio() {
       if (response.ok) {
         const data = await response.json();
         setCategories(data);
+        fetchAllEquipment();
         return data;
       }
     } catch (error) {
@@ -172,6 +174,21 @@ export default function ChatBotRentalsPortfolio() {
     // ];
     // setCategories(fallbackCategories);
     // return fallbackCategories;
+  };
+
+  const fetchAllEquipment = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('http://localhost:8000/api/equipments/equipments/');
+      if (response.ok) {
+        const data = await response.json();
+        setAllEquipment(data.results || data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch all equipment:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const fetchEquipmentByCategory = async (categoryId: number) => {
@@ -305,23 +322,28 @@ export default function ChatBotRentalsPortfolio() {
   const handleCategorySelection = async (categoryId: string) => {
     const selectedCategory = categories.find(cat => cat.id.toString() === categoryId);
     setChatState({ 
-      step: CONVERSATION_STEPS.EQUIPMENT_SELECTION, 
+      step: CONVERSATION_STEPS.EQUIPMENT_GRID, 
       selectedCategory 
     });
     
-    const equipmentData = await fetchEquipmentByCategory(parseInt(categoryId));
-    
-         // Get unique equipment names
-     const uniqueEquipmentNames = [...new Set(equipmentData.map((eq: Equipment) => eq.name))] as string[];
-     
-     addBotMessage(
-       `Perfect! You selected ${selectedCategory?.name}. Now, which specific equipment do you need?`,
-       uniqueEquipmentNames.map((name: string) => ({
-         id: name.replace(/\s+/g, '_').toLowerCase(),
-         text: name,
-         value: name
-       }))
-     );
+    const filteredEquipment = allEquipment.filter((eq: Equipment) => eq.category_name === selectedCategory?.name);
+    setEquipmentList(filteredEquipment);
+
+    if (filteredEquipment.length > 0) {
+      addBotMessage(
+        `Here are all available equipment in the ${selectedCategory?.name} category. Please select one to continue:`,
+        [],
+        filteredEquipment
+      );
+    } else {
+      addBotMessage(
+        `Sorry, there is no equipment available in the selected category. Please try another category or contact our team for help.`,
+        [
+          { id: 'restart', text: '🔄 Start Over', value: 'restart' },
+          { id: 'contact', text: '📞 Contact Our Team', value: 'contact' }
+        ]
+      );
+    }
   };
 
   const handleEquipmentSelection = async (equipmentName: string) => {
@@ -558,6 +580,7 @@ The remaining amount will be due after admin approval. Would you like to proceed
     setChatState({ step: CONVERSATION_STEPS.WELCOME });
     setCategories([]);
     setEquipmentList([]);
+    setAllEquipment([]);
     initializeChatbot();
   };
 
