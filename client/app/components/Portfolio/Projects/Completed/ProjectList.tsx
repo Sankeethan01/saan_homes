@@ -18,7 +18,7 @@ const completedProjects = [
       "Premium Materials",
       "Expert Craftsmanship"
     ],
-    image: "/projects/mall-1.jpg"
+    image: "/assets/images/projects/home07.png"
   },
   {
     id: 2,
@@ -32,7 +32,7 @@ const completedProjects = [
       "Premium Materials",
       "Expert Craftsmanship"
     ],
-    image: "/projects/residential-2.jpg"
+    image: "/assets/images/projects/home08.png"
   },
   {
     id: 3,
@@ -46,7 +46,7 @@ const completedProjects = [
       "Premium Materials",
       "Expert Craftsmanship"
     ],
-    image: "/projects/hotel-1.jpg"
+    image: "/assets/images/projects/home09.png"
   }
 ];
 

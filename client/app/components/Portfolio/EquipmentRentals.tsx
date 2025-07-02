@@ -51,7 +51,7 @@ const EquipmentRentalsPortfolio = () => {
   return (
     <section id="rentals" className="py-2" style={{ background: 'radial-gradient(ellipse at 20% 40%, #f3f8ff 60%, #f8fafc 100%)' }}>
       <div className="container mx-auto px-4">
-        <motion.div className="text-center max-w-3xl mx-auto mb-12">
+        <motion.div className="text-center max-w-3xl mx-auto mb-8">
           <motion.h2
             {...fadeInUp}
             className="text-2xl md:text-3xl font-bold mb-2 bg-clip-text text-transparent bg-[#1b4965]"
@@ -68,7 +68,7 @@ const EquipmentRentalsPortfolio = () => {
         </motion.div>
         {/* Horizontal scroll animation */}
         <div
-          className="relative w-full overflow-x-hidden h-[26rem]"
+          className="relative w-full overflow-x-hidden h-[24rem]"
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
         >

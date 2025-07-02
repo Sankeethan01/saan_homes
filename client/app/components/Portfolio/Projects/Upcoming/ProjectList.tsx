@@ -16,7 +16,7 @@ const upcomingProjects = [
       "Premium Materials",
       "Expert Craftsmanship"
     ],
-    image: "/projects/residential-1.jpg"
+    image: "/assets/images/projects/home01.jpg"
   },
   {
     id: 2,
@@ -30,7 +30,7 @@ const upcomingProjects = [
       "Premium Materials",
       "Expert Craftsmanship"
     ],
-    image: "/projects/office-1.jpg"
+    image: "/assets/images/projects/home02.jpg"
   },
   {
     id: 3,
@@ -44,7 +44,7 @@ const upcomingProjects = [
       "Premium Materials",
       "Expert Craftsmanship"
     ],
-    image: "/projects/sports-1.jpg"
+    image: "/assets/images/projects/home03.jpg"
   }
 ];
 
