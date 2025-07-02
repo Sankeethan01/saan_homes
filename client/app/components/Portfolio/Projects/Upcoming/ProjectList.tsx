@@ -95,7 +95,7 @@ const ProjectListUpcomingProjectsPortfolio = () => {
                   src={project.image}
                   alt={project.title}
                   fill
-                  className="object-cover w-full h-full"
+                  className="object-cover !w-full !h-full"
                   style={{ borderTopRightRadius: '1.5rem', borderBottomRightRadius: '1.5rem' }}
                 />
               </div>

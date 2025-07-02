@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { FaLandmark, FaMailBulk, FaPhone} from 'react-icons/fa';
+import { FaFacebookF, FaLandmark, FaMailBulk, FaPhone} from 'react-icons/fa';
 import { useState, useRef, useEffect } from 'react';
 
 const fadeInUp = {
@@ -103,57 +103,38 @@ const GetInTouchPortfolio = () => {
           </div>
 
           {/* Right Side: Intro Paragraph */}
-          <div className="md:w-1/2 w-full">
+          <div className="md:w-1/2 w-full flex flex-col justify-center">
             <motion.div
               initial={{ opacity: 0, x: 50 }}
               whileInView={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.8, ease: 'easeOut' }}
               viewport={{ once: true }}
-              className="space-y-6"
             >
-              <div>
-                <h2 className="text-3xl md:text-4xl font-bold text-[#1b4965] mb-4">
-                  Get in Touch
-                </h2>
-                <p className="text-gray-600 text-lg leading-relaxed">
-                  Ready to bring your vision to life? We&apos;re here to help you every step of the way. 
-                  From initial consultation to project completion, our team of experts is committed 
-                  to delivering excellence in every detail.
-                </p>
-              </div>
-              
-              <div className="space-y-4">
-                <motion.div {...fadeInUp} className="flex items-center gap-4 p-4 bg-white rounded-lg shadow-md">
-                  <div className="w-12 h-12 bg-[#1b4965] rounded-full flex items-center justify-center">
-                    <FaPhone className="text-white" />
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-gray-800">Call Us</h4>
-                    <p className="text-gray-600">+1 (555) 123-4567</p>
-                  </div>
-                </motion.div>
-                
-                <motion.div {...fadeInUp} className="flex items-center gap-4 p-4 bg-white rounded-lg shadow-md">
-                  <div className="w-12 h-12 bg-[#1b4965] rounded-full flex items-center justify-center">
-                    <FaMailBulk className="text-white" />
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-gray-800">Email Us</h4>
-                    <p className="text-gray-600">info@saanhomes.com</p>
-                  </div>
-                </motion.div>
-                
-                <motion.div {...fadeInUp} className="flex items-center gap-4 p-4 bg-white rounded-lg shadow-md">
-                  <div className="w-12 h-12 bg-[#1b4965] rounded-full flex items-center justify-center">
-                    <FaLandmark className="text-white" />
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-gray-800">Visit Us</h4>
-                    <p className="text-gray-600">123 Construction Ave, City, State</p>
-                  </div>
-                </motion.div>
+              <h2 className="text-2xl md:text-3xl font-bold mb-2 bg-clip-text text-transparent bg-[#1b4965]">Get In Touch</h2>
+              <p className="text-gray-600 text-xl md:text-2xl mb-4">Let's Build Something Great Together!</p>
+              <p className="text-gray-700 text-justify mb-6">
+                In our Contact section, you can easily reach out to us with any inquiries, feedback, or support needs. Whether you have questions about using QuickMatch, need assistance with your account, or want to provide feedback to help us improve, we're here to help. Fill out the contact form with your details and message, and our dedicated support team will respond promptly. Your satisfaction is our priority, and we strive to provide excellent customer service. Thank you for choosing QuickMatch! We look forward to assisting you.
+              </p>
+<div className="space-y-4 text-gray-700">
+                <div className="flex items-center gap-3">
+                  <svg className="w-6 h-6 text-[#1b4965]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><FaMailBulk size={23} /></svg>
+                  <span>saanexeng@gmail.com</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <svg className="w-5 h-5 text-[#1b4965]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><FaPhone size={23} /></svg>
+                  <span>+94 77 727 6391</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <svg className="w-5 h-5 text-[#1b4965]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><FaLandmark size={23} /></svg>
+                  <span>No.47, Courts Road, Point Pedo, Jaffna.</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <svg className="w-5 h-5 text-[#1b4965]" fill="currentColor" viewBox="0 0 24 24"><FaFacebookF size={23} /></svg>
+                  <span>SAAN Homes</span>
+                </div>
               </div>
             </motion.div>
+
           </div>
         </div>
       </div>
