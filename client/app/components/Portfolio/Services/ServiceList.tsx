@@ -142,7 +142,7 @@ const [activeImageIndex, setActiveImageIndex] = useState(0);
             >
               {/* Image Section */}
               <motion.div 
-                className="w-full lg:w-1/2 relative h-[330px] overflow-hidden rounded-2xl shadow"
+                className="w-full lg:w-1/2 relative !h-[330px] overflow-hidden rounded-2xl shadow"
                 whileHover={{ scale: 1.02 }}
                 transition={{ duration: 0.3 }}
               >
@@ -169,7 +169,7 @@ const [activeImageIndex, setActiveImageIndex] = useState(0);
                             src={image}
                             alt={`${service.title} ${imgIndex + 1}`}
                             fill
-                            className="object-cover w-full h-full"
+                            className="object-cover w-full !h-full"
                           />
                         </div>
                       </motion.div>

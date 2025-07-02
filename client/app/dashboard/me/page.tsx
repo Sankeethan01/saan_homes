@@ -126,7 +126,7 @@ export default function MePage() {
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.5 }}
-                className="bg-gradient-to-r from-[var(--primary-color)] to-indigo-600 text-white p-8 rounded-xl shadow-lg"
+                className="bg-[#1b4965] text-white p-8 rounded-xl shadow-lg"
             >
                 <h1 className="text-3xl font-bold mb-2">Congratulations, John! 🎉</h1>
                 <p className="text-indigo-100">You have completed 72% more rentals this month. Check your new raising badge in your profile.</p>
