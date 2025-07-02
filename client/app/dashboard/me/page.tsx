@@ -134,7 +134,7 @@ export default function MePage() {
 
             {/* Stats Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <StatCard icon={<RiBankCardLine className="text-blue-500 text-2xl" />} title="Total Spent" value={`$${rentalSummary.totalSpent.toLocaleString()}`} change={12.5} isPositive />
+                <StatCard icon={<RiBankCardLine className="text-blue-500 text-2xl" />} title="Total Spent" value={`LKR ${rentalSummary.totalSpent.toLocaleString()}`} change={12.5} isPositive />
                 <StatCard icon={<RiTruckLine className="text-green-500 text-2xl" />} title="Active Rentals" value={rentalSummary.activeRentals} />
                 <StatCard icon={<RiCheckDoubleLine className="text-purple-500 text-2xl" />} title="Completed Rentals" value={rentalSummary.completedRentals} />
                 <StatCard icon={<RiFileList2Line className="text-yellow-500 text-2xl" />} title="Total Rentals" value={rentalSummary.totalRentals} />
