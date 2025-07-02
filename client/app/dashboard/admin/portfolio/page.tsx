@@ -420,7 +420,7 @@ export default function AdminPortfolioPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-[#1b4965] bg-clip-text text-transparent">
+          <h1 className="text-2xl font-bold bg-[#1b4965] bg-clip-text text-transparent">
             Portfolio Management
           </h1>
           <p className="text-slate-600 mt-1">Manage content displayed on the landing page</p>
@@ -496,7 +496,7 @@ export default function AdminPortfolioPage() {
               }}
               className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 ${
                 tab === key
-                  ? 'bg-gradient-to-r from-blue-500 to-[#1b4965] text-white shadow-sm'
+                  ? 'bg-[#1b4965] text-white shadow-sm'
                   : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
               }`}
             >
@@ -519,7 +519,7 @@ export default function AdminPortfolioPage() {
             <button
               onClick={handleAdd}
               disabled={actionLoading}
-              className="bg-gradient-to-r from-green-500 to-green-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:from-green-600 hover:to-green-700 transition-colors shadow-sm disabled:opacity-50"
+              className="bg-[#1b4965] text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:from-green-600 hover:to-green-700 transition-colors shadow-sm disabled:opacity-50"
             >
               <RiAddLine className="w-4 h-4" />
               Add New Service

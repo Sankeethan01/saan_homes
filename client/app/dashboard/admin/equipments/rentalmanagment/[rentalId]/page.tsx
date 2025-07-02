@@ -205,7 +205,7 @@ export default function RentalDetailPage() {
           <RiArrowLeftLine className="w-5 h-5" />
         </button>
         <div className="flex-1">
-          <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-[#1b4965] bg-clip-text text-transparent">
+          <h1 className="text-2xl font-bold bg-[#1b4965] bg-clip-text text-transparent">
             Rental Details
           </h1>
           <p className="text-slate-600 mt-1">Manage rental request #{booking.id}</p>
@@ -240,11 +240,11 @@ export default function RentalDetailPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <p className="text-sm text-slate-500">Daily Rate</p>
-                    <p className="font-semibold text-slate-900">${booking.equipment_daily_rate}/day</p>
+                    <p className="font-semibold text-slate-900">LKR {booking.equipment_daily_rate}/day</p>
                   </div>
                   <div>
                     <p className="text-sm text-slate-500">Total Amount</p>
-                    <p className="font-semibold text-slate-900">${booking.total_cost}</p>
+                    <p className="font-semibold text-slate-900">LKR {booking.total_cost}</p>
                   </div>
                 </div>
               </div>
@@ -341,7 +341,7 @@ export default function RentalDetailPage() {
               
               <div>
                 <p className="text-sm text-slate-500 mb-1">Total Amount</p>
-                <p className="font-semibold text-slate-900">${booking.total_cost}</p>
+                <p className="font-semibold text-slate-900">LKR {booking.total_cost}</p>
               </div>
               
               <div>
@@ -351,7 +351,7 @@ export default function RentalDetailPage() {
               
               <div>
                 <p className="text-sm text-slate-500 mb-1">Daily Rate</p>
-                <p className="font-semibold text-slate-900">${booking.equipment_daily_rate}/day</p>
+                <p className="font-semibold text-slate-900">LKR {booking.equipment_daily_rate}/day</p>
               </div>
             </div>
           </div>
