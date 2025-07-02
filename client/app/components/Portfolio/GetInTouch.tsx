@@ -77,7 +77,7 @@ const LazyVideo = ({ src, poster, className }: { src: string; poster: string; cl
 
 const GetInTouchPortfolio = () => {
   return (
-     <section id="contact" className="py-20 min-h-[600px] bg-gradient-radial from-blue-50 via-slate-50 to-slate-100">
+     <section id="contact" className="py-20 min-h-[600px]" style={{ background: 'radial-gradient(ellipse at 20% 40%, #f3f8ff 60%, #f8fafc 100%)' }}>
         <div className="container mx-auto px-4">
           <div className="container mx-auto px-4">
         <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-12">

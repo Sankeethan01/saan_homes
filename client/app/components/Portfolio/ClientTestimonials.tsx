@@ -59,7 +59,7 @@ const ClientTestimonialsPortfolio = () => {
   const [selected, setSelected] = useState(0);
 
   return (
-    <section className="py-2 bg-gradient-radial from-blue-50 via-slate-50 to-slate-100">
+    <section id="testimonials" className="py-2" style={{ background: 'radial-gradient(ellipse at 20% 40%, #f3f8ff 60%, #f8fafc 100%)' }}>
       {/* Heading/Tagline Section */}
       <motion.div className="text-center max-w-3xl mx-auto mb-2">
         <motion.h2 

@@ -12,32 +12,32 @@ const equipments = [
   {
     name: 'Excavators',
     description: 'Available for daily, weekly, or monthly rental.',
-    image: '/assets/images/equipment.png',
+    image: '/assets/images/equipments/excavator.jpeg',
   },
   {
-    name: 'Bulldozers',
+    name: 'Grader',
     description: 'Available for daily, weekly, or monthly rental.',
-    image: '/assets/images/equipment.png',
+    image: '/assets/images/equipments/grader.jpeg',
   },
   {
-    name: 'Cranes',
+    name: 'Scaffolding',
     description: 'Available for daily, weekly, or monthly rental.',
-    image: '/assets/images/equipment.png',
+    image: '/assets/images/equipments/scaffolding.png',
   },
   {
-    name: 'Loaders',
+    name: 'Jackhammers',
     description: 'Available for daily, weekly, or monthly rental.',
-    image: '/assets/images/equipment.png',
+    image: '/assets/images/equipments/jackhammer.png',
   },
   {
-    name: 'Trucks',
+    name: 'Wheelborror',
     description: 'Available for daily, weekly, or monthly rental.',
-    image: '/assets/images/equipment.png',
+    image: '/assets/images/equipments/wheelborrow.png',
   },
   {
     name: 'Concrete Mixers',
     description: 'Available for daily, weekly, or monthly rental.',
-    image: '/assets/images/equipment.png',
+    image: '/assets/images/equipments/concretemixer.png',
   },
 ];
 
@@ -49,7 +49,7 @@ const EquipmentRentalsPortfolio = () => {
   const [isHovered, setIsHovered] = useState(false);
 
   return (
-    <section id="rentals" className="py-2 bg-white" style={{ background: 'radial-gradient(ellipse at 20% 40%, #f3f8ff 60%, #f8fafc 100%)' }}>
+    <section id="rentals" className="py-2" style={{ background: 'radial-gradient(ellipse at 20% 40%, #f3f8ff 60%, #f8fafc 100%)' }}>
       <div className="container mx-auto px-4">
         <motion.div className="text-center max-w-3xl mx-auto mb-12">
           <motion.h2
@@ -86,12 +86,12 @@ const EquipmentRentalsPortfolio = () => {
             {scrollingEquipments.map((equipment, index) => (
               <div
                 key={index}
-                className="group relative w-96 flex-shrink-0 overflow-hidden rounded-3xl  transition-all duration-300 bg-white/80 backdrop-blur-md border-2 border-gray-200"
+                className="group relative w-96 h-[50vh] flex-shrink-0 overflow-hidden rounded-3xl  transition-all duration-300 bg-white/80 backdrop-blur-md border-2 border-gray-200"
               >
-                <div className="relative h-70 overflow-hidden">
-                  <img src={equipment.image} alt={equipment.name} className="object-cover w-full h-full group-hover:scale-110 transition-transform duration-500" />
+                <div className="relative h-[33vh] overflow-hidden">
+                  <img src={equipment.image} alt={equipment.name} className="object-fill w-full h-[40vh] group-hover:scale-110 transition-transform duration-500" />
                 </div>
-                <div className="p-6">
+                <div className="p-6 h-[7vh]">
                   <h3 className="text-xl font-semibold mb-2 group-hover:text-[#1b4965] transition-colors">{equipment.name}</h3>
                   <p className="text-gray-600">{equipment.description}</p>
                 </div>
