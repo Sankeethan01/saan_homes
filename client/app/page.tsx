@@ -60,42 +60,42 @@ export default function Home() {
 
       {/* Hero Section - Critical, but lazy loaded with skeleton */}
       <Suspense fallback={<HeroSkeleton />}>
-        <HeroPortfolio />
+      <HeroPortfolio />
       </Suspense>
 
       {/* Services Section - Lazy loaded */}
       <Suspense fallback={<SectionSkeleton />}>
-        <OurServicesPortfolio />
+      <OurServicesPortfolio />
       </Suspense>
 
       {/* Projects Section - Lazy loaded */}
       <Suspense fallback={<SectionSkeleton />}>
-        <FeaturedProjectsPortfolio />
+      <FeaturedProjectsPortfolio />
       </Suspense>
 
       {/* Equipment Rentals Section - Lazy loaded */}
       <Suspense fallback={<SectionSkeleton />}>
-        <EquipmentRentalsPortfolio />
+      <EquipmentRentalsPortfolio />
       </Suspense>
 
       {/* Testimonials Section - Lazy loaded */}
       <Suspense fallback={<SectionSkeleton />}>
-        <ClientTestimonialsPortfolio />
+      <ClientTestimonialsPortfolio />
       </Suspense>
 
       {/* Contact Section - Lazy loaded */}
       <Suspense fallback={<SectionSkeleton />}>
-        <GetInTouchPortfolio />
+      <GetInTouchPortfolio />
       </Suspense>
 
       {/* Contact Form - Lazy loaded */}
       <Suspense fallback={<SectionSkeleton />}>
-        <ContactPortfolio />
+      <ContactPortfolio />
       </Suspense>
 
       {/* Footer - Lazy loaded */}
       <Suspense fallback={<div className="h-64 bg-gray-100 animate-pulse"></div>}>
-        <Footer />
+      <Footer />
       </Suspense>
     </main>
   );

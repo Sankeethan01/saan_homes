@@ -327,7 +327,7 @@ export default function NewProjectPage() {
           animate={{ opacity: 1, y: 0 }}
           className="text-center mb-8"
         >
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-[#1b4965] bg-clip-text text-transparent mb-2">
+          <h1 className="text-4xl font-bold bg-[#1b4965] bg-clip-text text-transparent mb-2">
             Create New Project
           </h1>
           <p className="text-gray-600 text-lg">Let's bring your construction project to life</p>
@@ -485,7 +485,7 @@ export default function NewProjectPage() {
                   disabled={!validateStep(currentStep)}
                   className={`flex items-center px-8 py-3 rounded-xl font-medium transition-all ${
                     validateStep(currentStep)
-                      ? 'bg-gradient-to-r from-blue-700 to-[#1b4965] text-white hover:shadow-lg hover:scale-105'
+                      ? 'bg-[#1b4965] text-white hover:shadow-lg hover:scale-105'
                       : 'bg-gray-100 text-gray-400 cursor-not-allowed'
                   }`}
                   whileHover={validateStep(currentStep) ? { scale: 1.05 } : {}}
@@ -917,7 +917,7 @@ export default function NewProjectPage() {
                    <FiDollarSign className="text-green-600 mr-2" />
                    <span className="text-sm text-gray-600">Total Budget</span>
                  </div>
-                 <p className="text-lg font-bold">${boqPreviewData.total_budget.toLocaleString()}</p>
+                 <p className="text-lg font-bold">LKR ${boqPreviewData.total_budget.toLocaleString()}</p>
                </div>
                
                <div className="bg-white p-3 rounded-lg">
@@ -1091,7 +1091,7 @@ export default function NewProjectPage() {
                </p>
                {boqPreviewData && (
                  <p className="text-sm font-bold text-green-600 mt-1">
-                   Budget: ${boqPreviewData.total_budget.toLocaleString()}
+                   Budget: LKR ${boqPreviewData.total_budget.toLocaleString()}
                  </p>
                )}
              </div>
