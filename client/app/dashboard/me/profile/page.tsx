@@ -85,7 +85,7 @@ export default function ProfilePage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
-          <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <div className="w-16 h-16 border-4 border-[#1b4965] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-gray-600 text-lg">Loading...</p>
         </div>
       </div>
@@ -96,7 +96,7 @@ export default function ProfilePage() {
 
   return (
     <div className="p-8">
-      <h2 className="text-2xl font-bold mb-6">My Profile</h2>
+      <h2 className="text-2xl font-bold text-[#1b4965] mb-6">My Profile</h2>
       <div className="max-w-2xl mx-auto bg-white rounded-lg shadow-md p-6">
         {error && <div className="mb-4 text-red-600">{error}</div>}
         <div className="flex items-center space-x-4 mb-6">
@@ -167,7 +167,7 @@ export default function ProfilePage() {
             </div>
             <div className="mt-6">
               <button
-                className="w-full bg-gradient-to-r from-blue-600 to-red-700 text-white py-3 rounded-lg font-medium hover:from-blue-700 hover:to-red-800 transition-all duration-300"
+                className="w-full bg-[#1b4965] text-white py-3 rounded-lg font-medium hover:transition-transform duration-300 group-hover:translate-x-1"
                 onClick={() => setEditMode(true)}
               >
                 Edit Profile

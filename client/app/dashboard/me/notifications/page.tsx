@@ -57,7 +57,7 @@ export default function NotificationsPage() {
 
     return (
         <div className="p-8">
-            <h2 className="text-2xl font-bold mb-6">Notifications</h2>
+            <h2 className="text-2xl text-[#1b4965] font-bold mb-6">Notifications</h2>
             {loading ? (
                 <div className="p-8 text-center text-gray-500">Loading notifications...</div>
             ) : error ? (

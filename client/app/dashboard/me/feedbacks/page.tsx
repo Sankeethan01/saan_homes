@@ -30,7 +30,7 @@ export default function FeedbacksPage() {
                     </div>
                     <button
                         type="submit"
-                        className="w-full bg-gradient-to-r from-blue-600 to-red-700 text-white py-3 rounded-lg font-medium hover:from-blue-700 hover:to-red-800 transition-all duration-300"
+                        className="w-full bg-[#1b4965] text-white py-3 rounded-lg font-medium hover:from-blue-700 hover:to-red-800 transition-all duration-300"
                     >
                         Submit Feedback
                     </button>
