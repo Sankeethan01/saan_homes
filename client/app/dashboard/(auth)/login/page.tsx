@@ -7,7 +7,7 @@ import Image from "next/image";
 import toast, { Toaster } from "react-hot-toast";
 import { useAuthStore } from "@/app/stores/useAuthStore";
 import { setAuthCookies } from "@/app/utils/auth";
-import { RiLockLine, RiLoginBoxLine, RiEyeLine, RiEyeOffLine, RiUser3Line } from "react-icons/ri";
+import { RiLockLine, RiLoginBoxLine, RiEyeLine, RiEyeOffLine, RiUser3Line, RiArrowLeftLine } from "react-icons/ri";
 import { Routes } from "@/app/constants/Routes/Routes";
 import { UserRoles } from "@/app/constants/UserRoles/UserRols";
 
@@ -144,6 +144,15 @@ export default function Login() {
 
   return (
     <div className="relative h-screen flex items-center justify-end overflow-hidden">
+      {/* Back button in top left */}
+      <button
+        type="button"
+        onClick={() => router.back()}
+        className="absolute top-6 left-6 z-20 flex items-center justify-center w-11 h-11 bg-[#1b4965] hover:bg-[#163a52] rounded-full shadow transition-all border-2 border-white focus:outline-none focus:ring-2 focus:ring-[#1b4965]"
+        aria-label="Go back"
+      >
+        <RiArrowLeftLine className="h-6 w-6 text-white" />
+      </button>
       {/* Background gradient image */}
       <div className="absolute inset-0 w-full h-full bg-[url('/assets/images/bg_login.png')] bg-cover bg-center z-0" />
 
@@ -155,13 +164,15 @@ export default function Login() {
             <div className="text-center mb-10">
               <h1 className="text-3xl font-bold text-[#1b4965] mb-2">Welcome back to</h1>
               <div className="p-0 items-center justify-center ml-30">
-                <Image
-                  src="/assets/logo.jpg"
-                  alt="SAAN Homes Logo"
-                  width={65}
-                  height={22}
-                  className="h-auto w-auto object-contain"
-                />
+                <Link href="/" aria-label="Go to home page">
+                  <Image
+                    src="/assets/logo.jpg"
+                    alt="SAAN Homes Logo"
+                    width={65}
+                    height={22}
+                    className="h-auto w-auto object-contain cursor-pointer hover:scale-105 transition-transform"
+                  />
+                </Link>
               </div>
               <p className="text-gray-600">Sign in to access your account</p>
             </div>
