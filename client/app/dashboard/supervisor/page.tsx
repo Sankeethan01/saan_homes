@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import axios from 'axios';
 import { useAuthStore } from '@/app/stores/useAuthStore';
+import { useRouter } from 'next/navigation';
 import {
   RiBuildingLine,
   RiTimeLine,
@@ -111,6 +112,7 @@ export default function SupervisorDashboard() {
   
   const token = useAuthStore((s) => s.token);
   const username = typeof window !== 'undefined' ? localStorage.getItem('username') : 'User';
+  const router = useRouter();
 
   useEffect(() => {
     const fetchProjectStats = async () => {
@@ -230,21 +232,19 @@ export default function SupervisorDashboard() {
                 />
               </div>
               
-              <select
-                value={selectedPeriod}
-                onChange={(e) => setSelectedPeriod(e.target.value)}
-                className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-700 text-white rounded-2xl border-0 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-lg"
+              <button
+                className="p-3 bg-white/70 backdrop-blur-sm border border-white/50 rounded-2xl hover:bg-white/90 transition-all duration-300 shadow-lg"
+                onClick={() => router.push('/dashboard/supervisor/notifications')}
+                aria-label="Notifications"
               >
-                <option value="weekly">Weekly</option>
-                <option value="monthly">Monthly</option>
-                <option value="yearly">Yearly</option>
-              </select>
-              
-              <button className="p-3 bg-white/70 backdrop-blur-sm border border-white/50 rounded-2xl hover:bg-white/90 transition-all duration-300 shadow-lg">
                 <RiNotificationLine className="text-lg text-slate-600" />
               </button>
               
-              <button className="p-3 bg-white/70 backdrop-blur-sm border border-white/50 rounded-2xl hover:bg-white/90 transition-all duration-300 shadow-lg">
+              <button
+                className="p-3 bg-white/70 backdrop-blur-sm border border-white/50 rounded-2xl hover:bg-white/90 transition-all duration-300 shadow-lg"
+                onClick={() => router.push('/dashboard/supervisor/profile')}
+                aria-label="Settings"
+              >
                 <RiSettingsLine className="text-lg text-slate-600" />
               </button>
 
@@ -311,54 +311,29 @@ export default function SupervisorDashboard() {
         </motion.div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {[
-            { 
-              title: 'Total Projects', 
-              value: projectStats.total, 
-              icon: RiBuildingLine, 
-              color: 'blue',
-              
-            },
-            { 
-              title: 'Ongoing', 
-              value: projectStats.ongoing, 
-              icon: RiTimeLine, 
-              color: 'purple',
-              
-            },
-            { 
-              title: 'Completed', 
-              value: projectStats.completed, 
-              icon: RiCheckLine, 
-              color: 'green',
-              
-            },
-            { 
-              title: 'Upcoming', 
-              value: projectStats.upcoming, 
-              icon: RiCalendarLine, 
-              color: 'pink',
-              
-            },
+            { title: 'Total Projects', value: projectStats.total, icon: RiBuildingLine, color: 'blue' },
+            { title: 'Ongoing', value: projectStats.ongoing, icon: RiTimeLine, color: 'purple' },
+            { title: 'Completed', value: projectStats.completed, icon: RiCheckLine, color: 'green' },
+            { title: 'Upcoming', value: projectStats.upcoming, icon: RiCalendarLine, color: 'pink' },
           ].map((stat, index) => (
             <motion.div
               key={stat.title}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
-              whileHover={{ scale: 1.05, y: -5 }}
-              className="group bg-white/80 backdrop-blur-xl p-6 rounded-3xl shadow-xl border border-white/30 hover:shadow-2xl transition-all duration-300"
+              whileHover={{ scale: 1.03, y: -2 }}
+              className="group bg-white/80 backdrop-blur-xl p-4 rounded-2xl shadow-md border border-white/30 hover:shadow-lg transition-all duration-300"
             >
-              <div className="flex items-center justify-between mb-4">
-                <div className={`p-3 bg-gradient-to-r from-${stat.color}-500 to-${stat.color}-600 rounded-2xl shadow-lg group-hover:scale-110 transition-transform duration-300`}>
-                  <stat.icon className="text-lg text-white" />
+              <div className="flex items-center justify-between mb-2">
+                <div className={`p-2 bg-gradient-to-r from-${stat.color}-500 to-${stat.color}-600 rounded-xl shadow group-hover:scale-105 transition-transform duration-300`}>
+                  <stat.icon className="text-base text-white" />
                 </div>
-                
               </div>
               <div>
-                <h3 className="text-3xl font-bold text-slate-800 mb-1">{stat.value}</h3>
-                <p className="text-slate-600 font-medium">{stat.title}</p>
+                <h3 className="text-xl font-bold text-slate-800 mb-0.5">{stat.value}</h3>
+                <p className="text-xs text-slate-600 font-medium">{stat.title}</p>
               </div>
             </motion.div>
           ))}

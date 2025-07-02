@@ -92,6 +92,15 @@ class Project(models.Model):
         self.save()
 
 
+STEP_STATUS_CHOICES = [
+    ('PENDING', 'Pending'),
+    ('IN_PROGRESS', 'In Progress'),
+    ('COMPLETED', 'Completed'),
+    ('SUBMITTED', 'Submitted to Admin'),
+    ('APPROVED', 'Approved by Admin'),
+    ('REJECTED', 'Rejected by Admin'),
+]
+
 class Step(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     project = models.ForeignKey(Project, related_name="steps", on_delete=models.CASCADE)
@@ -103,7 +112,9 @@ class Step(models.Model):
     expected_budget = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
 
     is_approved = models.BooleanField(default=False)          # admin gate
+    is_submitted_to_admin = models.BooleanField(default=False)  # supervisor submits for approval
     actual_completed = models.DateField(null=True, blank=True)
+    status = models.CharField(max_length=20, choices=STEP_STATUS_CHOICES, default='PENDING')
 
     class Meta:
         unique_together = ("project", "order")
