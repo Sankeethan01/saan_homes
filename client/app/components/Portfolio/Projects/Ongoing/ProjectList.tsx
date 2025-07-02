@@ -22,8 +22,8 @@ const ongoingProjects = [
   },
   {
     id: 2,
-    title: "Healthcare Complex",
-    category: "Healthcare Facilities",
+    title: "2 Floor Smart Home",
+    category: "2 Floor Smart Home",
     description: "Each structure we create is a reflection of our commitment to excellence and forward-thinking. Together, we build for a future that lasts beyond today. Experience interior design that speaks to your individuality and lifestyle.",
     features: [
       "Modern Design Solutions",
