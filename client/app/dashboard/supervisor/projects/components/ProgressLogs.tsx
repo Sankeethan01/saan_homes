@@ -45,50 +45,11 @@ interface MediaFile {
 
 export default function ProgressLogs({ project }: { project: Project }) {
   const [selectedStep, setSelectedStep] = useState<ProjectStep | null>(null);
-  const [showUploadForm, setShowUploadForm] = useState(false);
-  const [formData, setFormData] = useState({
-    stepId: '',
-    title: '',
-    description: '',
-    media: [] as File[]
-  });
-
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      const files = Array.from(e.target.files);
-      setFormData(prev => ({
-        ...prev,
-        media: [...prev.media, ...files]
-      }));
-    }
-  };
-
-  const removeFile = (index: number) => {
-    setFormData(prev => ({
-      ...prev,
-      media: prev.media.filter((_, i) => i !== index)
-    }));
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    // TODO: Implement API call to submit progress log
-    console.log('Submitting progress log:', formData);
-    setShowUploadForm(false);
-    setFormData({ stepId: '', title: '', description: '', media: [] });
-  };
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h3 className="text-2xl font-semibold text-gray-800">Progress Logs</h3>
-        <button
-          onClick={() => setShowUploadForm(true)}
-          className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-3 rounded-xl font-semibold hover:from-blue-700 hover:to-purple-700 transition-all duration-300 shadow-lg"
-        >
-          <RiUploadLine className="text-lg" />
-          Add Progress Log
-        </button>
       </div>
 
       {/* Steps Overview */}
@@ -141,7 +102,7 @@ export default function ProgressLogs({ project }: { project: Project }) {
               <div className="text-center py-8 text-gray-500">
                 <RiFileTextLine className="text-4xl mx-auto mb-2 text-gray-300" />
                 <p>No progress logs submitted yet</p>
-                <p className="text-sm">Click "Add Progress Log" to start tracking progress</p>
+                <p className="text-sm">No logs available for this step.</p>
               </div>
             ) : (
               selectedStep.logs.map((log) => (
@@ -167,122 +128,6 @@ export default function ProgressLogs({ project }: { project: Project }) {
                 </div>
               ))
             )}
-          </div>
-        </div>
-      )}
-
-      {/* Upload Form Modal */}
-      {showUploadForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl p-8 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-2xl font-semibold text-gray-800">Add Progress Log</h3>
-              <button
-                onClick={() => setShowUploadForm(false)}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <RiCloseLine className="text-2xl" />
-              </button>
-            </div>
-            
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Step</label>
-                <select 
-                  value={formData.stepId}
-                  onChange={(e) => setFormData(prev => ({ ...prev, stepId: e.target.value }))}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  required
-                >
-                  <option value="">Select a step</option>
-                  {project.steps.map((step) => (
-                    <option key={step.id} value={step.id}>{step.name}</option>
-                  ))}
-                </select>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Title</label>
-                <input
-                  type="text"
-                  value={formData.title}
-                  onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Enter log title"
-                  required
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
-                <textarea
-                  rows={4}
-                  value={formData.description}
-                  onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Describe the progress made..."
-                  required
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Upload Media</label>
-                <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center">
-                  <RiUploadLine className="text-4xl text-gray-400 mx-auto mb-2" />
-                  <p className="text-gray-600 mb-2">Drag and drop files here or click to browse</p>
-                  <p className="text-sm text-gray-500 mb-4">Supports: Images, Videos, PDFs</p>
-                  <input 
-                    type="file" 
-                    multiple 
-                    accept="image/*,video/*,.pdf"
-                    onChange={handleFileUpload}
-                    className="hidden" 
-                    id="media-upload"
-                  />
-                  <label 
-                    htmlFor="media-upload"
-                    className="inline-block bg-blue-600 text-white px-4 py-2 rounded-lg cursor-pointer hover:bg-blue-700"
-                  >
-                    Choose Files
-                  </label>
-                </div>
-                
-                {/* Selected Files */}
-                {formData.media.length > 0 && (
-                  <div className="mt-4 space-y-2">
-                    <h4 className="font-medium text-gray-700">Selected Files:</h4>
-                    {formData.media.map((file, index) => (
-                      <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
-                        <span className="text-sm text-gray-600">{file.name}</span>
-                        <button
-                          type="button"
-                          onClick={() => removeFile(index)}
-                          className="text-red-500 hover:text-red-700"
-                        >
-                          <RiCloseLine />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-              
-              <div className="flex gap-4 pt-4">
-                <button
-                  type="button"
-                  onClick={() => setShowUploadForm(false)}
-                  className="flex-1 px-6 py-3 border border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-3 rounded-xl font-semibold hover:from-blue-700 hover:to-purple-700"
-                >
-                  Submit Log
-                </button>
-              </div>
-            </form>
           </div>
         </div>
       )}
