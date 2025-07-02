@@ -70,23 +70,6 @@ interface MediaFile {
   filename: string;
 }
 
-interface Bill {
-  id: string;
-  url: string;
-  filename: string;
-}
-
-interface Invoice {
-  id: string;
-  step_title: string;
-  status?: string;
-  amount?: number;
-  bills?: Bill[];
-  data: any;
-  is_approved: boolean;
-  created: string;
-}
-
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://127.0.0.1:8000';
 
 export default function SupervisorProjectsPage() {
@@ -95,7 +78,6 @@ export default function SupervisorProjectsPage() {
   const [loading, setLoading] = useState(true);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [activeTab, setActiveTab] = useState<'overview' | 'progress' | 'timeline' | 'invoices'>('overview');
-  const [invoices, setInvoices] = useState<Invoice[]>([]);
 
   useEffect(() => {
     if (!token) return;
@@ -341,7 +323,7 @@ export default function SupervisorProjectsPage() {
               {activeTab === 'overview' && <ProjectOverview project={selectedProject} />}
               {activeTab === 'progress' && <ProgressLogs project={selectedProject} />} 
               {activeTab === 'timeline' && <ProjectTimeline project={selectedProject} />}
-              {activeTab === 'invoices' && <ProjectInvoices project={selectedProject} />}
+              {/* {activeTab === 'invoices' && <ProjectInvoices project={selectedProject} />} */}
             </div>
           </div>
         )}
@@ -369,23 +351,7 @@ function ProjectOverview({ project }: { project: Project }) {
     fetch(`${API_BASE}/projects/supervisor-notes/?project=${project.id}`, {
       headers: { 'Authorization': `Bearer ${token}` }
     })
-      .then(res => {
-        if (!res.ok) {
-          return res.text().then(text => {
-            console.error("Error response body:", text);
-            throw new Error("Request failed");
-          });
-        }
-        const contentType = res.headers.get("content-type");
-        if (contentType && contentType.includes("application/json")) {
-          return res.json();
-        } else {
-          return res.text().then(text => {
-            console.error("Non-JSON response:", text);
-            throw new Error("Expected JSON, got something else");
-          });
-        }
-      })
+      .then(res => res.json())
       .then(data => {
         if (Array.isArray(data) && data.length > 0) {
           setNote(data[0].note);
@@ -578,23 +544,7 @@ function SiteSupervisorNotes({ projectId }: { projectId: string }) {
     fetch(`${API_BASE}/projects/supervisor-notes/?project=${projectId}`, {
       headers: { 'Authorization': `Bearer ${token}` }
     })
-      .then(res => {
-        if (!res.ok) {
-          return res.text().then(text => {
-            console.error("Error response body:", text);
-            throw new Error("Request failed");
-          });
-        }
-        const contentType = res.headers.get("content-type");
-        if (contentType && contentType.includes("application/json")) {
-          return res.json();
-        } else {
-          return res.text().then(text => {
-            console.error("Non-JSON response:", text);
-            throw new Error("Expected JSON, got something else");
-          });
-        }
-      })
+      .then(res => res.json())
       .then(data => {
         if (Array.isArray(data) && data.length > 0) {
           setNote(data[0].note);
@@ -742,7 +692,7 @@ function ProgressLogs({ project }: { project: Project }) {
 
       {/* Steps Overview */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {project.steps.slice(0, 6).map((step) => (
+        {project.steps.map((step) => (
           <div
             key={step.id}
             onClick={() => setSelectedStep(step)}
@@ -908,76 +858,55 @@ function ProgressLogs({ project }: { project: Project }) {
 
       {/* Upload Form Modal */}
       {showUploadForm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-          <div className="bg-white rounded-lg shadow-xl w-[350px] max-w-full p-6 relative overflow-y-auto max-h-[90vh] flex flex-col items-center">
-            {/* Close Icon */}
-            <button
-              onClick={() => setShowUploadForm(false)}
-              className="absolute top-3 right-3 p-2 text-gray-400 hover:text-blue-600 focus:outline-none z-10"
-              aria-label="Close"
-            >
-              <RiCloseLine className="text-2xl" />
-            </button>
-            {/* Modal Header */}
-            <div className="w-full flex flex-col items-center mb-4">
-              <div className="w-14 h-14 flex items-center justify-center rounded-full bg-violet-100 mb-2">
-                <RiUploadLine className="text-3xl text-violet-500" />
-              </div>
-              <h3 className="text-xl font-bold text-violet-700 mb-1 text-center">Add Progress Log</h3>
-              <p className="text-gray-500 text-sm text-center mb-2">Document your project progress with details and media</p>
-            </div>
-            {/* Modal Body */}
-            <form className="w-full flex flex-col gap-3">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl p-8 max-w-2xl w-full mx-4">
+            <h3 className="text-2xl font-semibold text-gray-800 mb-6">Add Progress Log</h3>
+            <form className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">Select Project Phase</label>
-                <select className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-violet-400 focus:border-violet-400 text-base">
-                  <option value="">Choose a phase...</option>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Step</label>
+                <select className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                   {project.steps.map((step) => (
                     <option key={step.id} value={step.id}>{step.name}</option>
                   ))}
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">Log Title</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Title</label>
                 <input
                   type="text"
-                  className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-violet-400 focus:border-violet-400 text-base"
-                  placeholder="Enter a descriptive title..."
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Enter log title"
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">Description</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
                 <textarea
-                  rows={3}
-                  className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-violet-400 focus:border-violet-400 text-base resize-none"
-                  placeholder="Describe the progress made, challenges faced, and next steps..."
+                  rows={4}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Describe the progress made..."
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">Upload Media Files</label>
-                <div className="border-2 border-dashed border-gray-300 rounded p-4 text-center hover:border-violet-400 transition-colors duration-300 group cursor-pointer">
-                  <div className="w-8 h-8 flex items-center justify-center rounded-full bg-violet-50 mx-auto mb-2">
-                    <RiUploadLine className="text-xl text-violet-500" />
-                  </div>
-                  <p className="text-sm text-gray-700 mb-1">Drag and drop files here</p>
-                  <p className="text-xs text-gray-400">Images, Videos, PDFs (Max 10MB each)</p>
-                  <input type="file" multiple className="hidden" accept="image/*,video/*,.pdf" />
+                <label className="block text-sm font-medium text-gray-700 mb-2">Upload Media</label>
+                <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center">
+                  <RiUploadLine className="text-4xl text-gray-400 mx-auto mb-2" />
+                  <p className="text-gray-600">Drag and drop files here or click to browse</p>
+                  <input type="file" multiple className="hidden" />
                 </div>
               </div>
-              {/* Action Buttons */}
-              <div className="flex gap-2 pt-2">
+              <div className="flex gap-4">
                 <button
                   type="button"
                   onClick={() => setShowUploadForm(false)}
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded text-gray-700 font-semibold hover:bg-gray-50 hover:border-gray-400 text-base"
+                  className="flex-1 px-6 py-3 border border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 bg-violet-600 text-white px-4 py-2 rounded font-semibold hover:bg-violet-700 shadow text-base"
+                  className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-3 rounded-xl font-semibold hover:from-blue-700 hover:to-purple-700"
                 >
-                  Get the chance
+                  Submit Log
                 </button>
               </div>
             </form>
@@ -1111,140 +1040,93 @@ function ProjectTimeline({ project }: { project: Project }) {
 
 // Project Invoices Component
 function ProjectInvoices({ project }: { project: Project }) {
-  const [invoices, setInvoices] = useState<Invoice[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  const token = useAuthStore((s) => s.token);
-
-  useEffect(() => {
-    if (!token) {
-      console.error("Access token not found.");
-      setLoading(false);
-      return;
+  const [invoices, setInvoices] = useState([
+    {
+      id: '1',
+      phase: 'Foundation',
+      amount: 25000,
+      status: 'DRAFT',
+      submittedDate: '2024-01-15',
+      verified: false,
+      bills: ['foundation_materials.pdf', 'labor_costs.pdf']
+    },
+    {
+      id: '2',
+      phase: 'Framing',
+      amount: 35000,
+      status: 'PENDING_VERIFICATION',
+      submittedDate: '2024-01-20',
+      verified: false,
+      bills: ['framing_materials.pdf', 'contractor_bill.pdf']
     }
-
-    console.log("Token being used for invoices:", token);
-
-    fetch(`${API_BASE}/projects/invoices/?project=${project.id}`, {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-    })
-      .then(res => {
-        const contentType = res.headers.get("content-type");
-        if (!res.ok) {
-          return res.text().then(text => {
-            console.error("Error response body:", text);
-            throw new Error(`Request failed with status ${res.status}`);
-          });
-        }
-        if (contentType && contentType.includes("application/json")) {
-          return res.json();
-        } else {
-          return res.text().then(text => {
-            console.error("Non-JSON response (status:", res.status, "):", text);
-            throw new Error("Expected JSON, got something else");
-          });
-        }
-      })
-      .then(data => {
-        setInvoices(Array.isArray(data) ? data : data.results || []);
-      })
-      .catch(error => {
-        console.error("Error fetching invoices:", error);
-      })
-      .finally(() => setLoading(false));
-  }, [project.id, token]);
-
-  const handleAddInvoice = async () => {
-    const stepId = project.steps[0]?.id;
-    if (!stepId) return alert("No steps available for this project.");
-
-    if (!token) {
-      alert("You are not logged in.");
-      return;
-    }
-
-    try {
-      const res = await fetch(`${API_BASE}/invoices/`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          step: stepId,
-          data: {
-            total: 0,
-            items: [],
-          },
-        }),
-      });
-
-      if (!res.ok) {
-        const errorData = await res.json();
-        console.error("Error creating invoice:", errorData);
-        alert("Failed to create invoice.");
-        return;
-      }
-
-      // Refetch updated invoice list
-      const refreshed = await fetch(`${API_BASE}/projects/invoices/?project=${project.id}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      const newData = await refreshed.json();
-      setInvoices(Array.isArray(newData) ? newData : newData.results || []);
-    } catch (err) {
-      console.error("Error adding invoice:", err);
-    }
-  };
-
-  if (loading) return <div>Loading invoices...</div>;
-
-  return (
-    <div className="p-4 bg-white rounded shadow">
-      <h2 className="text-2xl font-semibold mb-4">Invoices & Billing</h2>
-
-      {invoices.length === 0 ? (
-        <div>No invoices yet.</div>
-      ) : (
-        invoices.map((inv) => (
-          <div key={inv.id} className="mb-4 p-4 border rounded bg-gray-50">
-            <p><strong>Phase:</strong> {inv.step_title}</p>
-            <p><strong>Status:</strong> {inv.is_approved ? "Approved" : "Draft"}</p>
-            <p><strong>Amount:</strong> {inv.amount ?? inv.data?.total ?? "N/A"}</p>
-            <p><strong>Date:</strong> {new Date(inv.created).toLocaleString()}</p>
-            {inv.bills && inv.bills.length > 0 && (
-              <div className="mt-2">
-                <p><strong>Bills:</strong></p>
-                <ul className="list-disc ml-6">
-                  {inv.bills.map((bill) => (
-                    <li key={bill.id}>
-                      {/* {bill.title}: {bill.amount} */}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </div>
-        ))
-      )}
-
-      <button
-        onClick={handleAddInvoice}
-        className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-      >
-        Add Invoice
-      </button>
-    </div>
-  );
+  ]);
 }
+  // return (
+  //   <div className="space-y-6">
+  //     <div className="flex justify-between items-center">
+  //       <h3 className="text-2xl font-semibold text-gray-800">Project Invoices</h3>
+  //       <button className="flex items-center gap-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white px-6 py-3 rounded-xl font-semibold hover:from-green-700 hover:to-emerald-700 transition-all duration-300 shadow-lg">
+  //         <RiFileTextLine className="text-lg" />
+  //         Generate Invoice
+  //       </button>
+  //     </div>
 
+  //     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+  //       {invoices.map((invoice) => (
+  //         <div key={invoice.id} className="bg-white border border-gray-200 rounded-xl p-6">
+  //           <div className="flex items-center justify-between mb-4">
+  //             <h4 className="text-lg font-semibold text-gray-800">{invoice.phase}</h4>
+  //             <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+  //               invoice.status === 'DRAFT' ? 'bg-yellow-100 text-yellow-700' :
+  //               invoice.status === 'PENDING_VERIFICATION' ? 'bg-blue-100 text-blue-700' :
+  //               invoice.status === 'VERIFIED' ? 'bg-green-100 text-green-700' :
+  //               'bg-gray-100 text-gray-700'
+  //             }`}>
+  //               {invoice.status.replace('_', ' ')}
+  //             </span>
+  //           </div>
+            
+  //           <div className="space-y-3 mb-4">
+  //             <div className="flex justify-between">
+  //               <span className="text-gray-600">Amount:</span>
+  //               <span className="font-semibold">${invoice.amount.toLocaleString()}</span>
+  //             </div>
+  //             <div className="flex justify-between">
+  //               <span className="text-gray-600">Submitted:</span>
+  //               <span>{new Date(invoice.submittedDate).toLocaleDateString()}</span>
+  //             </div>
+  //             <div className="flex justify-between">
+  //               <span className="text-gray-600">Bills:</span>
+  //               <span>{invoice.bills.length} files</span>
+  //             </div>
+  //           </div>
 
+  //           <div className="space-y-2 mb-4">
+  //             <h5 className="font-medium text-gray-800">Attached Bills:</h5>
+  //             {invoice.bills.map((bill, index) => (
+  //               <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
+  //                 <span className="text-sm text-gray-600">{bill}</span>
+  //                 <button className="text-blue-600 hover:text-blue-700">
+  //                   <RiDownloadLine className="text-lg" />
+  //                 </button>
+  //               </div>
+  //             ))}
+  //           </div>
+
+  //           <div className="flex gap-3">
+  //             <button className="flex-1 flex items-center justify-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+  //               <RiEyeLine />
+  //               View Invoice
+  //             </button>
+  //             <button className="flex-1 flex items-center justify-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors">
+  //               <RiCheckLine />
+  //               Verify
+  //             </button>
+  //           </div>
+  //         </div>
+  //       ))}
+  //     </div>
+  //   </div>
+  // );
 
 
