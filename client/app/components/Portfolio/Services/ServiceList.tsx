@@ -9,9 +9,9 @@ const services = [
     subtitle: '2-5 Bedrooms – 1000-3000 sq ft',
     description: 'Each structure we create is a reflection of our commitment to excellence and forward-thinking. Together, we build for a future that lasts beyond today. Experience interior design that speaks to your individuality and lifestyle. Discover the art of personalized design, where every element is tailored just for you.',
     images: [
-      '/services/custom-home-1.jpg',
-      '/services/custom-home-2.jpg',
-      '/services/custom-home-3.jpg',
+      '/assets/images/projects/home04.jpg',
+      '/assets/images/projects/home05.jpg',
+      '/assets/images/projects/home06.jpg',
     ],
     features: [
       'Personalized Design Consultation',
@@ -26,9 +26,9 @@ const services = [
     subtitle: 'Office Spaces & Retail Buildings',
     description: 'We specialize in creating modern commercial spaces that combine functionality with aesthetic appeal. Our commercial construction services are designed to meet the unique needs of businesses while ensuring maximum efficiency and sustainability.',
     images: [
-      '/services/commercial-1.jpg',
-      '/services/commercial-2.jpg',
-      '/services/commercial-3.jpg',
+      '/assets/images/services/com01.png',
+      '/assets/images/services/com02.png',
+      '/assets/images/services/com03.png',
     ],
     features: [
       'Modern Design Solutions',
@@ -43,9 +43,9 @@ const services = [
     subtitle: 'Transform Your Space',
     description: 'Give your property a new life with our comprehensive renovation and remodeling services. We combine modern design trends with practical solutions to create spaces that are both beautiful and functional.',
     images: [
-      '/services/renovation-1.jpg',
-      '/services/renovation-2.jpg',
-      '/services/renovation-3.jpg',
+      '/assets/images/services/ren01.png',
+      '/assets/images/services/ren02.png',
+      '/assets/images/services/ren03.png',
     ],
     features: [
       'Kitchen & Bathroom Remodeling',
@@ -60,9 +60,9 @@ const services = [
     subtitle: 'Outdoor Living Spaces',
     description: 'Transform your outdoor space into a beautiful, functional landscape that enhances your property value and lifestyle. Our landscape design services create stunning gardens, patios, and outdoor living areas that blend seamlessly with your home.',
     images: [
-      '/services/landscape-1.jpg',
-      '/services/landscape-2.jpg',
-      '/services/landscape-3.jpg',
+      '/assets/images/services/lan01.png',
+      '/assets/images/services/lan02.png',
+      '/assets/images/services/lan03.png',
     ],
     features: [
       'Garden Design & Installation',
@@ -77,9 +77,9 @@ const services = [
     subtitle: 'Bespoke Interior Solutions',
     description: 'Our interior design service creates personalized spaces that reflect your style and meet your needs. We focus on creating harmonious environments that combine aesthetics with functionality.',
     images: [
-      '/services/interior-1.jpg',
-      '/services/interior-2.jpg',
-      '/services/interior-3.jpg',
+      '/assets/images/services/interior01.png',
+      '/assets/images/services/interior02.png',
+      '/assets/images/services/interior03.png',
     ],
     features: [
       'Custom Design Plans',
@@ -90,47 +90,13 @@ const services = [
   },
   {
     id: 6,
-    title: 'Sustainable Building',
-    subtitle: 'Eco-Friendly Construction',
-    description: 'Were committed to sustainable construction practices that minimize environmental impact while maximizing energy efficiency. Our green building solutions help create a better future for generations to come.',
-    images: [
-      '/services/sustainable-1.jpg',
-      '/services/sustainable-2.jpg',
-      '/services/sustainable-3.jpg',
-    ],
-    features: [
-      'Solar Integration',
-      'Energy-Efficient Systems',
-      'Sustainable Materials',
-      'Water Conservation'
-    ]
-  },
-  {
-    id: 7,
-    title: 'Project Management',
-    subtitle: 'End-to-End Solutions',
-    description: 'Our experienced project management team ensures your construction project is completed on time, within budget, and to the highest standards. We handle all aspects of the project from planning to execution.',
-    images: [
-      '/services/project-1.jpg',
-      '/services/project-2.jpg',
-      '/services/project-3.jpg',
-    ],
-    features: [
-      'Timeline Management',
-      'Budget Control',
-      'Quality Assurance',
-      'Risk Management'
-    ]
-  },
-  {
-    id: 8,
     title: 'Architectural Design',
     subtitle: 'Creative & Functional Design',
     description: 'Our architectural design services blend creativity with functionality to create stunning spaces that work for you. We focus on innovative solutions that make the most of your space and location.',
     images: [
-      '/services/architecture-1.jpg',
-      '/services/architecture-2.jpg',
-      '/services/architecture-3.jpg',
+      '/assets/images/projects/home07.png',
+      '/assets/images/projects/home08.png',
+      '/assets/images/projects/home09.png',
     ],
     features: [
       'Custom Design',
@@ -140,14 +106,14 @@ const services = [
     ]
   },
   {
-    id: 9,
+    id: 7,
     title: 'Equipment Rental',
     subtitle: 'Professional Grade Equipment',
     description: 'Access top-quality construction equipment through our comprehensive rental service. We provide well-maintained equipment and expert guidance to ensure your project runs smoothly.',
     images: [
-      '/services/equipment-1.jpg',
-      '/services/equipment-2.jpg',
-      '/services/equipment-3.jpg',
+      '/assets/images/equipments/excavator.jpeg',
+      '/assets/images/equipments/concretemixer.png',
+      '/assets/images/equipments/wheelborrow.png',
     ],
     features: [
       'Wide Equipment Selection',
@@ -163,7 +129,7 @@ const [activeImageIndex, setActiveImageIndex] = useState(0);
 
   return (
      <section className="py-20 bg-white" >
-        <div className="container mx-auto px-4">
+        <div className="container mx-auto px-8">
           {services.map((service, index) => (
             <motion.div
               key={service.id}
@@ -172,17 +138,17 @@ const [activeImageIndex, setActiveImageIndex] = useState(0);
               transition={{ duration: 0.8 }}
               className={`flex flex-col ${
                 index % 2 === 0 ? 'lg:flex-row' : 'lg:flex-row-reverse'
-              } gap-12 mb-8 items-center bg-white rounded-3xl shadow-md p-10`}
+              } gap-12 mb-8 items-center bg-white rounded-3xl shadow-md p-13 pr-18 pl-18`}
             >
               {/* Image Section */}
               <motion.div 
-                className="w-full lg:w-1/2 relative h-[300px] overflow-hidden rounded-2xl shadow"
+                className="w-full lg:w-1/2 relative h-[330px] overflow-hidden rounded-2xl shadow"
                 whileHover={{ scale: 1.02 }}
                 transition={{ duration: 0.3 }}
               >
-                <div className="absolute inset-0 bg-gradient-to-br from-blue-600/20 to-red-700/20 z-10" />
+                <div className="absolute inset-0 bg-white" />
                 <motion.div
-                  className="relative w-full h-full"
+                  className="relative w-full h-full !object-cover"
                   whileHover={{ scale: 1.1 }}
                   transition={{ duration: 0.5 }}
                 >
@@ -198,12 +164,12 @@ const [activeImageIndex, setActiveImageIndex] = useState(0);
                         transition={{ duration: 0.5 }}
                         className="absolute inset-0"
                       >
-                        <div className="relative w-full h-full">
+                        <div className="relative !w-full !h-full !object-cover">
                           <Image
                             src={image}
                             alt={`${service.title} ${imgIndex + 1}`}
                             fill
-                            className="object-cover"
+                            className="object-cover w-full h-full"
                           />
                         </div>
                       </motion.div>
