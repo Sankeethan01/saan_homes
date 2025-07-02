@@ -184,6 +184,15 @@ const statusIcons: Record<Invoice['status'], typeof RiTimeLine> = {
   rejected: RiCloseLine,
 };
 
+// Currency formatting utility
+const formatCurrency = (amount: number): string => {
+  return `LKR ${amount.toLocaleString()}`;
+};
+
+const formatCurrencyFixed = (amount: number): string => {
+  return `LKR ${amount.toFixed(2)}`;
+};
+
 export default function InvoicesPage() {
   const [invoices, setInvoices] = useState<Invoice[]>(mockInvoices);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
@@ -291,7 +300,7 @@ export default function InvoicesPage() {
             <div>
               <p className="text-sm text-slate-600">Total Amount</p>
               <p className="text-2xl font-bold text-slate-900">
-                ${invoices.reduce((sum, inv) => sum + inv.totalAmount, 0).toLocaleString()}
+                {formatCurrency(invoices.reduce((sum, inv) => sum + inv.totalAmount, 0))}
               </p>
             </div>
             <div className="p-3 bg-green-100 rounded-lg">
@@ -305,7 +314,7 @@ export default function InvoicesPage() {
             <div>
               <p className="text-sm text-slate-600">Total Savings</p>
               <p className="text-2xl font-bold text-green-600">
-                ${invoices.reduce((sum, inv) => sum + inv.savings, 0).toLocaleString()}
+                {formatCurrency(invoices.reduce((sum, inv) => sum + inv.savings, 0))}
               </p>
             </div>
             <div className="p-3 bg-primary-100 rounded-lg">
@@ -369,14 +378,14 @@ export default function InvoicesPage() {
           <table className="w-full">
             <thead className="bg-slate-50 border-b border-slate-200">
               <tr>
-                <th className="text-left py-4 px-6 font-semibold text-slate-900">Invoice</th>
-                <th className="text-left py-4 px-6 font-semibold text-slate-900">Project & Step</th>
-                <th className="text-left py-4 px-6 font-semibold text-slate-900">Supervisor</th>
-                <th className="text-left py-4 px-6 font-semibold text-slate-900">Amount</th>
-                <th className="text-left py-4 px-6 font-semibold text-slate-900">Savings</th>
-                <th className="text-left py-4 px-6 font-semibold text-slate-900">Status</th>
-                <th className="text-left py-4 px-6 font-semibold text-slate-900">Date</th>
-                <th className="text-right py-4 px-6 font-semibold text-slate-900">Actions</th>
+                <th className="text-left py-4 px-6 font-semibold text-slate-900 w-48">Invoice</th>
+                <th className="text-left py-4 px-6 font-semibold text-slate-900 w-64">Project & Step</th>
+                <th className="text-left py-4 px-6 font-semibold text-slate-900 w-44">Supervisor</th>
+                <th className="text-left py-4 px-6 font-semibold text-slate-900 w-52">Amount</th>
+                <th className="text-left py-4 px-6 font-semibold text-slate-900 w-52">Savings</th>
+                <th className="text-left py-4 px-6 font-semibold text-slate-900 w-32">Status</th>
+                <th className="text-left py-4 px-6 font-semibold text-slate-900 w-32">Date</th>
+                <th className="text-right py-4 px-6 font-semibold text-slate-900 w-32">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200">
@@ -409,24 +418,24 @@ export default function InvoicesPage() {
                     <td className="py-4 px-6">
                       <div className="flex items-center">
                         <div className="w-8 h-8 bg-slate-200 rounded-full flex items-center justify-center mr-3">
-                          <RiUserLine className="w-4 h-4 text-slate-600" />
+                          <RiUserLine className="w-6 h-5 text-slate-600" />
                         </div>
                         <p className="font-medium text-slate-900">{invoice.supervisorName}</p>
                       </div>
                     </td>
                     <td className="py-4 px-6">
                       <div>
-                        <p className="font-semibold text-slate-900">${invoice.totalAmount.toLocaleString()}</p>
-                        <p className="text-sm text-slate-500">Est: ${invoice.estimatedAmount.toLocaleString()}</p>
+                        <p className="font-semibold text-slate-900">{formatCurrency(invoice.totalAmount)}</p>
+                        <p className="text-sm text-slate-500 w-25">Est: {formatCurrency(invoice.estimatedAmount)}</p>
                       </div>
                     </td>
                     <td className="py-4 px-6">
-                      <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-sm font-medium ${
+                      <span className={`inline-flex items-center px-2.5 py-1 rounded-full w-25 text-sm font-medium ${
                         invoice.savings >= 0 
                           ? 'bg-green-100 text-green-800' 
                           : 'bg-red-100 text-red-800'
                       }`}>
-                        {invoice.savings >= 0 ? '+' : ''}${invoice.savings.toLocaleString()}
+                        {invoice.savings >= 0 ? '+' : ''}{formatCurrency(invoice.savings)}
                       </span>
                     </td>
                     <td className="py-4 px-6">
@@ -528,10 +537,10 @@ export default function InvoicesPage() {
                 </div>
                 <div>
                   <h3 className="font-semibold text-slate-900 mb-2">Amount Summary</h3>
-                  <p className="text-sm text-slate-600">Estimated: ${selectedInvoice.estimatedAmount.toLocaleString()}</p>
-                  <p className="text-sm text-slate-600">Actual: ${selectedInvoice.totalAmount.toLocaleString()}</p>
+                  <p className="text-sm text-slate-600">Estimated: {formatCurrency(selectedInvoice.estimatedAmount)}</p>
+                  <p className="text-sm text-slate-600">Actual: {formatCurrency(selectedInvoice.totalAmount)}</p>
                   <p className={`text-sm font-medium ${selectedInvoice.savings >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                    Savings: {selectedInvoice.savings >= 0 ? '+' : ''}${selectedInvoice.savings.toLocaleString()}
+                    Savings: {selectedInvoice.savings >= 0 ? '+' : ''}{formatCurrency(selectedInvoice.savings)}
                   </p>
                 </div>
               </div>
@@ -554,13 +563,13 @@ export default function InvoicesPage() {
                         <tr key={index}>
                           <td className="py-3 px-4 text-slate-900">{material.name}</td>
                           <td className="py-3 px-4 text-right text-slate-600">{material.quantity} {material.unit}</td>
-                          <td className="py-3 px-4 text-right text-slate-600">${material.unitPrice.toFixed(2)}</td>
-                          <td className="py-3 px-4 text-right font-medium text-slate-900">${material.total.toFixed(2)}</td>
+                          <td className="py-3 px-4 text-right text-slate-600">{formatCurrencyFixed(material.unitPrice)}</td>
+                          <td className="py-3 px-4 text-right font-medium text-slate-900">{formatCurrencyFixed(material.total)}</td>
                         </tr>
                       ))}
                       <tr className="bg-slate-50 font-medium">
                         <td colSpan={3} className="py-3 px-4 text-slate-900">Materials Subtotal</td>
-                        <td className="py-3 px-4 text-right text-slate-900">${calculateTotal(selectedInvoice.materials).toFixed(2)}</td>
+                        <td className="py-3 px-4 text-right text-slate-900">{formatCurrencyFixed(calculateTotal(selectedInvoice.materials))}</td>
                       </tr>
                     </tbody>
                   </table>
@@ -585,13 +594,13 @@ export default function InvoicesPage() {
                         <tr key={index}>
                           <td className="py-3 px-4 text-slate-900">{labor.description}</td>
                           <td className="py-3 px-4 text-right text-slate-600">{labor.hours} hrs</td>
-                          <td className="py-3 px-4 text-right text-slate-600">${labor.rate.toFixed(2)}/hr</td>
-                          <td className="py-3 px-4 text-right font-medium text-slate-900">${labor.total.toFixed(2)}</td>
+                          <td className="py-3 px-4 text-right text-slate-600">{formatCurrencyFixed(labor.rate)}/hr</td>
+                          <td className="py-3 px-4 text-right font-medium text-slate-900">{formatCurrencyFixed(labor.total)}</td>
                         </tr>
                       ))}
                       <tr className="bg-slate-50 font-medium">
                         <td colSpan={3} className="py-3 px-4 text-slate-900">Labor Subtotal</td>
-                        <td className="py-3 px-4 text-right text-slate-900">${calculateTotal(selectedInvoice.labor).toFixed(2)}</td>
+                        <td className="py-3 px-4 text-right text-slate-900">{formatCurrencyFixed(calculateTotal(selectedInvoice.labor))}</td>
                       </tr>
                     </tbody>
                   </table>
@@ -619,14 +628,14 @@ export default function InvoicesPage() {
                             {equipment.days ? `${equipment.days} days` : `${equipment.hours} hrs`}
                           </td>
                           <td className="py-3 px-4 text-right text-slate-600">
-                            ${equipment.rate.toFixed(2)}/{equipment.days ? 'day' : 'hr'}
+                            {formatCurrencyFixed(equipment.rate)}/{equipment.days ? 'day' : 'hr'}
                           </td>
-                          <td className="py-3 px-4 text-right font-medium text-slate-900">${equipment.total.toFixed(2)}</td>
+                          <td className="py-3 px-4 text-right font-medium text-slate-900">{formatCurrencyFixed(equipment.total)}</td>
                         </tr>
                       ))}
                       <tr className="bg-slate-50 font-medium">
                         <td colSpan={3} className="py-3 px-4 text-slate-900">Equipment Subtotal</td>
-                        <td className="py-3 px-4 text-right text-slate-900">${calculateTotal(selectedInvoice.equipment).toFixed(2)}</td>
+                        <td className="py-3 px-4 text-right text-slate-900">{formatCurrencyFixed(calculateTotal(selectedInvoice.equipment))}</td>
                       </tr>
                     </tbody>
                   </table>
@@ -648,12 +657,12 @@ export default function InvoicesPage() {
                       {selectedInvoice.expenses.map((expense, index) => (
                         <tr key={index}>
                           <td className="py-3 px-4 text-slate-900">{expense.description}</td>
-                          <td className="py-3 px-4 text-right font-medium text-slate-900">${expense.amount.toFixed(2)}</td>
+                          <td className="py-3 px-4 text-right font-medium text-slate-900">{formatCurrencyFixed(expense.amount)}</td>
                         </tr>
                       ))}
                       <tr className="bg-slate-50 font-medium">
                         <td className="py-3 px-4 text-slate-900">Expenses Subtotal</td>
-                        <td className="py-3 px-4 text-right text-slate-900">${calculateTotal(selectedInvoice.expenses).toFixed(2)}</td>
+                        <td className="py-3 px-4 text-right text-slate-900">{formatCurrencyFixed(calculateTotal(selectedInvoice.expenses))}</td>
                       </tr>
                     </tbody>
                   </table>
@@ -665,31 +674,31 @@ export default function InvoicesPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <p className="text-sm text-slate-600">Materials Total</p>
-                    <p className="text-lg font-semibold text-slate-900">${calculateTotal(selectedInvoice.materials).toFixed(2)}</p>
+                    <p className="text-lg font-semibold text-slate-900">{formatCurrencyFixed(calculateTotal(selectedInvoice.materials))}</p>
                   </div>
                   <div>
                     <p className="text-sm text-slate-600">Labor Total</p>
-                    <p className="text-lg font-semibold text-slate-900">${calculateTotal(selectedInvoice.labor).toFixed(2)}</p>
+                    <p className="text-lg font-semibold text-slate-900">{formatCurrencyFixed(calculateTotal(selectedInvoice.labor))}</p>
                   </div>
                   <div>
                     <p className="text-sm text-slate-600">Equipment Total</p>
-                    <p className="text-lg font-semibold text-slate-900">${calculateTotal(selectedInvoice.equipment).toFixed(2)}</p>
+                    <p className="text-lg font-semibold text-slate-900">{formatCurrencyFixed(calculateTotal(selectedInvoice.equipment))}</p>
                   </div>
                   <div>
                     <p className="text-sm text-slate-600">Expenses Total</p>
-                    <p className="text-lg font-semibold text-slate-900">${calculateTotal(selectedInvoice.expenses).toFixed(2)}</p>
+                    <p className="text-lg font-semibold text-slate-900">{formatCurrencyFixed(calculateTotal(selectedInvoice.expenses))}</p>
                   </div>
                 </div>
                 <hr className="my-4" />
                 <div className="flex justify-between items-center">
                   <div>
                     <p className="text-sm text-slate-600">Grand Total</p>
-                    <p className="text-2xl font-bold text-slate-900">${selectedInvoice.totalAmount.toFixed(2)}</p>
+                    <p className="text-2xl font-bold text-slate-900">{formatCurrencyFixed(selectedInvoice.totalAmount)}</p>
                   </div>
                   <div className="text-right">
                     <p className="text-sm text-slate-600">vs Estimated</p>
                     <p className={`text-lg font-semibold ${selectedInvoice.savings >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                      {selectedInvoice.savings >= 0 ? 'Saved' : 'Over'} ${Math.abs(selectedInvoice.savings).toFixed(2)}
+                      {selectedInvoice.savings >= 0 ? 'Saved' : 'Over'} {formatCurrencyFixed(Math.abs(selectedInvoice.savings))}
                     </p>
                   </div>
                 </div>

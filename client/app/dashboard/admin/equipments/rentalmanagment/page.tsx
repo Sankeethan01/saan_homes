@@ -1,11 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import {
   RiEyeLine,
   RiSearchLine,
-  RiFilter3Line,
   RiCalendarEventLine,
   RiToolsLine,
   RiFileListLine,
@@ -189,14 +188,6 @@ export default function RentalsPage() {
     }
   };
 
-  const calculateDaysRemaining = (endDate: string) => {
-    const today = new Date();
-    const end = new Date(endDate);
-    const diffTime = end.getTime() - today.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays;
-  };
-
   const getImageUrl = (imageUrl: string) => {
     if (!imageUrl) return '/assets/images/equipment.png';
     if (imageUrl.startsWith('http')) return imageUrl;
@@ -223,7 +214,7 @@ export default function RentalsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-[#1b4965] bg-clip-text text-transparent">
+          <h1 className="text-2xl font-bold bg-[#1b4965] bg-clip-text text-transparent">
             Booking Management
           </h1>
           <p className="text-slate-600 mt-1">Monitor and manage equipment booking requests</p>
@@ -277,7 +268,7 @@ export default function RentalsPage() {
             <div>
               <p className="text-sm text-slate-600">Revenue</p>
               <p className="text-2xl font-bold text-slate-900">
-                ${bookings.filter(b => b.status === 'PAID').reduce((sum, b) => sum + (b.total_amount || 0), 0).toLocaleString()}
+                LKR {bookings.filter(b => b.status === 'PAID').reduce((sum, b) => sum + (b.total_amount || 0), 0).toLocaleString()}
               </p>
             </div>
             <div className="p-3 bg-green-100 rounded-lg">
@@ -297,7 +288,7 @@ export default function RentalsPage() {
               onClick={() => setActiveTab(tab.key)}
               className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 ${
                 activeTab === tab.key
-                  ? 'bg-gradient-to-r from-blue-500 to-[#1b4965] text-white shadow-sm'
+                  ? 'bg-[#1b4965] text-white shadow-sm'
                   : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
               }`}
             >
@@ -344,7 +335,7 @@ export default function RentalsPage() {
                     <div className="relative w-16 h-16 bg-slate-100 rounded-lg overflow-hidden flex-shrink-0">
                       <Image
                         src={getImageUrl(booking.equipment.image)}
-                        alt={booking.equipment.name}
+                        alt={`${booking.equipment.name} equipment image`}
                         fill
                         className="object-cover"
                         onError={(e) => {
@@ -391,7 +382,7 @@ export default function RentalsPage() {
                           <div>
                             <p className="text-xs text-slate-500">Total Amount</p>
                             <p className="text-sm font-medium text-slate-900">
-                              ${(booking.duration * booking.equipment.daily_rate).toFixed(2)}
+                              LKR {(booking.duration * booking.equipment.daily_rate).toFixed(2)}
                             </p>
                           </div>
                         </div>

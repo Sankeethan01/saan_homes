@@ -69,21 +69,21 @@ const stats: StatItem[] = [
   },
   { 
     label: 'Revenue', 
-    value: '$42,189', 
+    value: 'LKR 42,189', 
     trend: '+12.6%', 
     trendUp: true, 
-    subtext: '+$4,828 today', 
+    subtext: '+LKR 4,828 today', 
     icon: <RiMoneyDollarCircleLine className="w-6 h-6" /> 
   },
 ];
 
 // Recent activity data
 const recentActivity: ActivityItem[] = [
-  { user: 'John Smith', email: 'john.smith@example.com', status: 'Approved', id: '#329341', date: '49 min ago', amount: '$738.61' },
-  { user: 'Sarah Johnson', email: 'sarah.j@example.com', status: 'Pending', id: '#329342', date: '27 min ago', amount: '$108.16' },
-  { user: 'Michael Brown', email: 'mbrown@example.com', status: 'Completed', id: '#329343', date: '40 min ago', amount: '$1,279.80' },
-  { user: 'Emma Wilson', email: 'emma.w@example.com', status: 'In Progress', id: '#329344', date: '36 min ago', amount: '$327.86' },
-  { user: 'James Davis', email: 'james.d@example.com', status: 'Cancelled', id: '#329345', date: '15 min ago', amount: '$566.12' },
+  { user: 'John Smith', email: 'john.smith@example.com', status: 'Approved', id: '#329341', date: '49 min ago', amount: 'LKR 738.61' },
+  { user: 'Sarah Johnson', email: 'sarah.j@example.com', status: 'Pending', id: '#329342', date: '27 min ago', amount: 'LKR 108.16' },
+  { user: 'Michael Brown', email: 'mbrown@example.com', status: 'Completed', id: '#329343', date: '40 min ago', amount: 'LKR 1,279.80' },
+  { user: 'Emma Wilson', email: 'emma.w@example.com', status: 'In Progress', id: '#329344', date: '36 min ago', amount: 'LKR 327.86' },
+  { user: 'James Davis', email: 'james.d@example.com', status: 'Cancelled', id: '#329345', date: '15 min ago', amount: 'LKR 566.12' },
 ];
 
 // Monthly data for chart
@@ -296,7 +296,7 @@ export default function AdminDashboard() {
                 </div>
                 <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3">
                   <p className="text-blue-100 text-xs font-medium">Avg. Project Value</p>
-                  <p className="text-white text-lg font-bold">$185K</p>
+                  <p className="text-white text-lg font-bold">LKR 185K</p>
                   <div className="flex items-center text-green-300 text-xs mt-1">
                     <RiArrowUpLine className="mr-1" />
                     +5.7%
@@ -326,7 +326,7 @@ export default function AdminDashboard() {
                           <span className="text-sm text-gray-600">Construction Projects</span>
                         </div>
                         <div className="text-right">
-                          <p className="text-sm font-semibold text-gray-800">$23,456</p>
+                          <p className="text-sm font-semibold text-gray-800">LKR 23,456</p>
                           <p className="text-xs text-green-600">+15.2%</p>
                         </div>
                       </div>
@@ -336,14 +336,14 @@ export default function AdminDashboard() {
                           <span className="text-sm text-gray-600">Equipment Rentals</span>
                         </div>
                         <div className="text-right">
-                          <p className="text-sm font-semibold text-gray-800">$18,924</p>
+                          <p className="text-sm font-semibold text-gray-800">LKR 18,924</p>
                           <p className="text-xs text-green-600">+8.7%</p>
                         </div>
                       </div>
                       <div className="flex items-center justify-between pt-2 border-t border-gray-200">
                         <span className="text-sm font-semibold text-gray-800">Total Revenue</span>
                         <div className="text-right">
-                          <p className="text-lg font-bold text-[#1b4965]">$42,380</p>
+                          <p className="text-lg font-bold text-[#1b4965]">LKR 42,380</p>
                           <p className="text-xs text-green-600">+12.1% vs last month</p>
                         </div>
                       </div>
@@ -519,7 +519,7 @@ export default function AdminDashboard() {
                     </div>
                   </td>
                   <td className="px-4 py-3">
-                    <div className="text-sm font-medium">$245,000</div>
+                    <div className="text-sm font-medium">LKR 245,000</div>
                   </td>
                 </tr>
                 <tr className="hover:bg-gray-50">
@@ -542,7 +542,7 @@ export default function AdminDashboard() {
                     </div>
                   </td>
                   <td className="px-4 py-3">
-                    <div className="text-sm font-medium">$180,000</div>
+                    <div className="text-sm font-medium">LKR 180,000</div>
                   </td>
                 </tr>
                 <tr className="hover:bg-gray-50">
@@ -565,7 +565,7 @@ export default function AdminDashboard() {
                     </div>
                   </td>
                   <td className="px-4 py-3">
-                    <div className="text-sm font-medium">$320,000</div>
+                    <div className="text-sm font-medium">LKR 320,000</div>
                   </td>
                 </tr>
               </tbody>

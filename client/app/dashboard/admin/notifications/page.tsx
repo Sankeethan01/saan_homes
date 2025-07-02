@@ -8,21 +8,16 @@ import {
   RiDeleteBinLine,
   RiRecycleLine,
   RiSendPlaneLine,
-  RiEditLine,
   RiCheckLine,
   RiCloseLine,
   RiAlertLine,
   RiEyeLine,
   RiRestartLine,
-  RiNotificationLine,
-  RiUserLine,
   RiToolsLine,
-  RiFileListLine,
-  RiTimeLine,
   RiReplyLine,
   RiSearchLine,
 } from 'react-icons/ri';
-import { FiBell, FiMail, FiClock, FiUser, FiTool, FiTrash2 } from 'react-icons/fi';
+import { FiBell, FiMail, FiTool, FiTrash2 } from 'react-icons/fi';
 
 interface ContactMessage {
   id: string;
@@ -333,7 +328,7 @@ export default function NotificationsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-[#1b4965] bg-clip-text text-transparent">
+          <h1 className="text-2xl font-bold bg-[#1b4965] bg-clip-text text-transparent">
             Notifications & Communications
           </h1>
           <p className="text-slate-600 mt-1">Manage messages, alerts, and rental requests</p>
@@ -419,7 +414,7 @@ export default function NotificationsPage() {
             onClick={() => setActiveTab('messages')}
             className={`flex items-center px-4 py-3 rounded-lg font-medium transition-all relative ${
               activeTab === 'messages'
-                ? 'bg-gradient-to-r from-blue-500 to-[#1b4965] text-white shadow-sm'
+                ? 'bg-[#1b4965] text-white shadow-sm'
                 : 'text-slate-600 hover:bg-slate-100'
             }`}
           >
@@ -436,7 +431,7 @@ export default function NotificationsPage() {
             onClick={() => setActiveTab('project-alerts')}
             className={`flex items-center px-4 py-3 rounded-lg font-medium transition-all relative ${
               activeTab === 'project-alerts'
-                ? 'bg-gradient-to-r from-blue-500 to-[#1b4965] text-white shadow-sm'
+                ? 'bg-[#1b4965] text-white shadow-sm'
                 : 'text-slate-600 hover:bg-slate-100'
             }`}
           >
@@ -453,7 +448,7 @@ export default function NotificationsPage() {
             onClick={() => setActiveTab('rentals')}
             className={`flex items-center px-4 py-3 rounded-lg font-medium transition-all relative ${
               activeTab === 'rentals'
-                ? 'bg-gradient-to-r from-blue-500 to-[#1b4965] text-white shadow-sm'
+                ? 'bg-[#1b4965] text-white shadow-sm'
                 : 'text-slate-600 hover:bg-slate-100'
             }`}
           >
@@ -470,7 +465,7 @@ export default function NotificationsPage() {
             onClick={() => setActiveTab('recycle')}
             className={`flex items-center px-4 py-3 rounded-lg font-medium transition-all ${
               activeTab === 'recycle'
-                ? 'bg-gradient-to-r from-blue-500 to-[#1b4965] text-white shadow-sm'
+                ? 'bg-[#1b4965] text-white shadow-sm'
                 : 'text-slate-600 hover:bg-slate-100'
             }`}
           >
