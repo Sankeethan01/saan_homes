@@ -31,7 +31,7 @@ const projects: Project[] = [
     title: "Modern Residential Complex",
     type: "Residential",
     status: "upcoming",
-    image: "/projects/residential-1.jpg",
+    image: "/assets/images/projects/home01.jpg",
     location: "Downtown City Center",
     startDate: "2024-06-01",
     endDate: "2025-12-31",
@@ -46,7 +46,7 @@ const projects: Project[] = [
     title: "Tech Innovation Hub",
     type: "Commercial",
     status: "ongoing",
-    image: "/projects/commercial-1.jpg",
+    image: "/assets/images/projects/home04.jpg",
     location: "Tech District",
     startDate: "2023-09-15",
     endDate: "2024-12-31",
@@ -61,7 +61,7 @@ const projects: Project[] = [
     title: "City Center Mall",
     type: "Commercial",
     status: "completed",
-    image: "/projects/mall-1.jpg",
+    image: "/assets/images/projects/home07.png",
     location: "Metropolitan Area",
     startDate: "2022-03-01",
     endDate: "2023-11-30",
@@ -76,7 +76,7 @@ const projects: Project[] = [
     title: "Sustainable Office Park",
     type: "Commercial",
     status: "upcoming",
-    image: "/projects/office-1.jpg",
+    image: "/assets/images/projects/home02.jpg",
     location: "Green Business District",
     startDate: "2024-08-15",
     endDate: "2026-02-28",
@@ -91,7 +91,7 @@ const projects: Project[] = [
     title: "Healthcare Complex",
     type: "Healthcare",
     status: "ongoing",
-    image: "/projects/healthcare-1.jpg",
+    image: "/assets/images/projects/home05.jpg",
     location: "Medical District",
     startDate: "2023-11-01",
     endDate: "2025-04-30",
@@ -106,7 +106,7 @@ const projects: Project[] = [
     title: "Urban Apartments",
     type: "Residential",
     status: "completed",
-    image: "/projects/residential-2.jpg",
+    image: "/assets/images/projects/home08.png",
     location: "City Center",
     startDate: "2022-05-15",
     endDate: "2023-12-31",
@@ -121,7 +121,7 @@ const projects: Project[] = [
     title: "Sports Complex",
     type: "Recreation",
     status: "upcoming",
-    image: "/projects/sports-1.jpg",
+    image: "/assets/images/projects/home03.jpg",
     location: "Suburban District",
     startDate: "2024-09-01",
     endDate: "2026-03-31",
@@ -136,7 +136,7 @@ const projects: Project[] = [
     title: "Educational Campus",
     type: "Education",
     status: "ongoing",
-    image: "/projects/education-1.jpg",
+    image: "/assets/images/projects/home06.jpg",
     location: "Knowledge Park",
     startDate: "2023-10-15",
     endDate: "2025-08-31",
@@ -151,7 +151,7 @@ const projects: Project[] = [
     title: "Luxury Hotel",
     type: "Hospitality",
     status: "completed",
-    image: "/projects/hotel-1.jpg",
+    image: "/assets/images/projects/home09.png",
     location: "Tourist District",
     startDate: "2022-01-15",
     endDate: "2023-09-30",
@@ -168,7 +168,7 @@ const testimonials = [
     id: 1,
     name: "John Smith",
     position: "CEO, Smith Construction",
-    image: "/testimonials/person1.jpg",
+    image: "/assets/images/vano.jpg",
     quote: "SAAN HOMES delivered our project ahead of schedule with exceptional quality. Their attention to detail and professional approach made the entire process smooth.",
     rating: 5
   },
@@ -176,7 +176,7 @@ const testimonials = [
     id: 2,
     name: "Sarah Johnson",
     position: "Director, Metropolitan Development",
-    image: "/testimonials/person2.jpg",
+    image: "/assets/images/sankee.jpg",
     quote: "Working with SAAN HOMES was a great experience. Their innovative solutions and commitment to sustainability aligned perfectly with our vision.",
     rating: 5
   },
@@ -184,7 +184,7 @@ const testimonials = [
     id: 3,
     name: "Michael Chen",
     position: "Property Developer",
-    image: "/testimonials/person3.jpg",
+    image: "/assets/images/dina.jpg",
     quote: "The team's expertise and dedication to excellence is remarkable. They transformed our concept into reality with precision and creativity.",
     rating: 5
   }
@@ -214,12 +214,12 @@ export default function ProjectsPage() {
       whileHover={{ y: -10 }}
       className="bg-white/80 backdrop-blur-md border border-white/40 rounded-xl overflow-hidden shadow-lg hover:shadow-[0_4px_10px_0_#1b4965] transition-all duration-300"
     >
-      <div className="relative h-64">
+      <div className="relative !h-64 !w-full">
         <Image
           src={project.image}
           alt={project.title}
           fill
-          className="object-cover"
+          className="object-cover !w-full !h-full"
         />
         <div className="absolute top-4 right-4">
           <span className={`px-3 py-1 rounded-full text-sm font-medium ${
@@ -320,17 +320,17 @@ export default function ProjectsPage() {
         </section>
 
         {/* Upcoming Projects Section */}
-        <section className="py-16 bg-gray-50 overflow-hidden">
+        <section className="py-6 bg-gray-50 overflow-hidden">
           <div className="container mx-auto px-4 ">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
-              className="text-center mb-12"
+              className="text-center mb-6"
             >
               <h2 className="text-4xl font-bold mb-4 text-[#1b4965]">Upcoming Projects</h2>
               <p className="text-xl text-gray-600">Discover our future developments and innovations</p>
             </motion.div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 ">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 ">
               {upcomingProjects.map((project, index) => (
                 <motion.div
                   key={`${project.id}-upcoming`}
@@ -346,7 +346,7 @@ export default function ProjectsPage() {
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
-              className="mt-12 text-center"
+              className="mt-6 text-center"
             >
               <Link href="/projects/upcoming">
                 <motion.button
@@ -363,17 +363,17 @@ export default function ProjectsPage() {
         </section>
 
         {/* Ongoing Projects Section */}
-        <section className="py-16 bg-white overflow-hidden">
+        <section className="py-6 bg-white overflow-hidden">
           <div className="container mx-auto px-4">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
-              className="text-center mb-12"
+              className="text-center mb-4"
             >
               <h2 className="text-4xl font-bold mb-4 text-[#1b4965]">Ongoing Projects</h2>
               <p className="text-xl text-gray-600">Watch our current projects take shape</p>
             </motion.div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               {ongoingProjects.map((project, index) => (
                 <motion.div
                   key={`${project.id}-ongoing`}
@@ -389,7 +389,7 @@ export default function ProjectsPage() {
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
-              className="mt-12 text-center"
+              className="mt-6 text-center"
             >
               <Link href="/projects/ongoing">
                 <motion.button
@@ -406,17 +406,17 @@ export default function ProjectsPage() {
         </section>
 
         {/* Completed Projects Section */}
-        <section className="py-16 bg-gray-50 overflow-hidden">
+        <section className="py-6 bg-gray-50 overflow-hidden">
           <div className="container mx-auto px-4">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
-              className="text-center mb-12"
+              className="text-center mb-4"
             >
               <h2 className="text-4xl font-bold mb-4 text-[#1b4965]">Completed Projects</h2>
               <p className="text-xl text-gray-600">Explore our successfully delivered projects</p>
             </motion.div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               {completedProjects.map((project, index) => (
                 <motion.div
                   key={`${project.id}-completed`}
@@ -432,7 +432,7 @@ export default function ProjectsPage() {
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
-              className="mt-12 text-center"
+              className="mt-6 text-center"
             >
               <Link href="/projects/completed">
                 <motion.button
@@ -449,17 +449,17 @@ export default function ProjectsPage() {
         </section>
 
         {/* Testimonials Section */}
-        <section className="relative h-[90vh] py-16 bg-white">
+        <section className="relative py-6 bg-white">
           <div className="container mx-auto px-4">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
-              className="text-center mb-12"
+              className="text-center mb-20"
             >
               <h2 className="text-4xl font-bold mb-4 text-[#1b4965]">Client Testimonials</h2>
               <p className="text-xl text-gray-600">What our clients say about us</p>
             </motion.div>
-            <div className="grid grid-cols-1 h-[50vh] mt-10 md:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 h-[50vh] mt-3 md:grid-cols-3 gap-3">
               {testimonials.map((testimonial) => (
                 <div
                   key={testimonial.id}
