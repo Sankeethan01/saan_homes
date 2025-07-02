@@ -312,9 +312,9 @@ export default function RentalEquipmentPage() {
           </div>
         </motion.div>
 
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-3">
           {/* Left Column - Images and Details */}
-          <div className="xl:col-span-2 space-y-8">
+          <div className="xl:col-span-2 space-y-2">
             {/* Image Gallery */}
             <motion.div
               initial={{ opacity: 0, x: -20 }}
@@ -525,7 +525,7 @@ export default function RentalEquipmentPage() {
                 <div className="p-4 bg-gradient-to-r from-[#1b4965] to-[#1b4965]/90 rounded-xl text-white">
                   <div className="flex justify-between items-center">
                     <span className="font-medium">Daily Rate</span>
-                    <span className="text-2xl font-bold">${equipment.pricing.daily_rate}</span>
+                    <span className="text-2xl font-bold">LKR {equipment.pricing.daily_rate}</span>
                   </div>
                 </div>
                 
@@ -535,7 +535,7 @@ export default function RentalEquipmentPage() {
                       <span className="font-medium text-gray-800">Weekly Rate</span>
                       <div className="text-right">
                         <span className="text-xl font-bold text-gray-800">
-                          ${equipment.pricing.weekly_rate}
+                          LKR {equipment.pricing.weekly_rate}
                         </span>
                         {equipment.pricing.weekly_discount && (
                           <span className="block text-sm text-green-600 font-medium">
@@ -553,7 +553,7 @@ export default function RentalEquipmentPage() {
                       <span className="font-medium text-gray-800">Monthly Rate</span>
                       <div className="text-right">
                         <span className="text-xl font-bold text-gray-800">
-                          ${equipment.pricing.monthly_rate}
+                          LKR {equipment.pricing.monthly_rate}
                         </span>
                         {equipment.pricing.monthly_discount && (
                           <span className="block text-sm text-green-600 font-medium">
@@ -646,12 +646,12 @@ export default function RentalEquipmentPage() {
                   <div className="flex justify-between items-center">
                     <span className="font-medium text-gray-800">Total Cost</span>
                     <span className="text-2xl font-bold text-green-600">
-                      ${calculateTotalCost().toFixed(2)}
+                      LKR {calculateTotalCost().toFixed(2)}
                     </span>
                   </div>
                   {equipment.pricing.security_deposit > 0 && (
                     <p className="text-sm text-gray-600 mt-2">
-                      + ${equipment.pricing.security_deposit} security deposit
+                      + LKR {equipment.pricing.security_deposit} security deposit
                     </p>
                   )}
                 </div>

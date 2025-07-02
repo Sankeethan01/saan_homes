@@ -254,7 +254,7 @@ export default function RentalHistoryPage() {
                         <div>
                           <p className="text-xs text-gray-500">Total Cost</p>
                           <p className="text-sm font-medium text-gray-900">
-                            ${(booking.duration * booking.equipment.daily_rate).toFixed(2)}
+                            LKR {(booking.duration * booking.equipment.daily_rate).toFixed(2)}
                           </p>
                         </div>
                       </div>

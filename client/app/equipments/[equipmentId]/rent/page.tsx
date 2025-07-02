@@ -512,11 +512,11 @@ export default function RentEquipmentPage() {
                       <h3 className="text-xl font-bold text-green-800">Estimated Total</h3>
                     </div>
                     <p className="text-3xl font-bold text-green-600">
-                      ${calculateTotalCost().toFixed(2)}
+                      LKR {calculateTotalCost().toFixed(2)}
                     </p>
                     {equipment.pricing.security_deposit > 0 && (
                       <p className="text-sm text-green-700 mt-2">
-                        + ${equipment.pricing.security_deposit} security deposit (refundable)
+                        + LKR {equipment.pricing.security_deposit} security deposit (refundable)
                       </p>
                     )}
                   </div>
@@ -590,7 +590,7 @@ export default function RentEquipmentPage() {
                               <p className="text-gray-600">Within {equipment.rental_requirements.delivery_radius}km radius</p>
                               <p className="text-blue-600 font-medium">
                                 {equipment.rental_requirements.delivery_fee > 0 
-                                  ? `$${equipment.rental_requirements.delivery_fee}` 
+                                  ? `LKR ${equipment.rental_requirements.delivery_fee}` 
                                   : 'Free'
                                 }
                               </p>
@@ -779,12 +779,12 @@ export default function RentEquipmentPage() {
                     <div className="flex justify-between items-center">
                       <span className="text-xl font-bold text-green-800">Total Cost</span>
                       <span className="text-3xl font-bold text-green-600">
-                        ${calculateTotalCost().toFixed(2)}
+                        LKR {calculateTotalCost().toFixed(2)}
                       </span>
                     </div>
                     {equipment.pricing.security_deposit > 0 && (
                       <p className="text-sm text-green-700 mt-2">
-                        + ${equipment.pricing.security_deposit} security deposit (refundable)
+                        + LKR {equipment.pricing.security_deposit} security deposit (refundable)
                       </p>
                     )}
                   </div>
@@ -888,27 +888,27 @@ export default function RentEquipmentPage() {
               <div className="space-y-3 text-sm">
                 <div className="flex justify-between">
                   <span className="text-gray-600">Daily Rate</span>
-                  <span className="font-bold">${equipment.pricing.daily_rate}</span>
+                  <span className="font-bold">LKR {equipment.pricing.daily_rate}</span>
                 </div>
                 
                 {equipment.pricing.weekly_rate && (
                   <div className="flex justify-between">
                     <span className="text-gray-600">Weekly Rate</span>
-                    <span className="font-bold">${equipment.pricing.weekly_rate}</span>
+                    <span className="font-bold">LKR {equipment.pricing.weekly_rate}</span>
                   </div>
                 )}
                 
                 {equipment.pricing.monthly_rate && (
                   <div className="flex justify-between">
                     <span className="text-gray-600">Monthly Rate</span>
-                    <span className="font-bold">${equipment.pricing.monthly_rate}</span>
+                    <span className="font-bold">LKR {equipment.pricing.monthly_rate}</span>
                   </div>
                 )}
                 
                 <div className="border-t border-gray-200 pt-3">
                   <div className="flex justify-between">
                     <span className="text-gray-600">Security Deposit</span>
-                    <span className="font-bold">${equipment.pricing.security_deposit}</span>
+                    <span className="font-bold">LKR {equipment.pricing.security_deposit}</span>
                   </div>
                 </div>
               </div>
