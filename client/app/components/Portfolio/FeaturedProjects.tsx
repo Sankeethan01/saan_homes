@@ -13,42 +13,42 @@ const projects = [
   {
     title: 'Modern Villa',
     category: 'Residential',
-    image: '/assets/images/01.jpg',
+    image: '/assets/images/projects/home01.jpg',
     description: 'Contemporary design with sustainable features',
     bgColor: 'bg-blue-50'
   },
   {
     title: 'Commercial Complex',
     category: 'Commercial',
-    image: '/assets/images/01.jpg',
+    image: '/assets/images/projects/home02.jpg',
     description: 'State-of-the-art office spaces',
     bgColor: 'bg-red-50'
   },
   {
     title: 'Luxury Apartments',
     category: 'Multi-Family',
-    image: '/assets/images/01.jpg',
+    image: '/assets/images/projects/home03.jpg',
     description: 'High-end residential complex',
     bgColor: 'bg-green-50'
   },
   {
     title: 'Shopping Mall',
     category: 'Retail',
-    image: '/assets/images/01.jpg',
+    image: '/assets/images/projects/home04.jpg',
     description: 'Modern shopping experience center',
     bgColor: 'bg-yellow-50'
   },
   {
     title: 'Smart Homes',
     category: 'Residential',
-    image: '/assets/images/01.jpg',
+    image: '/assets/images/projects/home05.jpg',
     description: 'Technology-integrated living spaces',
     bgColor: 'bg-purple-50'
   },
   {
     title: 'Industrial Park',
     category: 'Industrial',
-    image: '/assets/images/01.jpg',
+    image: '/assets/images/projects/home06.jpg',
     description: 'Large-scale industrial development',
     bgColor: 'bg-indigo-50'
   }
@@ -62,7 +62,7 @@ const FeaturedProjectsPortfolio = () => {
   const [isHovered, setIsHovered] = useState(false);
 
   return (
-    <section id="projects" className="py-2 bg-gradient-radial from-blue-50 via-slate-50 to-slate-100">
+    <section id="projects" className="py-2" style={{ background: 'radial-gradient(ellipse at 20% 40%, #f3f8ff 60%, #f8fafc 100%)' }}>
       <div className="container mx-auto px-4">
         <motion.div className="text-center max-w-3xl mx-auto mb-16">
           <motion.h2 
@@ -86,40 +86,41 @@ const FeaturedProjectsPortfolio = () => {
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
         >
-          <motion.div
-            className={`flex flex-nowrap gap-8 items-stretch animate-scroll-left ${isHovered ? '[animation-play-state:paused]' : '[animation-play-state:running]'}`}
+          <div
+            className="flex flex-nowrap gap-8 items-stretch animate-scroll-left"
             style={{
-              width: `${scrollingProjects.length * 24}rem`,
+              width: '200%',
               animationDuration: `${animationDuration}s`,
+              animationPlayState: isHovered ? 'paused' : 'running',
             }}
           >
             {scrollingProjects.map((project, index) => (
               <div
                 key={index}
-                className={`group relative w-96 flex-shrink-0 overflow-hidden rounded-3xl shadow-xl hover:shadow-xl transition-all duration-300 bg-white/80 backdrop-blur-md border-2 border-gray-200`}
+                className={`group relative w-96 h-[60vh] flex-shrink-0 overflow-hidden rounded-3xl shadow-xl hover:shadow-xl transition-all duration-300 bg-white/80 backdrop-blur-md border-2 border-gray-200 p-0`}
               >
-                <div className="relative h-64 overflow-hidden">
+                <div className="relative h-[40vh] overflow-hidden p-0 m-0">
                   <Image 
                     src={project.image} 
                     alt={project.title} 
                     fill
-                    className="object-cover group-hover:scale-110 transition-transform duration-500" 
+                    className="object-cover w-full h-full scale-110 group-hover:scale-125 transition-transform duration-500" 
                   />
                   <div className="absolute inset-0 bg-gradient-to-br from-blue-100/40 to-red-100/40 opacity-20 group-hover:opacity-30 transition-opacity" />
                 </div>
-                <div className="p-6">
-                  <span className={`inline-block px-3 py-1 mb-4 text-sm font-medium text-[#1b4965] bg-white/80 backdrop-blur-sm rounded-full`}>
+                <div className="p-6 h-[18vh] flex flex-col justify-center gap-1 mt-2">
+                  <span className={`inline-block px-3 py-1 mb-0 text-sm font-medium text-[#1b4965] bg-white/80 backdrop-blur-sm rounded-full`}>
                     {project.category}
                   </span>
-                  <h3 className="text-xl font-semibold mb-2 group-hover:text-[#1b4965] transition-colors">
+                  <h3 className="text-xl font-semibold mb-0 group-hover:text-[#1b4965] transition-colors leading-tight">
                     {project.title}
                   </h3>
-                  <p className="text-gray-600">{project.description}</p>
+                  <p className="text-gray-600 mb-0 leading-tight">{project.description}</p>
                   <Link href="/projects">
                     <motion.button
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
-                      className="mt-4 text-[#1b4965] font-medium hover:font-maximum transition-colors"
+                      className="mt-2 text-[#1b4965] font-medium hover:font-maximum transition-colors"
                     >
                       Learn More →
                     </motion.button>
@@ -127,7 +128,7 @@ const FeaturedProjectsPortfolio = () => {
                 </div>
               </div>
             ))}
-          </motion.div>
+          </div>
         </div>
         <motion.div
           initial={{ opacity: 0, y: 10 }}
