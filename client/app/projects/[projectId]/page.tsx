@@ -5,6 +5,8 @@ import { motion } from 'framer-motion';
 import { use, useState } from 'react';
 import { FaVrCardboard, FaExpand } from 'react-icons/fa';
 import { MdConstruction, MdCheckCircle, MdSchedule } from 'react-icons/md';
+import NavBarProjects from '@/app/components/ui/NavBarProjects';
+import Footer from '@/app/components/Portfolio/Footer';
 
 interface Project {
   id: string;
@@ -35,19 +37,19 @@ interface ProjectStep {
 const sampleProject: Project = {
   id: '1',
   title: 'Modern Villa Construction',
-  description: `This modern villa project features contemporary architecture, sustainable materials, and smart home technology. The design emphasizes open spaces, natural light, and seamless indoor-outdoor living. Key highlights include a rooftop garden, infinity pool, and energy-efficient systems throughout the property.`,
-  owner: 'John Doe',
-  price: '$1,200,000',
+  description: `This modern villa project features contemporary architecture, sustainable materials, and smart home technology. The design emphasizes open spaces, natural light, and seamless indoor-outdoor living. Key highlights include a rooftop garden, infinity pool, and energy-efficient systems throughout the property. The villa also integrates cutting-edge smart home technology, allowing for seamless control of lighting, security, and climate with just a touch, enhancing both convenience and efficiency.`,
+  owner: 'Mr & Mrs. Vanojithan Lixsana',
+  price: 'LKR 1,200,000',
   details: '4 Bedrooms, 3 Bathrooms, 2,800 sq ft, Rooftop garden, Infinity pool, Smart home system',
-  location: 'Beverly Hills, CA',
+  location: 'Point Pedro, Jaffna',
   status: 'ongoing',
   progress: 65,
   startDate: '2024-01-15',
   estimatedEndDate: '2024-12-20',
   images: [
-    '/assets/images/img01.jpg',
-    '/assets/images/img02.jpg',
-    '/assets/images/img04.jpg',
+    '/assets/images/project1/1.jpg',
+    '/assets/images/project1/2.jpg',
+    '/assets/images/project1/3.jpg',
   ],
   vrVideo: 'https://www.youtube.com/embed/IG7Jrgl9h1o?si=To4jA86msX2av0GN',
   steps: [
@@ -57,7 +59,7 @@ const sampleProject: Project = {
       description: 'Site clearing, excavation, and foundation laying',
       status: 'completed',
       completedDate: '2024-02-15',
-      images: ['/assets/images/bg01.jpeg']
+      images: ['/assets/images/project1/found01.png', '/assets/images/project1/found02.png']
     },
     {
       id: '2',
@@ -65,14 +67,14 @@ const sampleProject: Project = {
       description: 'Steel frame construction and concrete work',
       status: 'completed',
       completedDate: '2024-04-10',
-      images: ['/assets/images/construction.png']
+      images: ['/assets/images/project1/structure01.png', '/assets/images/project1/structure02.png']
     },
     {
       id: '3',
       title: 'Roofing & Exterior Walls',
       description: 'Roof installation and exterior wall construction',
       status: 'in-progress',
-      images: ['/assets/images/renovation.png']
+      images: ['/assets/images/project1/roof01.png', '/assets/images/project1/roof02.png']
     },
     {
       id: '4',
@@ -120,8 +122,12 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
   
   return (
     <main className="min-h-screen bg-gray-50">
+
+      {/* NavBar */}
+      <NavBarProjects />
+
       {/* Hero Section */}
-      <div className="relative h-96 bg-gradient-to-r from-[#1b4965] to-[#2d6a87] text-white">
+      <div className="relative h-70 bg-gradient-to-r from-[#1b4965] to-[#2d6a87] text-white">
         <div className="absolute inset-0 bg-black/20"></div>
         <div className="relative container mx-auto px-4 h-full flex items-center">
           <div className="max-w-3xl">
@@ -162,7 +168,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
           <h2 className="text-3xl font-bold mb-6 text-[#1b4965]">Project Overview</h2>
           <div className="grid md:grid-cols-2 gap-8">
             <div>
-              <p className="text-lg text-gray-600 mb-6">{proj.description}</p>
+              <p className="text-lg text-justify text-gray-600 mb-6">{proj.description}</p>
               <div className="bg-white p-6 rounded-2xl shadow-lg">
                 <h3 className="text-xl font-semibold mb-4">Project Details</h3>
                 <div className="space-y-3">
@@ -202,6 +208,23 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
                 </div>
                 <p className="text-sm text-gray-600">{proj.details}</p>
               </div>
+              {/* Map Location Card */}
+              <div className="bg-white p-6 rounded-2xl shadow-lg mt-8">
+                <h3 className="text-xl font-semibold mb-4">Project Location</h3>
+                <div className="w-full h-32 rounded-xl overflow-hidden">
+                  <iframe
+                    src={`https://www.google.com/maps?q=${encodeURIComponent(proj.location)}&output=embed`}
+                    width="100%"
+                    height="100%"
+                    style={{ border: 0 }}
+                    allowFullScreen={true}
+                    loading="lazy"
+                    referrerPolicy="no-referrer-when-downgrade"
+                    title="Project Location Map"
+                    className="w-full h-full"
+                  ></iframe>
+                </div>
+              </div>
             </div>
           </div>
         </section>
@@ -223,7 +246,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
                   src={img} 
                   alt={`Project image ${idx + 1}`} 
                   fill 
-                  className="object-cover group-hover:scale-105 transition-transform duration-300" 
+                  className="object-cover !h-64 group-hover:scale-105 transition-transform duration-300" 
                 />
                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-300 flex items-center justify-center">
                   <FaExpand className="text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
@@ -266,7 +289,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
                       <div className="flex gap-2 mt-4">
                         {step.images.map((img, imgIdx) => (
                           <div key={imgIdx} className="relative w-20 h-20 rounded-lg overflow-hidden">
-                            <Image src={img} alt={`Step ${step.id} image ${imgIdx + 1}`} fill className="object-cover" />
+                            <Image src={img} alt={`Step ${step.id} image ${imgIdx + 1}`} fill className="object-cover !h-full" />
                           </div>
                         ))}
                       </div>
@@ -330,7 +353,12 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
             </div>
           </section>
         )}
+
       </div>
+
+      {/*Footer*/}
+      <Footer />
+
     </main>
   );
 }
