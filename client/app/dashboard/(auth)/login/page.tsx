@@ -15,6 +15,7 @@ export default function Login() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const returnUrl = searchParams.get('returnUrl');
+  const requiredRole = searchParams.get('requiredRole');
   const setToken = useAuthStore((s) => s.setToken);
   const setUserRole = useAuthStore((s) => s.setUserRole);
 
@@ -123,8 +124,21 @@ export default function Login() {
       // Delay redirect slightly to ensure cookies are set
       setTimeout(() => {
         if (returnUrl) {
-          // Redirect to the return URL if provided
-          router.push(returnUrl);
+          // Check if a specific role is required for the return URL
+          if (requiredRole && userRole !== requiredRole) {
+            // If user's role doesn't match required role, redirect to appropriate dashboard
+            if (userRole === UserRoles.ADMIN) {
+              router.push(Routes.ADMIN);
+            } else if (userRole === UserRoles.SUPERVISOR) {
+              router.push(Routes.SUPERVISOR);
+            } else {
+              router.push(Routes.EQUIPMENTS);
+            }
+            toast.error(`You need ${requiredRole} permissions to access that page`);
+          } else {
+            // Redirect to the return URL if role matches or no specific role required
+            router.push(returnUrl);
+          }
         } else if (userRole === UserRoles.ADMIN) {
           router.push(Routes.ADMIN);
         } else if (userRole === UserRoles.SUPERVISOR) {
