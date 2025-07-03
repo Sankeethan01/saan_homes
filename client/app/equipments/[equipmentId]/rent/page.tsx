@@ -226,8 +226,15 @@ export default function RentEquipmentPage() {
   const handleSubmitBooking = async () => {
     if (!equipment || !token) return;
 
+    // Validate project details
+    if (!bookingData.projectDetails || bookingData.projectDetails.trim() === '') {
+      setError('Project details are required');
+      setCurrentStep(1); // Go back to project details step
+      return;
+    }
+
     // Validate required fields based on current step
-    if (currentStep === 3) {
+    if (currentStep === 3 || currentStep === 4) { // Also validate in final step
       // Emergency contact validations
       let valid = true;
       const errors = { name: '', phone: '', relationship: '' };
@@ -235,10 +242,10 @@ export default function RentEquipmentPage() {
         errors.name = 'Name must be at least 3 characters';
         valid = false;
       }
-      if (!bookingData.emergencyContact.phone || !/^\d{10,15}$/.test(bookingData.emergencyContact.phone.trim())) {
-        errors.phone = 'Enter a valid phone number (10-15 digits)';
-        valid = false;
-      }
+                               if (!bookingData.emergencyContact.phone || !/^\d{10}$/.test(bookingData.emergencyContact.phone.trim())) {
+                           errors.phone = 'Enter a valid 10-digit phone number';
+                           valid = false;
+                         }
       if (!bookingData.emergencyContact.relationship || bookingData.emergencyContact.relationship.trim().length < 2) {
         errors.relationship = 'Relationship must be at least 2 characters';
         valid = false;
@@ -246,6 +253,9 @@ export default function RentEquipmentPage() {
       setEmergencyErrors(errors);
       if (!valid) {
         setError('Please correct the emergency contact details');
+        if (currentStep === 4) {
+          setCurrentStep(3); // Go back to emergency contact step if in final review
+        }
         return;
       }
 
@@ -363,13 +373,13 @@ export default function RentEquipmentPage() {
     );
   }
 
-  if (error || !equipment) {
+  if (!equipment) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
         <div className="text-center max-w-md mx-auto">
           <RiErrorWarningLine className="text-6xl text-red-500 mx-auto mb-4" />
           <h2 className="text-2xl font-bold text-gray-800 mb-2">Equipment Not Found</h2>
-          <p className="text-gray-600 mb-6">{error || 'The equipment you are looking for does not exist.'}</p>
+          <p className="text-gray-600 mb-6">The equipment you are looking for does not exist.</p>
           <Link href="/equipments">
             <button className="bg-[#1b4965] text-white px-6 py-3 rounded-lg hover:bg-[#0d3b59] transition-colors">
               Back to Equipment List
@@ -463,7 +473,7 @@ export default function RentEquipmentPage() {
               {currentStep === 0 && (
                 <div className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="p-6 bg-gradient-to-r from-[#1b4965] to-[#1b4965]/90 rounded-2xl text-white">
+                    <div className="p-6 bg-[#1b4965] rounded-2xl text-white">
                       <div className="flex items-center mb-4">
                         <RiCalendarLine className="text-2xl mr-3" />
                         <h3 className="text-xl font-bold">Start Date</h3>
@@ -473,7 +483,7 @@ export default function RentEquipmentPage() {
                       </p>
                     </div>
                     
-                    <div className="p-6 bg-gradient-to-r from-[#1b4965]/80 to-[#1b4965]/70 rounded-2xl text-white">
+                    <div className="p-6 bg-[#1b4965] rounded-2xl text-white">
                       <div className="flex items-center mb-4">
                         <RiCalendarLine className="text-2xl mr-3" />
                         <h3 className="text-xl font-bold">End Date</h3>
@@ -549,15 +559,27 @@ export default function RentEquipmentPage() {
                 <div className="space-y-6">
                   <div className="p-6 bg-gray-50 rounded-2xl">
                     <label className="block text-lg font-bold text-gray-800 mb-4">
-                      What&apos;s this equipment for? 🏗️
+                      What&apos;s this equipment for? 🏗️ <span className="text-red-500">*</span>
                     </label>
                     <textarea
+                      id="projectDetailsField"
                       value={bookingData.projectDetails}
-                      onChange={(e) => setBookingData({...bookingData, projectDetails: e.target.value})}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1b4965] focus:border-[#1b4965] transition-all resize-none"
+                      onChange={(e) => {
+                        setBookingData({...bookingData, projectDetails: e.target.value});
+                        if (e.target.value.trim() !== '') {
+                          setError(null);
+                        }
+                      }}
+                      className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1b4965] focus:border-[#1b4965] transition-all resize-none ${
+                        error && error.includes("project") ? "border-red-500" : "border-gray-300"
+                      }`}
                       rows={4}
                       placeholder="Tell us about your project - construction, landscaping, demolition, etc. This helps us ensure you have the right equipment for the job."
+                      required
                     />
+                    {error && error.includes("project") && (
+                      <p className="text-red-500 text-sm mt-2">Please provide project details</p>
+                    )}
                   </div>
 
                   <div className="p-6 bg-gray-50 rounded-2xl">
@@ -656,8 +678,8 @@ export default function RentEquipmentPage() {
               {/* Step 3: Safety & Compliance */}
               {currentStep === 3 && (
                 <div className="space-y-6">
-                  <div className="p-6 bg-red-50 rounded-2xl border border-red-200">
-                    <h3 className="text-xl font-bold text-red-800 mb-4">Emergency Contact 🚨</h3>
+                                      <div className="p-6 bg-red-50 rounded-2xl border border-red-200">
+                    <h3 className="text-xl font-bold text-red-800 mb-4">Emergency Contact 🚨 <span className="text-red-500">*</span></h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -666,6 +688,7 @@ export default function RentEquipmentPage() {
                         <div className="relative">
                           <RiUserLine className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                           <input
+                            id="emergencyContactName"
                             type="text"
                             value={bookingData.emergencyContact.name}
                             onChange={(e) => {
@@ -674,8 +697,13 @@ export default function RentEquipmentPage() {
                                 emergencyContact: {...bookingData.emergencyContact, name: e.target.value}
                               });
                               setEmergencyErrors((prev) => ({ ...prev, name: '' }));
+                              if (e.target.value.trim() !== '') {
+                                setError(null);
+                              }
                             }}
-                            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1b4965] focus:border-[#1b4965] transition-all"
+                            className={`w-full pl-10 pr-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1b4965] focus:border-[#1b4965] transition-all ${
+                              emergencyErrors.name ? "border-red-500" : "border-gray-300"
+                            }`}
                             placeholder="Full name"
                             required
                           />
@@ -692,21 +720,38 @@ export default function RentEquipmentPage() {
                         <div className="relative">
                           <RiPhoneLine className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                           <input
+                            id="emergencyContactPhone"
                             type="tel"
                             value={bookingData.emergencyContact.phone}
                             onChange={(e) => {
+                              // Only allow digits
+                              const value = e.target.value.replace(/\D/g, '');
+                              // Limit to 10 digits
+                              const trimmedValue = value.slice(0, 10);
+                              
                               setBookingData({
                                 ...bookingData, 
-                                emergencyContact: {...bookingData.emergencyContact, phone: e.target.value}
+                                emergencyContact: {...bookingData.emergencyContact, phone: trimmedValue}
                               });
                               setEmergencyErrors((prev) => ({ ...prev, phone: '' }));
+                              if (trimmedValue.length === 10) {
+                                setError(null);
+                              }
                             }}
-                            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1b4965] focus:border-[#1b4965] transition-all"
-                            placeholder="Phone number"
+                            className={`w-full pl-10 pr-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1b4965] focus:border-[#1b4965] transition-all ${
+                              emergencyErrors.phone ? "border-red-500" : "border-gray-300"
+                            }`}
+                            placeholder="10-digit phone number"
+                            maxLength={10}
+                            pattern="[0-9]{10}"
+                            inputMode="numeric"
                             required
                           />
                           {emergencyErrors.phone && (
                             <p className="text-red-500 text-xs mt-1">{emergencyErrors.phone}</p>
+                          )}
+                          {bookingData.emergencyContact.phone && bookingData.emergencyContact.phone.length > 0 && bookingData.emergencyContact.phone.length < 10 && (
+                            <p className="text-amber-500 text-xs mt-1">{10 - bookingData.emergencyContact.phone.length} more digits needed</p>
                           )}
                         </div>
                       </div>
@@ -716,6 +761,7 @@ export default function RentEquipmentPage() {
                           Relationship
                         </label>
                         <input
+                          id="emergencyContactRelationship"
                           type="text"
                           value={bookingData.emergencyContact.relationship}
                           onChange={(e) => {
@@ -724,8 +770,13 @@ export default function RentEquipmentPage() {
                               emergencyContact: {...bookingData.emergencyContact, relationship: e.target.value}
                             });
                             setEmergencyErrors((prev) => ({ ...prev, relationship: '' }));
+                            if (e.target.value.trim() !== '') {
+                              setError(null);
+                            }
                           }}
-                          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1b4965] focus:border-[#1b4965] transition-all"
+                          className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1b4965] focus:border-[#1b4965] transition-all ${
+                            emergencyErrors.relationship ? "border-red-500" : "border-gray-300"
+                          }`}
                           placeholder="e.g., Spouse, Parent, Colleague"
                           required
                         />
@@ -862,6 +913,45 @@ export default function RentEquipmentPage() {
                           return;
                         }
                       }
+                      
+                      // Validate project details in step 1
+                      if (currentStep === 1) {
+                        if (!bookingData.projectDetails || bookingData.projectDetails.trim() === '') {
+                          setError('Please provide details about your project');
+                          document.getElementById('projectDetailsField')?.focus();
+                          return;
+                        }
+                      }
+                      
+                      // Validate emergency contact in step 3
+                      if (currentStep === 3) {
+                        let valid = true;
+                        const errors = { name: '', phone: '', relationship: '' };
+                        
+                        if (!bookingData.emergencyContact.name || bookingData.emergencyContact.name.trim().length < 3) {
+                          errors.name = 'Name must be at least 3 characters';
+                          valid = false;
+                        }
+                        
+                        if (!bookingData.emergencyContact.phone || !/^\d{10,15}$/.test(bookingData.emergencyContact.phone.trim())) {
+                          errors.phone = 'Enter a valid phone number (10-15 digits)';
+                          valid = false;
+                        }
+                        
+                        if (!bookingData.emergencyContact.relationship || bookingData.emergencyContact.relationship.trim().length < 2) {
+                          errors.relationship = 'Relationship must be at least 2 characters';
+                          valid = false;
+                        }
+                        
+                        setEmergencyErrors(errors);
+                        
+                        if (!valid) {
+                          setError('Please complete all emergency contact fields');
+                          document.getElementById('emergencyContactName')?.focus();
+                          return;
+                        }
+                      }
+                      
                       setError(null);
                       setCurrentStep(currentStep + 1);
                     }}
