@@ -450,14 +450,14 @@ export default function ProjectDetailsPage({ params }: { params: Promise<{ proje
               </div>
               <div className="text-right">
                 <div className="text-2xl font-bold text-gray-900">
-                  ${project.budget ? (project.budget / 1000).toFixed(0) : '0'}K
+                  LKR {project.budget ? (project.budget / 1000).toFixed(0) : '0'}K
                 </div>
                 <div className="text-xs text-amber-600 font-medium">Budget</div>
               </div>
             </div>
             <div className="text-sm font-medium text-gray-600">Total Budget</div>
             <div className="text-xs text-gray-500 mt-1">
-              ${project.budget ? project.budget.toLocaleString() : '0'}
+              LKR {project.budget ? project.budget.toLocaleString() : '0'}
             </div>
           </div>
         </div>
@@ -611,30 +611,6 @@ export default function ProjectDetailsPage({ params }: { params: Promise<{ proje
                     </div>
                   </div>
                 )}
-                
-                {/* Quick Actions */}
-                <div className="mt-6 pt-6 border-t border-gray-200">
-                  <div className="flex flex-wrap gap-3">
-                    {project.client_email && (
-                      <a
-                        href={`mailto:${project.client_email}`}
-                        className="flex items-center px-4 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors text-sm font-medium"
-                      >
-                        <FiMail className="w-4 h-4 mr-2" />
-                        Send Email
-                      </a>
-                    )}
-                    {project.client_phone && (
-                      <a
-                        href={`tel:${project.client_phone}`}
-                        className="flex items-center px-4 py-2 bg-green-50 text-green-600 rounded-lg hover:bg-green-100 transition-colors text-sm font-medium"
-                      >
-                        <FiPhone className="w-4 h-4 mr-2" />
-                        Call Client
-                      </a>
-                    )}
-                  </div>
-                </div>
               </div>
             ) : (
               <div className="text-center py-8">
@@ -706,7 +682,7 @@ export default function ProjectDetailsPage({ params }: { params: Promise<{ proje
                             <div className="flex items-center">
                               <FiDollarSign className="w-4 h-4 text-amber-600 mr-2" />
                               <span className="text-sm text-gray-700">
-                                Budget: <span className="font-semibold">${currentStep.expected_budget.toLocaleString()}</span>
+                                Budget: <span className="font-semibold">LKR {currentStep.expected_budget.toLocaleString()}</span>
                               </span>
                             </div>
                           )}
@@ -737,7 +713,7 @@ export default function ProjectDetailsPage({ params }: { params: Promise<{ proje
                                 <div className="flex-1">
                                   <p className="text-sm font-medium text-gray-900">{step.title}</p>
                                   {step.expected_budget && (
-                                    <p className="text-xs text-gray-500">Budget: ${step.expected_budget.toLocaleString()}</p>
+                                    <p className="text-xs text-gray-500">Budget: LKR {step.expected_budget.toLocaleString()}</p>
                                   )}
                                 </div>
                                 <FiClock className="w-4 h-4 text-gray-400" />
@@ -959,7 +935,7 @@ export default function ProjectDetailsPage({ params }: { params: Promise<{ proje
                             {step.expected_budget && (
                               <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-700 border border-gray-200">
                                 <FiDollarSign className="w-4 h-4 mr-1" />
-                                ${step.expected_budget.toLocaleString()}
+                                LKR {step.expected_budget.toLocaleString()}
                               </span>
                             )}
                             {step.actual_completed && (
