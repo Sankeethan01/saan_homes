@@ -428,14 +428,14 @@ const EquipmentGridRentalsPortfolio = ({ searchQuery = '', selectedCategory = 'A
                   <div className="space-y-1">
                     <div className="flex justify-between items-center">
                       <span className="text-gray-600 text-xs font-medium">Daily Rate:</span>
-                      <span className="font-bold text-base text-gray-900">${equipment.pricing.daily_rate}</span>
+                      <span className="font-bold text-base text-gray-900">LKR {equipment.pricing.daily_rate}</span>
                     </div>
                     
                     {equipment.pricing.weekly_rate && (
                       <div className="flex justify-between items-center">
                         <span className="text-gray-600 text-xs font-medium">Weekly Rate:</span>
                         <div className="text-right">
-                          <span className="font-bold text-base text-gray-900">${equipment.pricing.weekly_rate}</span>
+                          <span className="font-bold text-base text-gray-900">LKR {equipment.pricing.weekly_rate}</span>
                           {equipment.pricing.weekly_discount && (
                             <span className="text-green-600 text-xs font-medium ml-2 bg-green-100 px-2 py-1 rounded">
                               {equipment.pricing.weekly_discount}% off
@@ -449,7 +449,7 @@ const EquipmentGridRentalsPortfolio = ({ searchQuery = '', selectedCategory = 'A
                       <div className="flex justify-between items-center">
                         <span className="text-gray-600 text-xs font-medium">Monthly Rate:</span>
                         <div className="text-right">
-                          <span className="font-bold text-base text-gray-900">${equipment.pricing.monthly_rate}</span>
+                          <span className="font-bold text-base text-gray-900">LKR {equipment.pricing.monthly_rate}</span>
                           {equipment.pricing.monthly_discount && (
                             <span className="text-green-600 text-xs font-medium ml-2 bg-green-100 px-2 py-1 rounded">
                               {equipment.pricing.monthly_discount}% off
