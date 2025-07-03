@@ -54,6 +54,12 @@ export default function UpdateProfilePage() {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [activeTab, setActiveTab] = useState<'personal' | 'professional' | 'password'>('personal');
+  const tabList = [
+    { id: 'personal', label: 'Personal Info', icon: RiUser3Line },
+    { id: 'professional', label: 'Professional Info', icon: RiBuildingLine },
+    { id: 'password', label: 'Security', icon: RiLockPasswordLine }
+  ];
+  const [hoveredTab, setHoveredTab] = useState<string | null>(null);
 
   useEffect(() => {
     if (!token) {
@@ -217,54 +223,71 @@ export default function UpdateProfilePage() {
 
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 py-8 px-4">
-      <div className="max-w-4xl mx-auto">
+    <div className="min-h-screen py-8 px-4">
+      <div className="max-w-5xl mx-auto">
+        {/* Breadcrumbs */}
+        <nav className="flex items-center space-x-2 text-sm py-6 px-2">
+          <button onClick={() => router.push('/dashboard/supervisor')} className="text-[#1b4965] hover:underline">Dashboard</button>
+          <span className="mx-2 text-[#1b4965]">/</span>
+          <span className="text-[#1b4965] font-semibold">Profile</span>
+        </nav>
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 via-purple-500 to-pink-500 bg-clip-text text-transparent mb-2 animate-gradient-x [background-size:200%_auto] animate-gradient-move">
+          <h1 className="text-3xl font-bold mb-2" style={{ color: '#1b4965' }}>
             <span className="inline-block animate-fade-in">Profile Settings</span>
           </h1>
           <p className="text-gray-600 animate-fade-in [animation-delay:200ms]">Manage your personal and professional information</p>
         </div>
-
-        {/* Tab Navigation */}
-        <div className="bg-white rounded-2xl shadow-lg p-2 mb-8">
-          <div className="flex space-x-1">
-            {[
-              { id: 'personal', label: 'Personal Info', icon: RiUser3Line },
-              { id: 'professional', label: 'Professional Info', icon: RiBuildingLine },
-              { id: 'password', label: 'Security', icon: RiLockPasswordLine }
-            ].map((tab) => {
+        {/* Icon Circle Vertical Tab Navigation + Grid Layout */}
+        <div className="flex flex-col md:flex-row gap-8">
+          {/* Icon Circle Vertical Tabs */}
+          <div className="relative flex flex-row md:flex-col items-center md:items-stretch gap-0 md:w-32 min-h-[340px] justify-center md:justify-start">
+            {/* Vertical connecting line */}
+            <div className="hidden md:block absolute left-1/2 top-8 bottom-8 w-1 -translate-x-1/2 bg-[#1b4965]/20 z-0" style={{ minHeight: 120, maxHeight: 340 }} />
+            {tabList.map((tab, idx) => {
               const Icon = tab.icon;
+              const isActive = activeTab === tab.id;
+              const isHovered = hoveredTab === tab.id;
               return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id as any)}
-                  className={`flex-1 flex items-center justify-center gap-2 px-6 py-4 rounded-xl font-medium transition-all duration-300 ${
-                    activeTab === tab.id 
-                      ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg transform scale-105' 
-                      : 'text-gray-600 hover:text-blue-600 hover:bg-gray-50'
-                  }`}
-                >
-                  <Icon className="text-lg" />
-                  {tab.label}
-                </button>
+                <div key={tab.id} className="relative flex flex-col items-center z-10">
+                  <button
+                    onClick={() => setActiveTab(tab.id as any)}
+                    onMouseEnter={() => setHoveredTab(tab.id)}
+                    onMouseLeave={() => setHoveredTab(null)}
+                    className={`flex items-center justify-center w-14 h-14 rounded-full border-2 transition-all duration-200 mb-2 md:mb-6 shadow-md bg-white group ${
+                      isActive
+                        ? 'border-[#1b4965] bg-white scale-110'
+                        : isHovered
+                        ? 'border-[#1b4965] bg-blue-50 scale-105'
+                        : 'border-[#1b4965] text-gray-400 hover:border-[#1b4965] hover:text-[#1b4965]'
+                    }`}
+                    style={{ zIndex: 2 }}
+                  >
+                    <Icon className="text-2xl" style={{ color: isActive ? '#1b4965' : undefined }} />
+                  </button>
+                  {/* Connecting line segment (except last) */}
+                  {idx < tabList.length - 1 && (
+                    <div className={`hidden md:block w-1 h-8 mx-auto ${isActive || hoveredTab === tabList[idx + 1].id ? 'bg-[#1b4965]' : 'bg-[#1b4965]/20'} transition-all duration-200`} />
+                  )}
+                  {/* Tooltip label on hover or active */}
+                  {(isHovered || isActive) && (
+                    <div className="absolute left-16 md:left-16 top-1/2 -translate-y-1/2 bg-white border border-[#1b4965] text-[#1b4965] px-4 py-2 rounded-xl shadow-lg font-semibold whitespace-nowrap transition-all duration-200 z-20 animate-fade-in">
+                      {tab.label}
+                    </div>
+                  )}
+                </div>
               );
             })}
           </div>
-        </div>
-
-        {/* Content Cards */}
-        <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
-          {/* PERSONAL FORM */}
-          {activeTab === 'personal' && (
-            <form onSubmit={handlePersonalUpdate} className="p-8">
-              <div className="mb-8">
-                <h2 className="text-2xl font-semibold text-gray-800 mb-6 flex items-center gap-2 animate-fade-in-up">
-                  <RiUser3Line className="text-blue-600" />
+          {/* Grid Cards */}
+          <div className="flex-1 space-y-8">
+            {/* PERSONAL FORM */}
+            {activeTab === 'personal' && (
+              <form onSubmit={handlePersonalUpdate} className="bg-white rounded-2xl shadow-xl p-4">
+                <h2 className="text-lg font-semibold mb-4 flex items-center gap-2" style={{ color: '#1b4965' }}>
+                  <RiUser3Line className="text-[#1b4965]" />
                   <span>Personal Information</span>
                 </h2>
-                
                 {/* Profile Image Section */}
                 <div className="flex items-center space-x-6 mb-8 p-6 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl">
                   <div className="relative">
@@ -275,7 +298,7 @@ export default function UpdateProfilePage() {
                       height={120}
                       className="rounded-full object-cover border-4 border-white shadow-lg"
                     />
-                    <div className="absolute -bottom-2 -right-2 bg-blue-600 rounded-full p-2 shadow-lg">
+                    <div className="absolute -bottom-2 -right-2 bg-[#1b4965] rounded-full p-2 shadow-lg">
                       <RiCameraLine className="text-white text-lg" />
                     </div>
                   </div>
@@ -306,13 +329,12 @@ export default function UpdateProfilePage() {
                         };
                         reader.readAsDataURL(file);
                       }}
-                      className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                      className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-[#1b4965] hover:file:bg-blue-100"
                     />
                   </div>
                 </div>
-
                 {/* Form Fields */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {[
                     { field: 'firstName', label: 'First Name', icon: RiUser3Line, type: 'text' },
                     { field: 'lastName', label: 'Last Name', icon: RiUser3Line, type: 'text' },
@@ -323,7 +345,7 @@ export default function UpdateProfilePage() {
                   ].map(({ field, label, icon: Icon, type }) => (
                     <div key={field} className="space-y-2">
                       <label className="block text-sm font-medium text-gray-700 flex items-center gap-2">
-                        <Icon className="text-blue-600" />
+                        <Icon className="text-[#1b4965]" />
                         {label}
                       </label>
                       <div className="relative">
@@ -343,116 +365,103 @@ export default function UpdateProfilePage() {
                                 : prev
                             )
                           }
-                          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 bg-gray-50 hover:bg-white"
+                          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#1b4965] focus:border-transparent transition-all duration-300 bg-gray-50 hover:bg-white"
                           required={field !== 'phone' && field !== 'address'}
                         />
                       </div>
                     </div>
                   ))}
                 </div>
-              </div>
-
-              <div className="flex justify-end">
-                <button
-                  type="submit"
-                  className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white px-8 py-3 rounded-xl font-semibold hover:from-blue-700 hover:to-purple-700 transform hover:scale-105 transition-all duration-300 shadow-lg"
-                >
-                  <RiSaveLine className="text-lg" />
-                  Save Changes
-                </button>
-              </div>
-            </form>
-          )}
-
-          {/* PROFESSIONAL INFO */}
-          {activeTab === 'professional' && (
-            <div className="p-8">
-              <h2 className="text-2xl font-semibold text-gray-800 mb-6 flex items-center gap-2 animate-fade-in-up">
-                <RiBuildingLine className="text-blue-600" />
-                <span>Professional Information</span>
-              </h2>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {[
-                  { field: 'department', label: 'Department', icon: RiBuildingLine, value: profileData.professionalInfo.department },
-                  { field: 'position', label: 'Position', icon: RiUser3Line, value: profileData.professionalInfo.position },
-                  { field: 'employeeId', label: 'Employee ID', icon: RiIdCardLine, value: profileData.professionalInfo.employeeId },
-                  { field: 'joinDate', label: 'Join Date', icon: RiTimeLine, value: profileData.professionalInfo.joinDate ? new Date(profileData.professionalInfo.joinDate).toLocaleDateString() : 'N/A' }
-                ].map(({ field, label, icon: Icon, value }) => (
-                  <div key={field} className="bg-gradient-to-r from-gray-50 to-blue-50 p-6 rounded-xl border border-gray-200">
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className="bg-blue-100 p-2 rounded-lg">
-                        <Icon className="text-blue-600 text-xl" />
-                      </div>
-                      <h3 className="font-semibold text-gray-800">{label}</h3>
-                    </div>
-                    <p className="text-gray-600 text-lg">{value || 'N/A'}</p>
-                  </div>
-                ))}
-              </div>
-              
-              <div className="mt-8 p-4 bg-yellow-50 border border-yellow-200 rounded-xl">
-                <p className="text-yellow-800 text-sm flex items-center gap-2">
-                  <span className="text-yellow-600">ℹ️</span>
-                  Professional information is managed by the system and cannot be modified directly.
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* CHANGE PASSWORD */}
-          {activeTab === 'password' && (
-            <div className="p-8 flex items-center justify-center min-h-[500px]">
-              <div className="w-full max-w-md">
-                <h2 className="text-2xl font-semibold text-gray-800 mb-6 flex items-center gap-2 text-center justify-center animate-fade-in-up">
-                  <RiLockPasswordLine className="text-blue-600" />
-                  <span>Security Settings</span>
-                </h2>
-                
-                <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl border border-blue-200 relative overflow-hidden animate-shimmer">
-                  <p className="text-blue-800 text-sm flex items-center gap-2 z-10 relative">
-                    <span className="text-blue-600">🔒</span>
-                    Update your password to keep your account secure
-                  </p>
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/60 to-transparent animate-shimmer-bar pointer-events-none" />
-                </div>
-                
-                <form onSubmit={handleChangePassword} className="space-y-6">
-                  {[
-                    { field: 'currentPassword', label: 'Current Password', icon: RiLockPasswordLine },
-                    { field: 'newPassword', label: 'New Password', icon: RiLockPasswordLine },
-                    { field: 'confirmPassword', label: 'Confirm New Password', icon: RiLockPasswordLine }
-                  ].map(({ field, label, icon: Icon }) => (
-                    <div key={field} className="space-y-2">
-                      <label className="block text-sm font-medium text-gray-700 flex items-center gap-2">
-                        <Icon className="text-blue-600" />
-                        {label}
-                      </label>
-                      <input
-                        type="password"
-                        value={field === 'currentPassword' ? currentPassword : field === 'newPassword' ? newPassword : confirmPassword}
-                        onChange={(e) => {
-                          if (field === 'currentPassword') setCurrentPassword(e.target.value);
-                          else if (field === 'newPassword') setNewPassword(e.target.value);
-                          else setConfirmPassword(e.target.value);
-                        }}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 bg-gray-50 hover:bg-white"
-                        required
-                      />
-                    </div>
-                  ))}
-                  
+                <div className="flex justify-end mt-8">
                   <button
                     type="submit"
-                    className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-3 rounded-xl font-semibold hover:from-blue-700 hover:to-purple-700 transform hover:scale-105 transition-all duration-300 shadow-lg"
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl font-semibold transition-all duration-300 shadow-lg"
+                    style={{ backgroundColor: '#1b4965', color: 'white' }}
                   >
-                    <RiLockPasswordLine className="text-lg" />
-                    Update Password
+                    <RiSaveLine className="text-lg" />
+                    Save Changes
                   </button>
-                </form>
+                </div>
+              </form>
+            )}
+            {/* PROFESSIONAL INFO */}
+            {activeTab === 'professional' && (
+              <div className="bg-white rounded-2xl shadow-xl p-4">
+                <h2 className="text-lg font-semibold mb-4 flex items-center gap-2" style={{ color: '#1b4965' }}>
+                  <RiBuildingLine className="text-[#1b4965]" />
+                  <span>Professional Information</span>
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {[
+                    { field: 'department', label: 'Department', icon: RiBuildingLine, value: profileData.professionalInfo.department },
+                    { field: 'position', label: 'Position', icon: RiUser3Line, value: profileData.professionalInfo.position },
+                    { field: 'employeeId', label: 'Employee ID', icon: RiIdCardLine, value: profileData.professionalInfo.employeeId },
+                    { field: 'joinDate', label: 'Join Date', icon: RiTimeLine, value: profileData.professionalInfo.joinDate ? new Date(profileData.professionalInfo.joinDate).toLocaleDateString() : 'N/A' }
+                  ].map(({ field, label, icon: Icon, value }) => (
+                    <div key={field} className="bg-gradient-to-r from-gray-50 to-blue-50 p-4 rounded-xl border border-gray-200">
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="bg-blue-100 p-2 rounded-lg">
+                          <Icon className="text-[#1b4965] text-lg" />
+                        </div>
+                        <h3 className="font-semibold text-gray-800">{label}</h3>
+                      </div>
+                      <p className="text-gray-600 text-base">{value || 'N/A'}</p>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-8 p-4 bg-yellow-50 border border-yellow-200 rounded-xl">
+                  <p className="text-yellow-800 text-sm flex items-center gap-2">
+                    <span className="text-yellow-600">ℹ️</span>
+                    Professional information is managed by the system and cannot be modified directly.
+                  </p>
+                </div>
               </div>
-            </div>
-          )}
+            )}
+            {/* CHANGE PASSWORD */}
+            {activeTab === 'password' && (
+              <div className="bg-white rounded-2xl shadow-xl p-4 flex items-center justify-center min-h-[400px]">
+                <div className="w-full max-w-md">
+                  <h2 className="text-lg font-semibold mb-4 flex items-center gap-2 text-center justify-center" style={{ color: '#1b4965' }}>
+                    <RiLockPasswordLine className="text-[#1b4965]" />
+                    <span>Security Settings</span>
+                  </h2>
+                  <form onSubmit={handleChangePassword} className="space-y-6">
+                    {[
+                      { field: 'currentPassword', label: 'Current Password', icon: RiLockPasswordLine },
+                      { field: 'newPassword', label: 'New Password', icon: RiLockPasswordLine },
+                      { field: 'confirmPassword', label: 'Confirm New Password', icon: RiLockPasswordLine }
+                    ].map(({ field, label, icon: Icon }) => (
+                      <div key={field} className="space-y-2">
+                        <label className="block text-sm font-medium text-gray-700 flex items-center gap-2">
+                          <Icon className="text-[#1b4965]" />
+                          {label}
+                        </label>
+                        <input
+                          type="password"
+                          value={field === 'currentPassword' ? currentPassword : field === 'newPassword' ? newPassword : confirmPassword}
+                          onChange={(e) => {
+                            if (field === 'currentPassword') setCurrentPassword(e.target.value);
+                            else if (field === 'newPassword') setNewPassword(e.target.value);
+                            else setConfirmPassword(e.target.value);
+                          }}
+                          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#1b4965] focus:border-transparent transition-all duration-300 bg-gray-50 hover:bg-white"
+                          required
+                        />
+                      </div>
+                    ))}
+                    <button
+                      type="submit"
+                      className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-xl font-semibold transition-all duration-300 shadow-lg"
+                      style={{ backgroundColor: '#1b4965', color: 'white' }}
+                    >
+                      <RiLockPasswordLine className="text-lg" />
+                      Update Password
+                    </button>
+                  </form>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
