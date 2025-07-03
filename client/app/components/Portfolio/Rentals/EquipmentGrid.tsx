@@ -357,7 +357,7 @@ const EquipmentGridRentalsPortfolio = ({ searchQuery = '', selectedCategory = 'A
         </div>
 
         {/* Equipment Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {currentEquipments.map((equipment) => (
             <motion.div
               onClick={() => router.push('/equipments/' + equipment.id)}
@@ -366,15 +366,15 @@ const EquipmentGridRentalsPortfolio = ({ searchQuery = '', selectedCategory = 'A
               whileInView={{ opacity: 1, y: 0 }}
               whileHover={{ y: -8, scale: 1.02 }}
               transition={{ duration: 0.3 }}
-              className="bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group"
+              className="bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group flex flex-col h-full"
             >
               {/* Image Container */}
-              <div className="relative h-72 overflow-hidden">
+              <div className="relative !h-48 overflow-hidden">
                 <Image
                   src={getImageUrl(equipment.image)}
                   alt={equipment.name}
                   fill
-                  className="object-cover group-hover:scale-110 transition-transform duration-500"
+                  className="object-cover !h-48 group-hover:scale-110 transition-transform duration-500"
                   onError={(e) => {
                     const target = e.target as HTMLImageElement;
                     target.src = '/assets/images/equipment.png';
@@ -412,30 +412,30 @@ const EquipmentGridRentalsPortfolio = ({ searchQuery = '', selectedCategory = 'A
               </div>
 
               {/* Content */}
-              <div className="p-6">
+              <div className="p-4 flex flex-col flex-1">
                 {/* Title */}
-                <h3 className="text-xl font-bold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors">
+                <h3 className="text-lg font-bold text-gray-900 mb-1 group-hover:text-[#1b4965] transition-colors">
                   {equipment.name}
                 </h3>
                 
                 {/* Description */}
-                <p className="text-gray-600 text-sm mb-4 line-clamp-2 leading-relaxed">
+                <p className="text-gray-600 text-xs mb-2 line-clamp-2 leading-relaxed">
                   {equipment.description}
                 </p>
 
                 {/* Pricing Section */}
-                <div className="bg-gray-50 rounded-xl p-4 mb-4">
-                  <div className="space-y-2">
+                <div className="bg-gray-50 rounded-xl p-2 mb-3">
+                  <div className="space-y-1">
                     <div className="flex justify-between items-center">
-                      <span className="text-gray-600 text-sm font-medium">Daily Rate:</span>
-                      <span className="font-bold text-lg text-gray-900">${equipment.pricing.daily_rate}</span>
+                      <span className="text-gray-600 text-xs font-medium">Daily Rate:</span>
+                      <span className="font-bold text-base text-gray-900">${equipment.pricing.daily_rate}</span>
                     </div>
                     
                     {equipment.pricing.weekly_rate && (
                       <div className="flex justify-between items-center">
-                        <span className="text-gray-600 text-sm font-medium">Weekly Rate:</span>
+                        <span className="text-gray-600 text-xs font-medium">Weekly Rate:</span>
                         <div className="text-right">
-                          <span className="font-bold text-gray-900">${equipment.pricing.weekly_rate}</span>
+                          <span className="font-bold text-base text-gray-900">${equipment.pricing.weekly_rate}</span>
                           {equipment.pricing.weekly_discount && (
                             <span className="text-green-600 text-xs font-medium ml-2 bg-green-100 px-2 py-1 rounded">
                               {equipment.pricing.weekly_discount}% off
@@ -447,9 +447,9 @@ const EquipmentGridRentalsPortfolio = ({ searchQuery = '', selectedCategory = 'A
                     
                     {equipment.pricing.monthly_rate && (
                       <div className="flex justify-between items-center">
-                        <span className="text-gray-600 text-sm font-medium">Monthly Rate:</span>
+                        <span className="text-gray-600 text-xs font-medium">Monthly Rate:</span>
                         <div className="text-right">
-                          <span className="font-bold text-gray-900">${equipment.pricing.monthly_rate}</span>
+                          <span className="font-bold text-base text-gray-900">${equipment.pricing.monthly_rate}</span>
                           {equipment.pricing.monthly_discount && (
                             <span className="text-green-600 text-xs font-medium ml-2 bg-green-100 px-2 py-1 rounded">
                               {equipment.pricing.monthly_discount}% off
@@ -462,10 +462,10 @@ const EquipmentGridRentalsPortfolio = ({ searchQuery = '', selectedCategory = 'A
                 </div>
 
                 {/* Features */}
-                <div className="space-y-2 mb-4">
+                <div className="space-y-1 mb-2 flex-shrink-0">
                   {formatFeatures(equipment).map((feature, index) => (
-                    <div key={index} className="flex items-start text-sm text-gray-700">
-                      <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 mr-3 flex-shrink-0"></div>
+                    <div key={index} className="flex items-start text-xs text-gray-700">
+                      <div className="w-2 h-2 bg-[#1b4965] rounded-full mt-1 mr-2 flex-shrink-0"></div>
                       <span className="leading-relaxed">{feature}</span>
                     </div>
                   ))}
@@ -473,9 +473,9 @@ const EquipmentGridRentalsPortfolio = ({ searchQuery = '', selectedCategory = 'A
 
                 {/* Location */}
                 {equipment.current_location && (
-                  <div className="pt-4 border-t border-gray-100">
-                    <div className="flex items-center text-sm text-gray-600">
-                      <svg className="w-4 h-4 mr-2 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                  <div className="pt-2 border-t border-gray-100 flex-shrink-0">
+                    <div className="flex items-center text-xs text-gray-600">
+                      <svg className="w-3 h-3 mr-1 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
                       </svg>
                       <span className="font-medium">Location:</span>
@@ -485,8 +485,8 @@ const EquipmentGridRentalsPortfolio = ({ searchQuery = '', selectedCategory = 'A
                 )}
 
                 {/* View Details Button */}
-                <div className="pt-4">
-                  <button className="w-full bg-[#1b4965] text-white py-3 px-4 rounded-xl font-medium transition-colors duration-200">
+                <div className="mt-auto pt-2">
+                  <button className="w-full bg-[#1b4965] text-white py-2 px-3 rounded-lg text-xs font-medium transition-colors duration-200">
                     View Details & Book
                   </button>
                 </div>
