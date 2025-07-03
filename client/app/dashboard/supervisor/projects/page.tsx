@@ -24,6 +24,9 @@ import {
   RiDeleteBinLine,
   RiCloseLine,
 } from 'react-icons/ri';
+import Image from 'next/image';
+import { FiSearch, FiFilter, FiCalendar, FiCheckCircle, FiClock, FiUsers } from 'react-icons/fi';
+import { useRouter } from 'next/navigation';
 
 interface Project {
   id: string;
@@ -38,8 +41,9 @@ interface Project {
   currentStep: string;
   client: string;
   budget: number;
-  progress:number;
+  progress: number;
   steps: ProjectStep[];
+  thumbnail?: string;
 }
 
 interface ProjectStep {
@@ -78,6 +82,10 @@ export default function SupervisorProjectsPage() {
   const [loading, setLoading] = useState(true);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [activeTab, setActiveTab] = useState<'overview' | 'progress' | 'timeline' | 'invoices'>('overview');
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('All');
+  const router = useRouter();
 
   useEffect(() => {
     if (!token) return;
@@ -104,226 +112,242 @@ export default function SupervisorProjectsPage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#1b4965] mx-auto mb-4"></div>
           <p className="text-gray-600">Loading projects...</p>
         </div>
       </div>
     );
   }
 
+  // Stats
+  const totalProjects = projects.length;
+  const activeProjects = projects.filter(p => p.status).length;
+  const completedProjects = projects.filter(p => p.is_completed).length;
+  const upcomingProjects = projects.filter(p => !p.is_completed && new Date(p.start_date) > new Date()).length;
+
+  // Filtered projects
+  const filteredProjects = projects.filter(project => {
+    const matchesSearch =
+      project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      project.description.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus =
+      statusFilter === 'All' ||
+      (statusFilter === 'Active' && project.status) ||
+      (statusFilter === 'Completed' && project.is_completed) ||
+      (statusFilter === 'Upcoming' && !project.is_completed && new Date(project.start_date) > new Date());
+    return matchesSearch && matchesStatus;
+  });
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 py-12 px-6">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50 py-0 px-0">
       <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="text-center mb-12">
-          <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl shadow-2xl mb-6 animate-pulse hover:animate-none hover:scale-110 transition-all duration-500">
-            <RiBuildingLine className="text-white text-3xl animate-bounce" />
-          </div>
-          <h1 className="text-5xl font-bold bg-gradient-to-r from-slate-800 via-blue-800 to-indigo-800 bg-clip-text text-transparent mb-4 tracking-tight animate-fade-in">
-            <span className="inline-block animate-slide-in-left">Site</span>{' '}
-            <span className="inline-block animate-slide-in-right">Supervisor</span>{' '}
-            <span className="inline-block animate-slide-in-up">Dashboard</span>
-          </h1>
-          <p className="text-lg text-slate-600 font-medium max-w-2xl mx-auto leading-relaxed animate-fade-in-delay">
-            Manage assigned projects and track construction progress with{' '}
-            <span className="text-blue-600 font-bold animate-pulse">precision</span> and{' '}
-            <span className="text-indigo-600 font-bold animate-pulse">efficiency</span>
-          </p>
-          <div className="mt-6 flex justify-center gap-4">
-            <div className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-700 text-white rounded-2xl font-semibold shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300 animate-bounce-in">
-              <span className="flex items-center gap-2">
-                <RiPlayLine className="animate-pulse" />
-                Active Projects: {projects.filter(p => p.status).length}
-              </span>
+        {/* Breadcrumbs */}
+        <nav className="flex items-center space-x-2 text-sm py-6 px-2">
+          <button onClick={() => router.push('/dashboard/supervisor')} className="text-[#1b4965] hover:text-[#1b4965]">Dashboard</button>
+          <span className="mx-2 text-[#1b4965]">/</span>
+          <span className="text-[#1b4965] font-semibold">Projects</span>
+        </nav>
+
+        {/* Navigation Bar */}
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 bg-white/80 backdrop-blur-sm rounded-2xl shadow p-6 mb-8 border border-white/20">
+          <div className="flex-1 flex items-center gap-4">
+            <div className="relative w-full max-w-xs">
+              <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <input
+                type="text"
+                placeholder="Search projects..."
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+                className="pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#1b4965] focus:border-transparent transition-all duration-200 w-full"
+              />
             </div>
-            <div className="px-6 py-3 bg-gradient-to-r from-emerald-600 to-green-700 text-white rounded-2xl font-semibold shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300 animate-bounce-in-delay">
-              <span className="flex items-center gap-2">
-                <RiProgress1Line className="animate-spin" />
-                Total: {projects.length}
-              </span>
+            <div className="relative w-40">
+              <FiFilter className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <select
+                value={statusFilter}
+                onChange={e => setStatusFilter(e.target.value)}
+                className="pl-10 pr-8 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#1b4965] focus:border-transparent transition-all duration-200 appearance-none w-full"
+              >
+                <option value="All">All Statuses</option>
+                <option value="Active">Active</option>
+                <option value="Completed">Completed</option>
+                <option value="Upcoming">Upcoming</option>
+              </select>
             </div>
           </div>
         </div>
 
-        {/* Project Selection */}
-        <div className="bg-white/90 backdrop-blur-xl rounded-3xl shadow-2xl p-10 mb-12 border border-white/30">
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <h2 className="text-3xl font-bold text-slate-800 mb-2">Assigned Projects</h2>
-              <p className="text-slate-600 font-medium">Select a project to view detailed information and manage progress</p>
-            </div>
-            <div className="hidden lg:flex items-center gap-4">
-              <div className="px-4 py-2 bg-gradient-to-r from-green-100 to-emerald-100 rounded-xl border border-green-200">
-                <span className="text-sm font-semibold text-green-800">Active Projects: {projects.filter(p => p.status).length}</span>
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="bg-white/80 rounded-2xl p-6 shadow group border border-blue-100 hover:shadow-lg transition-all duration-300 relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-blue-600/10 rounded-2xl"></div>
+            <div className="relative flex items-center gap-4">
+              <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
+                <RiBuildingLine className="w-6 h-6 text-blue-600" />
               </div>
-              <div className="px-4 py-2 bg-gradient-to-r from-blue-100 to-indigo-100 rounded-xl border border-blue-200">
-                <span className="text-sm font-semibold text-blue-800">Total: {projects.length}</span>
+              <div>
+                <div className="text-2xl font-bold text-gray-900">{totalProjects}</div>
+                <div className="text-xs text-blue-600 font-medium">Total Projects</div>
               </div>
             </div>
           </div>
+          <div className="bg-white/80 rounded-2xl p-6 shadow group border border-green-100 hover:shadow-lg transition-all duration-300 relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-br from-green-500/5 to-green-600/10 rounded-2xl"></div>
+            <div className="relative flex items-center gap-4">
+              <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
+                <FiCheckCircle className="w-6 h-6 text-green-600" />
+              </div>
+              <div>
+                <div className="text-2xl font-bold text-gray-900">{completedProjects}</div>
+                <div className="text-xs text-green-600 font-medium">Completed</div>
+              </div>
+            </div>
+          </div>
+          <div className="bg-white/80 rounded-2xl p-6 shadow group border border-amber-100 hover:shadow-lg transition-all duration-300 relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-br from-amber-500/5 to-amber-600/10 rounded-2xl"></div>
+            <div className="relative flex items-center gap-4">
+              <div className="w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center">
+                <FiClock className="w-6 h-6 text-amber-600" />
+              </div>
+              <div>
+                <div className="text-2xl font-bold text-gray-900">{activeProjects}</div>
+                <div className="text-xs text-amber-600 font-medium">Active</div>
+              </div>
+            </div>
+          </div>
+          <div className="bg-white/80 rounded-2xl p-6 shadow group border border-purple-100 hover:shadow-lg transition-all duration-300 relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-purple-600/10 rounded-2xl"></div>
+            <div className="relative flex items-center gap-4">
+              <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
+                <FiCalendar className="w-6 h-6 text-purple-600" />
+              </div>
+              <div>
+                <div className="text-2xl font-bold text-gray-900">{upcomingProjects}</div>
+                <div className="text-xs text-purple-600 font-medium">Upcoming</div>
+              </div>
+            </div>
+          </div>
+        </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {projects.map((project) => (
+        {/* Projects Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+          {filteredProjects.length > 0 ? (
+            filteredProjects.map((project) => (
               <div
                 key={project.id}
+                className="group relative bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 border border-white/20 hover:scale-[1.02] overflow-hidden"
                 onClick={() => setSelectedProject(project)}
-                className={`group relative overflow-hidden rounded-3xl cursor-pointer transition-all duration-700 hover:scale-105 hover:shadow-3xl ${
-                  selectedProject?.id === project.id
-                    ? 'ring-4 ring-blue-500/30 shadow-3xl'
-                    : 'shadow-2xl hover:shadow-4xl'
-                }`}
               >
-                {/* Background Gradient */}
-                <div className={`absolute inset-0 bg-gradient-to-br ${
-                  selectedProject?.id === project.id
-                    ? 'from-blue-500/10 via-indigo-500/10 to-purple-500/10'
-                    : 'from-slate-50 via-white to-blue-50/40'
-                } group-hover:from-blue-100/60 group-hover:via-indigo-100/60 group-hover:to-purple-100/60 transition-all duration-700`}></div>
-                
-                {/* Decorative Elements */}
-                <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-bl from-blue-400/20 to-transparent rounded-full -translate-y-20 translate-x-20"></div>
-                <div className="absolute bottom-0 left-0 w-32 h-32 bg-gradient-to-tr from-indigo-400/20 to-transparent rounded-full translate-y-16 -translate-x-16"></div>
-                
-                {/* Content */}
-                <div className="relative p-8">
-                  {/* Header */}
-                  <div className="flex items-center justify-between mb-6">
-                    <h3 className="text-xl font-bold text-slate-800 group-hover:text-blue-700 transition-colors duration-500 leading-tight">
+                {/* Thumbnail */}
+                <div className="w-full h-40 bg-gray-100 flex items-center justify-center overflow-hidden border-b border-gray-200">
+                  <Image
+                    src={project.thumbnail || '/assets/images/project_saan.png'}
+                    alt={project.name}
+                    width={400}
+                    height={160}
+                    className="object-cover w-full h-full"
+                  />
+                </div>
+                <div className="relative p-6">
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-lg font-bold text-gray-900 group-hover:text-[#1b4965] transition-colors">
                       {project.name}
                     </h3>
-                    <div className={`px-4 py-2 rounded-full text-xs font-bold shadow-lg ${
-                      project.status 
-                        ? 'bg-gradient-to-r from-emerald-500 to-green-600 text-white' 
-                        : 'bg-gradient-to-r from-slate-400 to-gray-500 text-white'
-                    }`}>
-                      {project.status ? 'Active' : 'Inactive'}
-                    </div>
-                  </div>
-
-                  {/* Project Info */}
-                  <div className="space-y-4 mb-6">
-                    <div className="flex items-center gap-4 p-4 bg-white/70 rounded-2xl backdrop-blur-sm border border-white/50">
-                      <div className="p-3 bg-gradient-to-r from-blue-600 to-indigo-700 rounded-xl shadow-lg">
-                        <RiMapPinLine className="text-white text-lg" />
-                      </div>
-                      <div>
-                        <div className="text-sm font-semibold text-slate-700">Location</div>
-                        <div className="text-slate-600">{project.location}</div>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center gap-4 p-4 bg-white/70 rounded-2xl backdrop-blur-sm border border-white/50">
-                      <div className="p-3 bg-gradient-to-r from-emerald-600 to-green-700 rounded-xl shadow-lg">
-                        <RiCalendarLine className="text-white text-lg" />
-                      </div>
-                      <div className="flex-1">
-                        <div className="text-sm font-semibold text-slate-700">Timeline</div>
-                        <div className="text-sm text-slate-600">
-                          {new Date(project.start_date).toLocaleDateString()} - {new Date(project.estimated_end_date).toLocaleDateString()}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Status Section */}
-                  <div className="p-5 bg-gradient-to-r from-emerald-50 to-green-50 rounded-2xl border border-emerald-100 mb-6 group-hover:from-emerald-100 group-hover:to-green-100 transition-all duration-500">
-                    <div className="text-sm font-semibold text-emerald-800 mb-2 flex items-center gap-2">
-                      <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
-                      Project Status
-                    </div>
-                    <div className={`text-lg font-bold px-3 py-1 rounded-full text-sm ${
-                      project.is_completed 
-                        ? 'bg-green-100 text-green-800' 
+                    <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                      project.is_completed
+                        ? 'bg-green-100 text-green-800'
+                        : project.status
+                        ? 'bg-amber-100 text-amber-800'
                         : 'bg-blue-100 text-blue-800'
                     }`}>
-                      {project.is_completed ? 'Completed' : 'In Progress'}
-                    </div>
+                      {project.is_completed ? 'Completed' : project.status ? 'Active' : 'Upcoming'}
+                    </span>
                   </div>
-
-                  {/* Progress Indicator */}
-                  {/* <div className="mb-4">
-                    <div className="flex justify-between text-sm font-semibold text-slate-700 mb-3">
-                      <span>Overall Progress</span>
-                      <span className="text-blue-600 animate-pulse font-bold">{project.progress}%</span>
-                    </div>
-                    <div className="w-full bg-slate-200 rounded-full h-4 overflow-hidden shadow-inner group-hover:h-5 transition-all duration-500">
+                  <p className="text-gray-600 text-sm mb-3 line-clamp-2">{project.description}</p>
+                  <div className="flex items-center gap-3 text-xs text-gray-500 mb-2">
+                    <FiCalendar className="w-4 h-4" />
+                    {new Date(project.start_date).toLocaleDateString()} - {new Date(project.estimated_end_date).toLocaleDateString()}
+                  </div>
+                  <div className="flex items-center gap-3 text-xs text-gray-500 mb-4">
+                    <RiMapPinLine className="w-4 h-4" />
+                    {project.location}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-full bg-gray-200 rounded-full h-2">
                       <div
-                        className="h-full bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 rounded-full transition-all duration-1500 ease-out shadow-lg group-hover:shadow-xl relative overflow-hidden progress-animate"
+                        className="bg-[#1b4965] h-2 rounded-full"
                         style={{ width: `${project.progress}%` }}
-                      >
-                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer"></div>
-                      </div>
+                      ></div>
                     </div>
-                  </div> */}
-
-                  {/* Animated Action Button */}
-                  <div className="mt-6">
-                    <button 
-                      className="w-full flex items-center justify-center gap-3 bg-gradient-to-r from-blue-600 to-indigo-700 text-white px-6 py-3 rounded-2xl font-semibold hover:from-blue-700 hover:to-indigo-800 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 group/btn btn-animate"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedProject(project);
-                      }}
-                    >
-                      <span className="group-hover/btn:translate-x-1 transition-transform duration-300">View Details</span>
-                      <RiArrowRightLine className="text-xl group-hover/btn:translate-x-2 transition-transform duration-300" />
-                    </button>
+                    <span className="text-xs text-[#1b4965] font-semibold ml-2">{project.progress}%</span>
                   </div>
-
-                  {/* Hover Effect Overlay */}
-                  <div className="absolute inset-0 bg-gradient-to-r from-blue-600/0 to-indigo-600/0 group-hover:from-blue-600/5 group-hover:to-indigo-600/5 transition-all duration-700 rounded-3xl"></div>
-                  
-                  {/* Floating Animation Elements */}
-                  <div className="absolute top-4 right-4 w-2 h-2 bg-blue-400 rounded-full animate-ping opacity-75"></div>
-                  <div className="absolute bottom-4 left-4 w-3 h-3 bg-indigo-400 rounded-full animate-pulse"></div>
-                  <div className="absolute top-1/2 right-8 w-1 h-1 bg-purple-400 rounded-full animate-float"></div>
-                  <div className="absolute bottom-1/3 left-6 w-1.5 h-1.5 bg-blue-300 rounded-full animate-float" style={{ animationDelay: '1s' }}></div>
+                  <button
+                    className="mt-4 w-full flex items-center justify-center gap-2 bg-[#1b4965] text-white px-4 py-2 rounded-xl font-semibold hover:transition-transform duration-300 group-hover:translate-x-1"
+                    onClick={e => {
+                      e.stopPropagation();
+                      router.push(`/dashboard/supervisor/projects/${project.id}`);
+                    }}
+                  >
+                    View Details <RiArrowRightLine className="text-lg" />
+                  </button>
                 </div>
               </div>
-            ))}
-          </div>
+            ))
+          ) : (
+            <div className="col-span-full flex flex-col items-center justify-center py-16">
+              <div className="w-24 h-24 bg-gray-100 rounded-2xl flex items-center justify-center mb-6">
+                <RiBuildingLine className="w-12 h-12 text-gray-400" />
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">No projects found</h3>
+              <p className="text-gray-500 text-center max-w-md">
+                No projects match your current search criteria. Try adjusting your filters or search terms.
+              </p>
+            </div>
+          )}
         </div>
 
-        {/* Project Details */}
+        {/* Project Details Modal (unchanged) */}
         {selectedProject && (
-          <div className="bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl overflow-hidden border border-white/30">
-            {/* Tab Navigation */}
-            <div className="bg-gradient-to-r from-slate-50 to-blue-50 border-b border-slate-200">
-              <div className="flex space-x-2 p-6">
-                {[
-                  { id: 'overview', label: 'Project Overview', icon: RiEyeLine },
-                  { id: 'progress', label: 'Progress Logs', icon: RiProgress1Line },
-                  { id: 'timeline', label: 'Project Timeline', icon: RiTimeLine },
-                  { id: 'invoices', label: 'Invoices & Billing', icon: RiFileTextLine }
-                ].map((tab, index) => (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id as any)}
-                    className={`flex items-center gap-3 px-8 py-4 rounded-2xl font-semibold transition-all duration-500 transform hover:scale-105 ${
-                      activeTab === tab.id
-                        ? 'bg-gradient-to-r from-blue-600 to-indigo-700 text-white shadow-xl scale-105 animate-pulse'
-                        : 'text-slate-600 hover:text-blue-700 hover:bg-white/80 hover:shadow-lg'
-                    }`}
-                    style={{ animationDelay: `${index * 100}ms` }}
-                  >
-                    <tab.icon className={`text-xl ${activeTab === tab.id ? 'animate-bounce' : 'group-hover:animate-pulse'}`} />
-                    <span className="relative">
-                      {tab.label}
-                      {activeTab === tab.id && (
-                        <div className="absolute -bottom-1 left-0 w-full h-0.5 bg-white animate-slide-in-left"></div>
-                      )}
-                    </span>
-                  </button>
-                ))}
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+            <div className="bg-white rounded-2xl shadow-xl w-full max-w-3xl p-8 relative overflow-y-auto max-h-[90vh] flex flex-col items-center border border-slate-200">
+              <button
+                onClick={() => setSelectedProject(null)}
+                className="absolute top-3 right-3 p-2 text-gray-400 hover:text-[#1b4965] focus:outline-none z-10"
+                aria-label="Close"
+              >
+                <RiCloseLine className="text-2xl" />
+              </button>
+              {/* Tab Navigation and Content (reuse existing logic) */}
+              <div className="w-full">
+                {/* Tab Navigation */}
+                <div className="flex space-x-2 mb-6">
+                  {[
+                    { id: 'overview', label: 'Project Overview', icon: RiEyeLine },
+                    { id: 'progress', label: 'Progress Logs', icon: RiProgress1Line },
+                    { id: 'timeline', label: 'Project Timeline', icon: RiTimeLine },
+                    { id: 'invoices', label: 'Invoices & Billing', icon: RiFileTextLine }
+                  ].map((tab) => (
+                    <button
+                      key={tab.id}
+                      onClick={() => setActiveTab(tab.id as any)}
+                      className={`flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all duration-200 ${
+                        activeTab === tab.id
+                          ? 'bg-[#1b4965] text-white shadow'
+                          : 'text-slate-600 hover:text-[#1b4965]-700 hover:bg-white/80 hover:shadow'
+                      }`}
+                    >
+                      <tab.icon className="text-lg" />
+                      <span>{tab.label}</span>
+                    </button>
+                  ))}
+                </div>
+                <div className="p-2">
+                  {activeTab === 'overview' && <ProjectOverview project={selectedProject} />}
+                  {activeTab === 'progress' && <ProgressLogs project={selectedProject} />}
+                  {activeTab === 'timeline' && <ProjectTimeline project={selectedProject} />}
+                  {activeTab === 'invoices' && <ProjectInvoices project={selectedProject} />}
+                </div>
               </div>
-            </div>
-
-            {/* Tab Content */}
-            <div className="p-10">
-              {activeTab === 'overview' && <ProjectOverview project={selectedProject} />}
-              {activeTab === 'progress' && <ProgressLogs project={selectedProject} />} 
-              {activeTab === 'timeline' && <ProjectTimeline project={selectedProject} />}
-              {/* {activeTab === 'invoices' && <ProjectInvoices project={selectedProject} />} */}
             </div>
           </div>
         )}

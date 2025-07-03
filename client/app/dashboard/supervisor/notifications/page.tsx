@@ -11,6 +11,7 @@ import {
   RiDeleteBin6Line,
   RiCheckDoubleLine,
 } from 'react-icons/ri';
+import { useRouter } from 'next/navigation';
 
 interface Notification {
   id: number;
@@ -68,6 +69,7 @@ export default function NotificationsPage() {
   const [notifications, setNotifications] = useState<Notification[]>(sampleNotifications);
   const [selectedType, setSelectedType] = useState("All");
   const [showUnreadOnly, setShowUnreadOnly] = useState(false);
+  const router = useRouter();
 
   const getNotificationIcon = (type: string) => {
     switch (type) {
@@ -106,17 +108,24 @@ export default function NotificationsPage() {
 
   return (
     <div className="space-y-8">
+      {/* Breadcrumbs */}
+      <nav className="flex items-center space-x-2 text-sm py-6 px-2">
+        <button onClick={() => router.push('/dashboard/supervisor')} className="text-[#1b4965] hover:underline">Dashboard</button>
+        <span className="mx-2 text-[#1b4965]">/</span>
+        <span className="text-[#1b4965] font-semibold">Notifications</span>
+      </nav>
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">Notifications</h1>
+          <h1 className="text-2xl font-bold" style={{ color: '#1b4965' }}>Notifications</h1>
           <p className="text-gray-600">
             {notifications.filter(n => !n.isRead).length} unread notifications
           </p>
         </div>
         <button
           onClick={markAllAsRead}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          className="flex items-center gap-2 px-4 py-2 rounded-lg transition-colors"
+          style={{ backgroundColor: '#1b4965', color: 'white' }}
         >
           <RiCheckDoubleLine />
           Mark All as Read
