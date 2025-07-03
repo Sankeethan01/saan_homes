@@ -56,7 +56,7 @@ export default function RentalContact() {
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.8, delay: 0.5, type: "spring" }}
             >
-              Contact Us
+              Rental Inquiry
             </motion.h1>
             <motion.p 
               className="text-xl text-white/90"
