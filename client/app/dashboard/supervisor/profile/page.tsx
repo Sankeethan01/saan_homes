@@ -2,7 +2,6 @@
 
 import { useAuthStore } from '@/app/stores/useAuthStore';
 import { useEffect, useState } from 'react';
-import Image from 'next/image';
 import axios from 'axios';
 import { useRouter } from 'next/navigation';
 import {
@@ -18,7 +17,6 @@ import {
   RiIdCardLine,
   RiTimeLine,
 } from 'react-icons/ri';
-import clsx from 'clsx';
 
 interface PersonalInfo {
   firstName: string;

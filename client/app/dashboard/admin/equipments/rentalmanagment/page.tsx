@@ -107,11 +107,11 @@ export default function RentalsPage() {
         throw new Error(errorMessage);
       }
       
-      const data = await response.json();
+        const data = await response.json();
       console.log('Fetched bookings:', data);
       
       // Update the state with the fetched data
-      setBookings(data);
+        setBookings(data);
       
       // Also update filtered bookings based on current activeTab and searchTerm
       let result = [...data];
@@ -186,7 +186,7 @@ export default function RentalsPage() {
     setFilteredBookings(result);
   }, [activeTab, searchTerm, bookings]);
 
-    const handleApproveBooking = async (bookingId: string) => {
+  const handleApproveBooking = async (bookingId: string) => {
     try {
       setActionLoading(bookingId);
       const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api';

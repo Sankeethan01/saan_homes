@@ -178,12 +178,12 @@ export default function CategoryPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-[#1b4965] bg-clip-text text-transparent">Equipment Categories</h1>
+          <h1 className="text-2xl font-bold bg-[#1b4965] bg-clip-text text-transparent">Equipment Categories</h1>
           <p className="text-slate-600 mt-1">Manage equipment categories for your inventory</p>
         </div>
         <button
           onClick={() => setIsAddModalOpen(true)}
-          className="bg-gradient-to-r from-blue-500 to-[#1b4965] text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:from-blue-600 hover:to-[#1b4965] transition-colors shadow-sm"
+          className="bg-[#1b4965] text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:from-blue-600 hover:to-[#1b4965] transition-colors shadow-sm"
         >
           <RiAddLine />
           Add Category
@@ -328,7 +328,7 @@ export default function CategoryPage() {
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-[#1b4965] bg-clip-text text-transparent">Add New Category</h2>
+                <h2 className="text-xl font-bold bg-[#1b4965] bg-clip-text text-transparent">Add New Category</h2>
                 <button
                   onClick={() => { setIsAddModalOpen(false); setNewCategory(''); }}
                   className="p-2 text-slate-400 hover:text-slate-600 rounded-lg"
@@ -345,7 +345,7 @@ export default function CategoryPage() {
                   value={newCategory}
                   onChange={e => setNewCategory(e.target.value)}
                   placeholder="Enter category name"
-                  className="w-full p-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full p-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1b4965] focus:border-transparent"
                   disabled={actionLoading}
                   aria-label="New category name"
                 />
@@ -360,7 +360,7 @@ export default function CategoryPage() {
                 </button>
                 <button
                   onClick={handleAddCategory}
-                  className="px-4 py-2 bg-gradient-to-r from-blue-500 to-[#1b4965] text-white rounded-lg hover:from-blue-600 hover:to-[#1b4965] shadow-sm"
+                  className="px-4 py-2 bg-[#1b4965] text-white rounded-lg hover:from-blue-600 hover:to-[#1b4965] shadow-sm"
                   disabled={actionLoading}
                 >
                   {actionLoading ? 'Adding...' : 'Add Category'}

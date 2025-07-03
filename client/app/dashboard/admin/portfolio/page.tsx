@@ -891,7 +891,7 @@ export default function AdminPortfolioPage() {
               onClick={(e) => e.stopPropagation()}
             >
               <div className="p-6 border-b border-slate-200">
-                <h2 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-[#1b4965] bg-clip-text text-transparent">
+                <h2 className="text-xl font-bold bg-[#1b4965] bg-clip-text text-transparent">
                   {editing.type === 'add' ? 'Add New Service' : 'Edit Service'}
                 </h2>
               </div>
@@ -906,7 +906,7 @@ export default function AdminPortfolioPage() {
                     type="text"
                     value={form.name}
                     onChange={(e) => setForm(f => ({ ...f, name: e.target.value }))}
-                    className="w-full p-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full p-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1b4965]"
                     required
                     disabled={actionLoading}
                     placeholder="Enter service name"
@@ -921,7 +921,7 @@ export default function AdminPortfolioPage() {
                     id="serviceDescription"
                     value={form.desc}
                     onChange={(e) => setForm(f => ({ ...f, desc: e.target.value }))}
-                    className="w-full p-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full p-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1b4965]"
                     rows={3}
                     required
                     disabled={actionLoading}
@@ -962,7 +962,7 @@ export default function AdminPortfolioPage() {
                   </button>
                   <button
                     type="submit"
-                    className="flex-1 px-4 py-2 bg-gradient-to-r from-blue-500 to-[#1b4965] text-white rounded-lg hover:from-blue-600 hover:to-[#1b4965] transition-colors disabled:opacity-50"
+                    className="flex-1 px-4 py-2 bg-[#1b4965] text-white rounded-lg hover:from-blue-600 hover:to-[#1b4965] transition-colors disabled:opacity-50"
                     disabled={actionLoading}
                   >
                     {actionLoading ? 'Saving...' : 'Save Service'}
