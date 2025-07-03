@@ -662,7 +662,7 @@ export default function RentalEquipmentPage() {
                 onClick={handleBookNow}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                disabled={!equipment.is_available}
+                disabled={!equipment.is_available || !selectedDate}
                 className="w-full bg-gradient-to-r from-[#1b4965] to-[#1b4965]/90 text-white py-4 rounded-xl font-semibold text-lg hover:from-[#1b4965]/90 hover:to-[#1b4965] transition-all duration-300 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
               >
                 <RiCalendarLine className="text-xl" />
@@ -672,6 +672,12 @@ export default function RentalEquipmentPage() {
               {!equipment.is_available && (
                 <p className="text-center text-red-600 text-sm mt-3">
                   This equipment is currently not available for rental
+                </p>
+              )}
+              
+              {!selectedDate && (
+                <p className="text-center text-amber-600 text-sm mt-3">
+                  Please select a start date to continue
                 </p>
               )}
 
