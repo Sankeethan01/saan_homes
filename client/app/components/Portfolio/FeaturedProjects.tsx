@@ -62,7 +62,7 @@ const FeaturedProjectsPortfolio = () => {
   const [isHovered, setIsHovered] = useState(false);
 
   return (
-    <section id="projects" className="py-2 h-[98vh]" style={{ background: 'radial-gradient(ellipse at 20% 40%, #f3f8ff 60%, #f8fafc 100%)' }}>
+    <section id="projects" className="py-2 !h-[98vh]" style={{ background: 'radial-gradient(ellipse at 20% 40%, #f3f8ff 60%, #f8fafc 100%)' }}>
       <div className="container mx-auto px-4">
         <motion.div className="text-center max-w-3xl mx-auto mb-8">
           <motion.h2 
@@ -97,18 +97,18 @@ const FeaturedProjectsPortfolio = () => {
             {scrollingProjects.map((project, index) => (
               <div
                 key={index}
-                className={`group relative w-96 h-[60vh] flex-shrink-0 overflow-hidden rounded-3xl shadow-xl hover:shadow-xl transition-all duration-300 bg-white/80 backdrop-blur-md border-2 border-gray-200 p-0`}
+                className={`group relative w-96  flex-shrink-0 overflow-hidden rounded-3xl shadow-xl hover:shadow-xl transition-all duration-300 bg-white/80 backdrop-blur-md border-2 border-gray-200 p-0`}
               >
-                <div className="relative h-[40vh] overflow-hidden p-0 m-0">
+                <div className="relative h-[18rem] overflow-hidden p-0 m-0">
                   <Image 
                     src={project.image} 
                     alt={project.title} 
                     fill
-                    className="object-cover w-full !h-[40vh] scale-110 group-hover:scale-125 transition-transform duration-500" 
+                    className="object-cover w-full !h-[18rem] scale-110 group-hover:scale-125 transition-transform duration-500" 
                   />
                   <div className="absolute inset-0 bg-gradient-to-br from-blue-100/40 to-red-100/40 opacity-20 group-hover:opacity-30 transition-opacity" />
                 </div>
-                <div className="p-6 h-[18vh] flex flex-col justify-center gap-1 mt-2">
+                <div className="p-6 h-[9rem] flex flex-col justify-center gap-0 mt-2">
                   <span className={`inline-block px-3 py-1 mb-0 text-sm font-medium text-[#1b4965] bg-white/80 backdrop-blur-sm rounded-full`}>
                     {project.category}
                   </span>
@@ -120,7 +120,7 @@ const FeaturedProjectsPortfolio = () => {
                     <motion.button
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
-                      className="text-[#1b4965] font-medium hover:font-maximum transition-colors"
+                      className="text-[#1b4965] mt-6 font-medium hover:font-maximum transition-colors"
                     >
                       Learn More →
                     </motion.button>
