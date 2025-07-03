@@ -161,7 +161,7 @@ export default function Login() {
       {/* Back button in top left */}
       <button
         type="button"
-        onClick={() => router.back()}
+        onClick={() => router.push(Routes.LANDING)}
         className="absolute top-6 left-6 z-20 flex items-center justify-center w-11 h-11 bg-[#1b4965] hover:bg-[#163a52] rounded-full shadow transition-all border-2 border-white focus:outline-none focus:ring-2 focus:ring-[#1b4965]"
         aria-label="Go back"
       >
