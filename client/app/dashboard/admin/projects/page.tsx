@@ -2,13 +2,13 @@
 
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useAuthStore } from '@/app/stores/useAuthStore';
 import { useRouter } from 'next/navigation';
-import { FiSearch, FiFilter, FiCalendar, FiUsers, FiCheckCircle, FiClock, FiArrowRight, FiTrash2, FiFile } from 'react-icons/fi';
+import { FiSearch, FiFilter, FiCalendar, FiUsers, FiCheckCircle, FiClock, FiArrowRight, FiTrash2, FiRefreshCw } from 'react-icons/fi';
 import { RiHomeGearLine } from 'react-icons/ri';
-import { MdFiberNew } from 'react-icons/md';
 import { FaFileUpload } from 'react-icons/fa';
+import { fetchWithAuth } from '@/app/utils/auth';
 
 interface Project {
   id: string;
@@ -73,106 +73,162 @@ export default function ProjectsPage() {
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('All');
-  const [performanceInfo, setPerformanceInfo] = useState<{
-    componentMount: number;
-    authCheck: number;
-    apiCall: number;
-    dataProcessing: number;
-    rendering: number;
-  } | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
+  const [isRetrying, setIsRetrying] = useState(false);
   
   const token = useAuthStore((s) => s.token);
   const router = useRouter();
   const clearToken = useAuthStore((s) => s.clear);
-
-  // Performance monitoring
-  const startTime = performance.now();
   
+  // Use ref to prevent multiple simultaneous API calls
+  const fetchingRef = useRef(false);
+  const mountedRef = useRef(true);
+
+  // Cleanup on unmount
   useEffect(() => {
-    const mountTime = performance.now();
-    console.log('🔍 Component mounted at:', mountTime - startTime, 'ms');
-    
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
+  const fetchProjects = useCallback(async (isRetry = false) => {
+    // Prevent multiple simultaneous calls
+    if (fetchingRef.current) {
+      console.log('🔍 Fetch already in progress, skipping...');
+      return;
+    }
+
+    // Check if component is still mounted
+    if (!mountedRef.current) {
+      console.log('🔍 Component unmounted, skipping fetch...');
+      return;
+    }
+
+    // Validate token before making request
     if (!token) {
-      const authCheckTime = performance.now();
-      console.log('🔍 Auth check (no token) took:', authCheckTime - mountTime, 'ms');
+      console.log('🔍 No token available, redirecting to login...');
       router.replace('/dashboard/login');
       return;
     }
 
-    const authCheckTime = performance.now();
-    console.log('🔍 Auth check (token exists) took:', authCheckTime - mountTime, 'ms');
+    fetchingRef.current = true;
+    
+    if (isRetry) {
+      setIsRetrying(true);
+    } else {
+      setLoading(true);
+    }
+    
+    setError(null);
 
-    const fetchProjects = async () => {
-      try {
-        // Debug logging to identify the issue
-        const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api';
-        console.log('🔍 API Base URL:', apiBaseUrl);
-        console.log('🔍 Token exists:', !!token);
-        console.log('🔍 Starting projects fetch at:', new Date().toISOString());
-        
-        const apiStartTime = performance.now();
-        
-        // Add timeout to prevent hanging requests
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
-        
-        const response = await fetch(`${apiBaseUrl}/projects/`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          signal: controller.signal,
-        });
-        
-        clearTimeout(timeoutId);
+    try {
+      const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api';
+      console.log('🔍 Fetching projects from:', `${apiBaseUrl}/projects/`);
+      
+      // Use the fetchWithAuth helper for better error handling
+      const response = await fetchWithAuth(`${apiBaseUrl}/projects/`, {
+        method: 'GET',
+        signal: AbortSignal.timeout(10000), // 10 second timeout
+      });
 
-        const apiEndTime = performance.now();
-        console.log(`🔍 API call took: ${apiEndTime - apiStartTime}ms`);
-
-        if (!response.ok) {
-          console.error('🔍 API Response not OK:', response.status, response.statusText);
-          if (response.status === 401) {
-            clearToken();
-            router.replace('/dashboard/login');
-            return;
-          }
-          throw new Error('Failed to fetch projects');
-        }
-
-        const dataProcessingStartTime = performance.now();
-        const data = await response.json();
-        const dataProcessingEndTime = performance.now();
-        
-        console.log('🔍 Projects data received:', data?.length || 0, 'projects');
-        console.log(`🔍 Data processing took: ${dataProcessingEndTime - dataProcessingStartTime}ms`);
-        
-        // No need to fetch supervisor details separately as they're now included in the API response
-        setProjects(data);
-        setFilteredProjects(data);
-        setError(null);
-        
-        // Update performance info
-        setPerformanceInfo({
-          componentMount: mountTime - startTime,
-          authCheck: authCheckTime - mountTime,
-          apiCall: apiEndTime - apiStartTime,
-          dataProcessing: dataProcessingEndTime - dataProcessingStartTime,
-          rendering: performance.now() - dataProcessingEndTime
-        });
-        
-      } catch (err) {
-        console.error('🔍 Error details:', err);
-        setError('Error loading projects. Please try again later.');
-        console.error('Error:', err);
-      } finally {
-        setLoading(false);
+      // Check if component is still mounted before processing response
+      if (!mountedRef.current) {
+        console.log('🔍 Component unmounted during fetch, aborting...');
+        return;
       }
-    };
 
-    fetchProjects();
+      if (!response.ok) {
+        console.error('🔍 API Response not OK:', response.status, response.statusText);
+        
+        if (response.status === 401) {
+          console.log('🔍 Unauthorized, clearing token and redirecting...');
+          clearToken();
+          router.replace('/dashboard/login');
+          return;
+        }
+        
+        if (response.status >= 500) {
+          throw new Error(`Server error (${response.status}). Please try again.`);
+        }
+        
+        throw new Error(`Failed to fetch projects (${response.status})`);
+      }
+
+      const data = await response.json();
+      
+      // Final mounted check before updating state
+      if (!mountedRef.current) {
+        console.log('🔍 Component unmounted after data received, aborting...');
+        return;
+      }
+      
+      console.log('🔍 Projects data received:', data?.length || 0, 'projects');
+      
+      // Validate data structure
+      if (!Array.isArray(data)) {
+        throw new Error('Invalid data format received from server');
+      }
+      
+      setProjects(data);
+      setFilteredProjects(data);
+      setError(null);
+      setRetryCount(0); // Reset retry count on success
+      
+    } catch (err) {
+      console.error('🔍 Error fetching projects:', err);
+      
+      // Only update error state if component is still mounted
+      if (mountedRef.current) {
+        if (err instanceof Error) {
+          if (err.name === 'AbortError') {
+            setError('Request timed out. Please check your connection and try again.');
+          } else if (err.message.includes('Failed to fetch')) {
+            setError('Network error. Please check your internet connection.');
+          } else {
+            setError(err.message);
+          }
+        } else {
+          setError('An unexpected error occurred. Please try again.');
+        }
+      }
+    } finally {
+      fetchingRef.current = false;
+      
+      if (mountedRef.current) {
+        setLoading(false);
+        setIsRetrying(false);
+      }
+    }
   }, [token, router, clearToken]);
 
+  // Auto-retry logic with exponential backoff
+  const handleRetry = useCallback(() => {
+    if (retryCount < 3) { // Max 3 retries
+      const delay = Math.pow(2, retryCount) * 1000; // Exponential backoff: 1s, 2s, 4s
+      console.log(`🔍 Retrying in ${delay}ms (attempt ${retryCount + 1}/3)...`);
+      
+      setTimeout(() => {
+        if (mountedRef.current) {
+          setRetryCount(prev => prev + 1);
+          fetchProjects(true);
+        }
+      }, delay);
+    }
+  }, [retryCount, fetchProjects]);
+
+  // Initial fetch
   useEffect(() => {
-    // Filter projects based on search term and status filter
+    if (!token) {
+      router.replace('/dashboard/login');
+      return;
+    }
+
+    fetchProjects();
+  }, [token, router, fetchProjects]);
+
+  // Filter projects
+  useEffect(() => {
     let result = [...projects];
     
     if (searchTerm) {
@@ -198,38 +254,56 @@ export default function ProjectsPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading projects...</p>
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="p-6 text-center">
-        <div className="text-red-600 mb-4">{error}</div>
-        <button 
-          onClick={() => window.location.reload()}
-          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors duration-200"
-        >
-          Retry
-        </button>
+      <div className="p-6 text-center max-w-md mx-auto mt-20">
+        <div className="bg-red-50 border border-red-200 rounded-xl p-6">
+          <div className="text-red-600 mb-4 font-medium">Error Loading Projects</div>
+          <div className="text-red-500 text-sm mb-6">{error}</div>
+          
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <button 
+              onClick={() => fetchProjects()}
+              disabled={isRetrying}
+              className="flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isRetrying ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Retrying...
+                </>
+              ) : (
+                <>
+                  <FiRefreshCw className="mr-2" />
+                  Try Again
+                </>
+              )}
+            </button>
+            
+            {retryCount < 3 && (
+              <button 
+                onClick={handleRetry}
+                className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors duration-200"
+              >
+                Auto Retry ({3 - retryCount} left)
+              </button>
+            )}
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Performance Debug Info (remove in production) */}
-      {/* {performanceInfo && process.env.NODE_ENV === 'development' && (
-        <div className="bg-amber-50/80 backdrop-blur-sm border border-amber-200/50 rounded-xl p-3 text-xs mb-6 shadow-sm">
-          <strong>⚡ Performance Debug:</strong> Mount: {performanceInfo.componentMount.toFixed(1)}ms | 
-          Auth: {performanceInfo.authCheck.toFixed(1)}ms | 
-          API: {performanceInfo.apiCall.toFixed(1)}ms | 
-          Processing: {performanceInfo.dataProcessing.toFixed(1)}ms | 
-          Render: {performanceInfo.rendering.toFixed(1)}ms
-        </div>
-      )} */}
-      
       {/* Hero Header Section */}
       <div className="relative overflow-hidden bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg p-8 mb-8 border border-white/20">
         <div className="absolute inset-0 bg-gray-50/30"></div>

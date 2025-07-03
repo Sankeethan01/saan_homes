@@ -487,10 +487,10 @@ export default function StepDetailsPage({ params }: { params: Promise<{ projectI
                       {material.unit}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {material.rate ? `$${material.rate.toFixed(2)}` : '-'}
+                      {material.rate ? `LKR ${material.rate.toFixed(2)}` : '-'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {material.amount ? `$${material.amount.toFixed(2)}` : '-'}
+                      {material.amount ? `LKR ${material.amount.toFixed(2)}` : '-'}
                     </td>
                   </tr>
                 ))}
@@ -501,7 +501,7 @@ export default function StepDetailsPage({ params }: { params: Promise<{ projectI
                     Total
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">
-                    ${totalMaterialCost.toFixed(2)}
+                    LKR {totalMaterialCost.toFixed(2)}
                   </td>
                 </tr>
               </tbody>
@@ -534,14 +534,14 @@ export default function StepDetailsPage({ params }: { params: Promise<{ projectI
               <div className="bg-gradient-to-r from-blue-50 to-blue-100 p-4 rounded-xl border border-blue-200">
                 <div className="text-sm font-medium text-blue-700">Expected Budget</div>
                 <div className="text-2xl font-bold text-blue-900 mt-1">
-                  ${step.expected_budget?.toLocaleString() || '0'}
+                  LKR {step.expected_budget?.toLocaleString() || '0'}
                 </div>
               </div>
               
               <div className="bg-gradient-to-r from-purple-50 to-purple-100 p-4 rounded-xl border border-purple-200">
                 <div className="text-sm font-medium text-purple-700">Actual Cost (Materials)</div>
                 <div className="text-2xl font-bold text-purple-900 mt-1">
-                  ${totalMaterialCost.toLocaleString()}
+                  LKR {totalMaterialCost.toLocaleString()}
                 </div>
               </div>
               
@@ -554,7 +554,7 @@ export default function StepDetailsPage({ params }: { params: Promise<{ projectI
                   Budget Variance
                 </div>
                 <div className={`text-2xl font-bold mt-1 ${budgetVariance > 0 ? 'text-red-900' : 'text-green-900'}`}>
-                  {budgetVariance > 0 ? '+' : ''}${Math.abs(budgetVariance).toLocaleString()} 
+                  {budgetVariance > 0 ? '+' : ''}LKR {Math.abs(budgetVariance).toLocaleString()} 
                   <span className="text-lg">({Math.abs(budgetVariancePercent).toFixed(1)}%)</span>
                 </div>
                 <div className={`text-xs mt-1 ${budgetVariance > 0 ? 'text-red-600' : 'text-green-600'}`}>
@@ -611,7 +611,7 @@ export default function StepDetailsPage({ params }: { params: Promise<{ projectI
               <button
                 type="submit"
                 disabled={!billFile || uploadingBill}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors duration-200 flex items-center justify-center"
+                className="px-4 py-2 bg-[#1b4965] text-white rounded-md transition-colors duration-200 flex items-center justify-center"
               >
                 {uploadingBill ? (
                   <>
@@ -686,7 +686,7 @@ export default function StepDetailsPage({ params }: { params: Promise<{ projectI
             </div>
             <button
               onClick={() => setShowAddLogModal(true)}
-              className="px-3 py-1.5 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 transition-colors flex items-center"
+              className="px-3 py-1.5 bg-[#1b4965] text-white text-sm rounded-md transition-colors flex items-center"
             >
               <FiUpload className="mr-1" /> Add Progress Update
             </button>
@@ -953,7 +953,7 @@ export default function StepDetailsPage({ params }: { params: Promise<{ projectI
                 </div>
                 <div className="text-sm font-medium text-orange-700">Materials</div>
                 <div className="text-xs text-orange-600 mt-2">
-                  ${totalMaterialCost.toLocaleString()} total
+                  LKR {totalMaterialCost.toLocaleString()} total
                 </div>
                 <div className="mt-2 h-2 bg-orange-200 rounded-full">
                   <div 
@@ -1101,12 +1101,12 @@ export default function StepDetailsPage({ params }: { params: Promise<{ projectI
                               {material.name}
                             </div>
                             <div className="text-sm font-bold text-gray-900">
-                              ${material.amount?.toFixed(2)}
+                              LKR {material.amount?.toFixed(2)}
                             </div>
                           </div>
                           <div className="flex items-center justify-between text-xs text-gray-500">
                             <span>{material.quantity} {material.unit}</span>
-                            <span>${material.rate?.toFixed(2)}/unit</span>
+                            <span>LKR {material.rate?.toFixed(2)}/unit</span>
                           </div>
                           <div className="mt-2 h-1.5 bg-gray-200 rounded-full">
                             <div 

@@ -32,7 +32,7 @@ const CallActionsRentalsPortfolio = () => {
           width={768}
           height={400}
           className="w-full h-auto"
-        />
+      />
       </motion.div>
       
       <div className="container mx-auto px-4 relative z-10">

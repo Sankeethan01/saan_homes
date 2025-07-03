@@ -38,7 +38,7 @@ const projects: Project[] = [
     description: "Luxury residential complex featuring 200 premium apartments with modern amenities.",
     progress: 0,
     client: "City Development Corp",
-    value: "$50M",
+    value: "LKR 50M",
     features: ["200 Premium Units", "Underground Parking", "Rooftop Garden"]
   },
   {
@@ -53,7 +53,7 @@ const projects: Project[] = [
     description: "State-of-the-art office complex designed for tech companies and startups.",
     progress: 45,
     client: "TechSpace Inc",
-    value: "$75M",
+    value: "LKR 75M",
     features: ["Smart Building Systems", "Collaborative Spaces", "Innovation Labs"]
   },
   {
@@ -68,7 +68,7 @@ const projects: Project[] = [
     description: "Modern shopping mall with entertainment facilities and dining options.",
     progress: 100,
     client: "Metro Retail Group",
-    value: "$120M",
+    value: "LKR 120M",
     features: ["200+ Retail Spaces", "Food Court", "Cinema Complex"]
   },
   {
@@ -83,7 +83,7 @@ const projects: Project[] = [
     description: "Eco-friendly office park with renewable energy systems and green spaces.",
     progress: 0,
     client: "EcoWork Developments",
-    value: "$95M",
+    value: "LKR 95M",
     features: ["Solar Panels", "Green Spaces", "Smart Building Systems"]
   },
   {
@@ -98,7 +98,7 @@ const projects: Project[] = [
     description: "Modern medical facility with state-of-the-art equipment and specialized units.",
     progress: 35,
     client: "Regional Health Authority",
-    value: "$150M",
+    value: "LKR 150M",
     features: ["Emergency Unit", "Specialized Care", "Research Facilities"]
   },
   {
@@ -113,7 +113,7 @@ const projects: Project[] = [
     description: "Modern urban living spaces with smart home features and community areas.",
     progress: 100,
     client: "Urban Living Ltd",
-    value: "$65M",
+    value: "LKR 65M",
     features: ["Smart Home Tech", "Community Spaces", "Fitness Center"]
   },
   {
@@ -128,7 +128,7 @@ const projects: Project[] = [
     description: "Multi-purpose sports facility with indoor and outdoor venues.",
     progress: 0,
     client: "City Sports Authority",
-    value: "$85M",
+    value: "LKR 85M",
     features: ["Olympic Pool", "Indoor Courts", "Training Facilities"]
   },
   {
@@ -143,7 +143,7 @@ const projects: Project[] = [
     description: "Modern educational campus with advanced learning facilities.",
     progress: 60,
     client: "Education Board",
-    value: "$110M",
+    value: "LKR 110M",
     features: ["Smart Classrooms", "Research Labs", "Library Complex"]
   },
   {
@@ -158,7 +158,7 @@ const projects: Project[] = [
     description: "Five-star hotel with premium amenities and conference facilities.",
     progress: 100,
     client: "Global Hotels Group",
-    value: "$130M",
+    value: "LKR 130M",
     features: ["200 Rooms", "Conference Center", "Spa & Wellness"]
   }
 ];

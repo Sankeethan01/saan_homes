@@ -40,9 +40,9 @@ const ModelLoader = () => (
 
 // Optimized 3D Canvas Component
 const ThreeDCanvas: React.FC = () => (
-  <Canvas 
-    camera={{ position: [8, 5, 8], fov: 45 }}
-    shadows
+      <Canvas 
+        camera={{ position: [8, 5, 8], fov: 45 }}
+        shadows
     gl={{ 
       antialias: true, 
       alpha: true,
@@ -52,13 +52,13 @@ const ThreeDCanvas: React.FC = () => (
     }}
     dpr={[1, 2]} // Limit device pixel ratio for better performance
     performance={{ min: 0.5 }} // Adaptive performance
-  >
+      >
     {/* Lighting - Simplified for better performance */}
     <ambientLight intensity={0.6} />
-    <directionalLight 
-      position={[10, 10, 5]} 
+        <directionalLight 
+          position={[10, 10, 5]} 
       intensity={1.2} 
-      castShadow
+          castShadow
       shadow-mapSize-width={1024} // Reduced shadow map size for performance
       shadow-mapSize-height={1024}
       shadow-camera-far={50}
@@ -67,42 +67,42 @@ const ThreeDCanvas: React.FC = () => (
       shadow-camera-top={10}
       shadow-camera-bottom={-10}
     />
-    
+        
     {/* Environment - Lazy loaded */}
     <Suspense fallback={null}>
-      <Environment preset="sunset" />
+        <Environment preset="sunset" />
     </Suspense>
-    
+        
     {/* House Model - Lazy loaded */}
-    <Suspense fallback={null}>
-      <Model 
-        url="/model/house.glb" 
-        scale={2.5} 
-        position={[0, -1, 0]}
-        rotation={[0, Math.PI / 4, 0]}
-      />
-    </Suspense>
-    
+        <Suspense fallback={null}>
+          <Model 
+            url="/model/house.glb" 
+            scale={2.5} 
+            position={[0, -1, 0]}
+            rotation={[0, Math.PI / 4, 0]}
+          />
+        </Suspense>
+        
     {/* Controls - Optimized */}
-    <PresentationControls
-      global
-      rotation={[0, -Math.PI / 4, 0]}
-      polar={[-Math.PI / 4, Math.PI / 4]}
-      azimuth={[-Math.PI / 4, Math.PI / 4]}
+        <PresentationControls
+          global
+          rotation={[0, -Math.PI / 4, 0]}
+          polar={[-Math.PI / 4, Math.PI / 4]}
+          azimuth={[-Math.PI / 4, Math.PI / 4]}
 
-    >
-      <OrbitControls 
-        enableZoom={false}
-        enablePan={false}
-        minPolarAngle={Math.PI / 6}
-        maxPolarAngle={Math.PI / 2}
-        autoRotate
+        >
+          <OrbitControls 
+            enableZoom={false}
+            enablePan={false}
+            minPolarAngle={Math.PI / 6}
+            maxPolarAngle={Math.PI / 2}
+            autoRotate
         autoRotateSpeed={0.3} // Reduced speed for better performance
         enableDamping
         dampingFactor={0.05}
-      />
-    </PresentationControls>
-  </Canvas>
+          />
+        </PresentationControls>
+      </Canvas>
 );
 
 const ThreeDViewer: React.FC = () => {
