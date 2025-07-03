@@ -16,6 +16,7 @@ import {
 } from 'react-icons/ri';
 import { useAuthStore } from '@/app/stores/useAuthStore';
 import { getUserRole, getAccessToken, setAuthCookies, fetchWithAuth } from '@/app/utils/auth';
+import Image from 'next/image';
 
 interface NavItem {
   title: string;
@@ -167,28 +168,28 @@ export default function SupervisorLayout({
         <motion.aside
           initial={{ width: 280 }}
           animate={{ width: isSidebarOpen ? 280 : 80 }}
-          className="bg-white border-r border-gray-200 flex flex-col"
+          className="bg-white flex flex-col fixed top-0 left-0 h-screen z-30"
         >
           <div className='flex-grow'>
           {/* Logo and Toggle */}
-          <div className="h-16 border-b border-gray-200 flex items-center justify-between px-4">
+          <div className="h-16  flex items-center justify-between px-4 bg-white">
             {isSidebarOpen && (
-              <motion.h1
+              <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                className="text-xl font-bold text-gray-800"
+                className="flex items-center gap-2"
               >
-                SAAN HOMES
-              </motion.h1>
+                <Image src="/assets/logo.jpg" alt="Logo" width={40} height={40} className="rounded-xl" />
+              </motion.div>
             )}
             <button
               onClick={toggleSidebar}
               className="w-10 h-10 rounded-lg hover:bg-gray-100 flex items-center justify-center"
             >
               {isSidebarOpen ? (
-                <RiMenuFoldLine className="text-xl text-gray-600" />
+                <RiMenuFoldLine className="text-xl text-[#1b4965]" />
               ) : (
-                <RiMenuUnfoldLine className="text-xl text-gray-600" />
+                <RiMenuUnfoldLine className="text-xl text-[#1b4965]" />
               )}
             </button>
           </div>
@@ -201,8 +202,8 @@ export default function SupervisorLayout({
                   href={item.path}
                   className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
                     isActive(item.path)
-                      ? 'bg-blue-50 text-blue-600'
-                      : 'text-gray-600 hover:bg-gray-50'
+                      ? 'bg-[#1b4965]/10 text-[#1b4965] font-semibold'
+                      : 'text-gray-600 hover:bg-[#1b4965]/10 hover:text-[#1b4965]'
                   }`}
                   onClick={() => {
                     if (item.subItems) {
@@ -222,7 +223,7 @@ export default function SupervisorLayout({
                         <RiArrowDownSLine
                           className={`text-lg transition-transform ${
                             expandedItem === item.title ? 'rotate-180' : ''
-                          }`}
+                          } text-[#1b4965]`}
                         />
                       )}
                     </motion.div>
@@ -245,8 +246,8 @@ export default function SupervisorLayout({
                             href={subItem.path}
                             className={`block px-3 py-2 rounded-lg text-sm transition-colors ${
                               isActive(subItem.path)
-                                ? 'bg-blue-50 text-blue-600'
-                                : 'text-gray-600 hover:bg-gray-50'
+                                ? 'bg-[#1b4965]/10 text-[#1b4965] font-semibold'
+                                : 'text-gray-600 hover:bg-[#1b4965]/10 hover:text-[#1b4965]'
                             }`}
                           >
                             {subItem.title}
@@ -262,7 +263,7 @@ export default function SupervisorLayout({
           </div>
           
           {/* User Profile Preview & Logout */}
-<div className="border-t border-gray-200 p-4">
+<div className="border-t border-[#1b4965] p-4 bg-white">
   {isSidebarOpen && (
     <motion.div
       initial={{ opacity: 0 }}
@@ -273,7 +274,7 @@ export default function SupervisorLayout({
         <img
           src={`${process.env.NEXT_PUBLIC_API_BASE_URL}${user.profile_image}`}
           alt="Profile"
-          className="w-10 h-10 rounded-full object-cover border-2 border-gray-200 shadow-sm"
+          className="w-10 h-10 rounded-full object-cover border-2 border-[#1b4965] shadow-sm"
         />
       ) : (
         <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white font-semibold text-sm">
@@ -303,7 +304,7 @@ export default function SupervisorLayout({
         </motion.aside>
 
         {/* Main Content */}
-        <main className="flex-1 overflow-y-auto">
+        <main className="flex-1 ml-[80px] md:ml-[280px]">
           <div className="container mx-auto px-6 py-8">{children}</div>
         </main>
       </div>

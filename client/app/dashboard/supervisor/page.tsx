@@ -49,8 +49,8 @@ const monthlyProgress = {
   datasets: [
     {
       label: 'Project Progress',
-      data: [65, 72, 78, 85, 89, 93],
-      borderColor: 'rgb(59, 130, 246)',
+      data: [65, 35, 78, 50, 89, 93],
+      borderColor: '#1b4965',
       backgroundColor: 'rgba(59, 130, 246, 0.1)',
       tension: 0.4,
       fill: true,
@@ -66,9 +66,9 @@ const invoicesOverview = {
       label: 'Invoices',
       data: [120, 35, 8],
       backgroundColor: [
-        'rgba(34, 197, 94, 0.7)', // green
-        'rgba(251, 191, 36, 0.7)', // yellow
-        'rgba(239, 68, 68, 0.7)', // red
+        '#cbf3f0', 
+        '#e7c6ff', 
+        '#ffcad4', 
       ],
       borderRadius: 8,
       barPercentage: 0.6,
@@ -84,14 +84,14 @@ const completionRateData = {
     {
       data: [12, 7, 5],
       backgroundColor: [
-        'rgba(34, 197, 94, 0.7)', // green
-        'rgba(59, 130, 246, 0.7)', // blue
-        'rgba(251, 191, 36, 0.7)', // yellow
+        '#f4acb7',
+        '#9a8c98',
+        '#b7e4c7',
       ],
       borderColor: [
-        '#22c55e',
-        '#1b4965',
-        '#fbbf24',
+        '#f4acb7',
+        '#9a8c98',
+        '#b7e4c7',
       ],
       borderWidth: 2,
       hoverOffset: 8,
@@ -166,12 +166,12 @@ export default function SupervisorDashboard() {
       {
         data: Object.values(projectStats.project_types),
         backgroundColor: [
-          'rgba(59, 130, 246, 0.8)',
-          'rgba(139, 92, 246, 0.8)',
-          'rgba(236, 72, 153, 0.8)',
-          'rgba(34, 197, 94, 0.8)',
-          'rgba(245, 158, 11, 0.8)',
-          'rgba(239, 68, 68, 0.8)',
+          '#be95c4',
+          '#b7b7a4',
+          '#bbdefb',
+          '#f3d5b5',
+          '#a4c3b2',
+          '#aeb8fe',
         ],
         borderWidth: 2,
         borderColor: '#ffffff',
@@ -183,7 +183,7 @@ export default function SupervisorDashboard() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 p-8 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#1b4965] mx-auto mb-4"></div>
           <p className="text-gray-600">Loading dashboard...</p>
         </div>
       </div>
@@ -465,7 +465,7 @@ export default function SupervisorDashboard() {
                   {completionRateData.labels.map((label, idx) => (
                     <div key={label} className="flex items-center gap-1 text-xs text-gray-600 mb-0.5">
                       <span className="inline-block w-2.5 h-2.5 rounded-full" style={{backgroundColor: [
-                        '#22c55e','#1b4965','#fbbf24'][idx]}}></span>
+                        '#f4acb7','#9a8c98','#b7e4c7'][idx]}}></span> 
                       <span>{label}</span>
                     </div>
                   ))}
@@ -523,9 +523,9 @@ export default function SupervisorDashboard() {
           transition={{ delay: 0.87 }}
           className="bg-white p-2 rounded-2xl shadow border border-gray-100 w-full mt-3"
         >
-          <h2 className="text-xs font-bold text-[#1b4965] mb-2">Recent Invoices</h2>
+          <h2 className="text-sm font-bold text-[#1b4965] mb-2">Recent Invoices</h2>
           <div className="overflow-x-auto">
-            <table className="min-w-full text-xs text-left">
+            <table className="min-w-full text-sm text-left">
               <thead>
                 <tr className="text-[#1b4965] border-b">
                   <th className="py-1 px-1 font-semibold">Invoice #</th>

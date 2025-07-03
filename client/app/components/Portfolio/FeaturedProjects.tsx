@@ -62,7 +62,7 @@ const FeaturedProjectsPortfolio = () => {
   const [isHovered, setIsHovered] = useState(false);
 
   return (
-    <section id="projects" className="py-2" style={{ background: 'radial-gradient(ellipse at 20% 40%, #f3f8ff 60%, #f8fafc 100%)' }}>
+    <section id="projects" className="py-2 h-[98vh]" style={{ background: 'radial-gradient(ellipse at 20% 40%, #f3f8ff 60%, #f8fafc 100%)' }}>
       <div className="container mx-auto px-4">
         <motion.div className="text-center max-w-3xl mx-auto mb-8">
           <motion.h2 
