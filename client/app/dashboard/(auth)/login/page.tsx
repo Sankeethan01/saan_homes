@@ -18,6 +18,7 @@ export default function Login() {
   const requiredRole = searchParams.get('requiredRole');
   const setToken = useAuthStore((s) => s.setToken);
   const setUserRole = useAuthStore((s) => s.setUserRole);
+  const setUser = useAuthStore((s) => s.setUser);
 
   const [formData, setFormData] = useState({
     username: "",
@@ -107,9 +108,15 @@ export default function Login() {
         throw new Error("User role not found");
       }
 
-      // 3) Save tokens and user data in Zustand store
+      // 3) Save tokens, user role, and user data in Zustand store
       setToken(access);
       setUserRole(userRole);
+      setUser({
+        id: profile.id,
+        username: profile.username,
+        email: profile.email,
+        role: userRole
+      });
 
       // 4) Save tokens and user data in localStorage for redundancy
       localStorage.setItem('username', profile.username);

@@ -12,6 +12,7 @@ from .serializers import (
 )
 from notifications.models import RentalRequest
 from django.db.models import Q
+import uuid
 
 
 # ──────────────────────────────────────────────
@@ -198,12 +199,24 @@ class BookingViewSet(viewsets.ModelViewSet):
     ordering = ["-created"]
 
     def get_queryset(self):
-        """Allow filtering by equipment for availability checking"""
+        """Allow filtering by equipment or user"""
         queryset = super().get_queryset()
         equipment_id = self.request.query_params.get('equipment')
+        user_id = self.request.query_params.get('user')
         
         if equipment_id:
             queryset = queryset.filter(equipment_id=equipment_id)
+            
+        if user_id:
+            # Check if user_id is a valid UUID before filtering
+            try:
+                # Try to parse the user_id as UUID to validate it
+                uuid_obj = uuid.UUID(user_id)
+                queryset = queryset.filter(user_id=uuid_obj)
+            except (ValueError, TypeError):
+                # If user_id is not a valid UUID, return empty queryset
+                # instead of raising an error
+                return queryset.none()
             
         return queryset
 
@@ -306,6 +319,118 @@ class BookingViewSet(viewsets.ModelViewSet):
             
             return Response(
                 {"message": "Booking cancelled successfully", "status": booking.status},
+                status=status.HTTP_200_OK
+            )
+            
+        except Booking.DoesNotExist:
+            return Response(
+                {"error": "Booking not found"}, 
+                status=status.HTTP_404_NOT_FOUND
+            )
+            
+    @action(detail=True, methods=['patch'], permission_classes=[IsAdminOrSupervisor])
+    def approve(self, request, pk=None):
+        """Allow admins to approve pending bookings"""
+        try:
+            booking = self.get_object()
+            
+            # Check if booking is in pending status
+            if booking.status != Booking.Status.PENDING:
+                return Response(
+                    {"error": "Only pending bookings can be approved"}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Update status to approved
+            booking.status = Booking.Status.APPROVED
+            booking.save()
+            
+            return Response(
+                {"message": "Booking approved successfully", "status": booking.status},
+                status=status.HTTP_200_OK
+            )
+            
+        except Booking.DoesNotExist:
+            return Response(
+                {"error": "Booking not found"}, 
+                status=status.HTTP_404_NOT_FOUND
+            )
+            
+    @action(detail=True, methods=['patch'], permission_classes=[IsAdminOrSupervisor])
+    def reject(self, request, pk=None):
+        """Allow admins to reject pending bookings"""
+        try:
+            booking = self.get_object()
+            
+            # Check if booking is in pending status
+            if booking.status != Booking.Status.PENDING:
+                return Response(
+                    {"error": "Only pending bookings can be rejected"}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Update status to rejected
+            booking.status = Booking.Status.REJECTED
+            booking.save()
+            
+            return Response(
+                {"message": "Booking rejected successfully", "status": booking.status},
+                status=status.HTTP_200_OK
+            )
+            
+        except Booking.DoesNotExist:
+            return Response(
+                {"error": "Booking not found"}, 
+                status=status.HTTP_404_NOT_FOUND
+            )
+            
+    @action(detail=True, methods=['patch'], permission_classes=[IsAdminOrSupervisor])
+    def mark_rented(self, request, pk=None):
+        """Allow admins to mark a booking as rented (equipment handed over)"""
+        try:
+            booking = self.get_object()
+            
+            # Check if booking is in paid status
+            if booking.status != Booking.Status.PAID:
+                return Response(
+                    {"error": "Only paid bookings can be marked as rented"}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Update status to rented
+            booking.status = Booking.Status.RENTED
+            booking.save()
+            
+            return Response(
+                {"message": "Booking marked as rented successfully", "status": booking.status},
+                status=status.HTTP_200_OK
+            )
+            
+        except Booking.DoesNotExist:
+            return Response(
+                {"error": "Booking not found"}, 
+                status=status.HTTP_404_NOT_FOUND
+            )
+            
+    @action(detail=True, methods=['patch'], permission_classes=[IsAdminOrSupervisor])
+    def complete(self, request, pk=None):
+        """Allow admins to mark a booking as completed (equipment returned)"""
+        try:
+            booking = self.get_object()
+            
+            # Check if booking is in rented status
+            if booking.status != Booking.Status.RENTED:
+                return Response(
+                    {"error": "Only rented bookings can be marked as completed"}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Update status to completed
+            booking.status = Booking.Status.COMPLETED
+            booking.save()
+            
+            return Response(
+                {"message": "Booking marked as completed successfully", "status": booking.status},
                 status=status.HTTP_200_OK
             )
             

@@ -13,8 +13,10 @@ import {
   RiTimeLine,
   RiAlertLine,
   RiLoader4Line,
+  RiArrowRightLine,
 } from 'react-icons/ri';
 import Image from 'next/image';
+import { toast, Toaster } from 'react-hot-toast';
 
 interface Booking {
   id: string;
@@ -24,20 +26,24 @@ interface Booking {
     image: string;
     daily_rate: number;
   };
+  equipment_name: string;
+  equipment_image: string;
+  equipment_daily_rate: number;
+  status: 'PENDING' | 'APPROVED' | 'PAID' | 'RENTED' | 'COMPLETED' | 'REJECTED' | 'CANCELLED';
   start_date: string;
   end_date: string;
-  status: 'PENDING' | 'APPROVED' | 'PAID' | 'REJECTED' | 'CANCELLED';
   notes: string;
-  created: string;
+  total_cost: number;
   duration: number;
-  total_amount: number;
+  created: string;
 }
 
 export default function RentalHistoryPage() {
   const token = useAuthStore((s) => s.token);
+  const user = useAuthStore((s) => s.user);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
-  const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [loadingBookingId, setLoadingBookingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -45,32 +51,64 @@ export default function RentalHistoryPage() {
   // Check for success message from booking creation
   const bookingSuccess = searchParams.get('success');
   const newBookingId = searchParams.get('booking');
+  const paymentSuccess = searchParams.get('payment');
 
   useEffect(() => {
     if (!token) {
       router.push('/dashboard/login');
       return;
     }
-    fetchBookings();
-  }, [token, router]);
+    
+    // Only fetch bookings if we have a user with an ID
+    if (user && user.id) {
+      fetchBookings();
+    }
+  }, [token, user, router]);
 
   const fetchBookings = async () => {
     try {
       setLoading(true);
+      
+      // Check if user exists and has an ID before making the API call
+      if (!user || !user.id) {
+        console.error('User information is missing');
+        setError('User information is missing. Please try logging in again.');
+        return;
+      }
+      
       const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api';
       
-      const response = await fetchWithAuth(`${API_BASE_URL}/equipments/bookings/`);
+      // Log the user ID to verify it's a valid UUID
+      console.log('Fetching bookings for user ID:', user.id);
       
-      if (response.ok) {
-        const data = await response.json();
-        // Filter to only show current user's bookings
-        setBookings(data);
-      } else {
-        throw new Error('Failed to fetch bookings');
+      // Make the API call with explicit user ID
+      const response = await fetch(`${API_BASE_URL}/equipments/bookings/?user=${user.id}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('API error response:', errorText);
+        
+        try {
+          const errorData = JSON.parse(errorText);
+          throw new Error(errorData.detail || `Error ${response.status}: ${response.statusText}`);
+        } catch {
+          // If we can't parse the error as JSON, just use the status text
+          throw new Error(`Error ${response.status}: ${response.statusText}`);
+        }
       }
+      
+      const data = await response.json();
+      console.log('Bookings data received:', data);
+      setBookings(data);
     } catch (err) {
       console.error('Error fetching bookings:', err);
-      setError('Failed to load rental history');
+      setError('Failed to load rental history: ' + (err instanceof Error ? err.message : String(err)));
     } finally {
       setLoading(false);
     }
@@ -78,32 +116,40 @@ export default function RentalHistoryPage() {
 
   const handleCancelBooking = async (bookingId: string) => {
     try {
-      setActionLoading(bookingId);
-      const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api';
+      setLoadingBookingId(bookingId);
       
+      const loadingToast = toast.loading('Cancelling booking...');
+      
+      const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api';
+      // Use the dedicated cancel endpoint instead of a generic PATCH
       const response = await fetchWithAuth(`${API_BASE_URL}/equipments/bookings/${bookingId}/cancel/`, {
         method: 'PATCH',
       });
-
-      if (response.ok) {
-        // Update the local state to reflect the cancellation
-        setBookings(prev => 
-          prev.map(booking => 
-            booking.id === bookingId 
-              ? { ...booking, status: 'CANCELLED' }
-              : booking
-          )
-        );
-        alert('Booking cancelled successfully!');
-      } else {
+      
+      if (!response.ok) {
         const errorData = await response.json();
-        alert(`Failed to cancel booking: ${errorData.error || 'Unknown error'}`);
+        throw new Error(errorData.error || 'Failed to cancel booking');
       }
+      
+      const data = await response.json();
+      
+      // Update the local state
+      setBookings(prev => 
+        prev.map(booking => 
+          booking.id === bookingId ? { ...booking, status: 'CANCELLED' } : booking
+        )
+      );
+      
+      toast.dismiss(loadingToast);
+      toast.success(data.message || 'Booking cancelled successfully');
+      
+      // Refresh bookings to ensure we have the latest data
+      fetchBookings();
     } catch (error) {
       console.error('Error cancelling booking:', error);
-      alert('Failed to cancel booking. Please try again.');
+      toast.error('Failed to cancel booking: ' + (error instanceof Error ? error.message : String(error)));
     } finally {
-      setActionLoading(null);
+      setLoadingBookingId(null);
     }
   };
 
@@ -115,6 +161,10 @@ export default function RentalHistoryPage() {
         return 'bg-blue-100 text-blue-800 border-blue-200';
       case 'PAID':
         return 'bg-green-100 text-green-800 border-green-200';
+      case 'RENTED':
+        return 'bg-purple-100 text-purple-800 border-purple-200';
+      case 'COMPLETED':
+        return 'bg-teal-100 text-teal-800 border-teal-200';
       case 'REJECTED':
         return 'bg-red-100 text-red-800 border-red-200';
       case 'CANCELLED':
@@ -125,10 +175,38 @@ export default function RentalHistoryPage() {
   };
 
   const getImageUrl = (imageUrl: string) => {
-    if (!imageUrl) return '/assets/images/equipment.png';
+    if (!imageUrl) return '/assets/images/equipments/excavator.jpeg';
     if (imageUrl.startsWith('http')) return imageUrl;
     const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
     return `${apiBaseUrl}${imageUrl}`;
+  };
+
+  const formatCurrency = (amount: number) => {
+    if (amount === undefined || amount === null || isNaN(amount)) {
+      return 'LKR 0.00';
+    }
+    return `LKR ${amount.toFixed(2)}`;
+  };
+
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case 'PENDING':
+        return 'Waiting for admin approval';
+      case 'APPROVED':
+        return 'Approved, waiting for payment';
+      case 'PAID':
+        return 'Payment completed, ready for pickup';
+      case 'RENTED':
+        return 'Equipment rented out';
+      case 'COMPLETED':
+        return 'Rental completed';
+      case 'REJECTED':
+        return 'Booking rejected by admin';
+      case 'CANCELLED':
+        return 'Booking cancelled';
+      default:
+        return status;
+    }
   };
 
   if (loading) {
@@ -162,8 +240,14 @@ export default function RentalHistoryPage() {
   }
 
   return (
-    <div className="p-8">
-      {/* Success Message */}
+    <div className="px-4 py-8 max-w-6xl mx-auto">
+      <Toaster position="top-right" />
+      
+      <div className="flex items-center justify-between mb-8">
+        <h1 className="text-2xl font-bold text-gray-900">My Rental History</h1>
+      </div>
+
+      {/* Success Message - Booking */}
       {bookingSuccess && newBookingId && (
         <motion.div
           initial={{ opacity: 0, y: -20 }}
@@ -176,21 +260,34 @@ export default function RentalHistoryPage() {
               <h3 className="text-green-800 font-semibold">Booking Submitted Successfully!</h3>
               <p className="text-green-700 text-sm">
                 Your booking request has been submitted and is pending admin approval. 
-                You'll be notified once it's reviewed.
+                You&apos;ll be notified once it&apos;s reviewed.
               </p>
             </div>
           </div>
         </motion.div>
       )}
 
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h2 className="text-2xl font-bold text-[#1b4965]">My Rental History</h2>
-          <p className="text-gray-600">Track your equipment rental bookings and payments</p>
-        </div>
-      </div>
+      {/* Success Message - Payment */}
+      {paymentSuccess === 'success' && (
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-6 p-4 bg-green-50 border border-green-200 rounded-xl"
+        >
+          <div className="flex items-center">
+            <RiCheckLine className="text-green-600 text-xl mr-3" />
+            <div>
+              <h3 className="text-green-800 font-semibold">Payment Successful!</h3>
+              <p className="text-green-700 text-sm">
+                Your payment has been processed successfully. Your equipment rental is now confirmed.
+                You&apos;ll be notified with pickup/delivery details soon.
+              </p>
+            </div>
+          </div>
+        </motion.div>
+      )}
 
-      <div className="space-y-4">
+      <div className="space-y-6">
         {bookings.length > 0 ? (
           bookings.map((booking, index) => (
             <motion.div
@@ -201,36 +298,36 @@ export default function RentalHistoryPage() {
               className="bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-300 border border-gray-200 overflow-hidden"
             >
               <div className="p-6">
-                <div className="flex items-start gap-4">
+                <div className="flex flex-col md:flex-row gap-6">
                   {/* Equipment Image */}
-                  <div className="relative w-20 h-20 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
+                  <div className="relative w-full md:w-32 h-32 md:h-32 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
                     <Image
-                      src={getImageUrl(booking.equipment.image)}
-                      alt={booking.equipment.name}
+                      src={getImageUrl(booking.equipment_image || booking.equipment?.image)}
+                      alt={booking.equipment_name || booking.equipment?.name}
                       fill
                       className="object-cover"
                       onError={(e) => {
                         const target = e.target as HTMLImageElement;
-                        target.src = '/assets/images/equipment.png';
+                        target.src = '/assets/images/equipments/excavator.jpeg';
                       }}
                     />
                   </div>
 
                   {/* Booking Details */}
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between mb-3">
+                    <div className="flex flex-col md:flex-row md:items-start justify-between mb-4 gap-3">
                       <div>
-                        <h3 className="font-semibold text-lg text-gray-900">{booking.equipment.name}</h3>
-                        <p className="text-gray-600 text-sm">Booking #{booking.id}</p>
+                        <h3 className="font-semibold text-lg text-gray-900">{booking.equipment_name || booking.equipment?.name}</h3>
+                        <p className="text-gray-600 text-sm">Booking #{booking.id.substring(0, 8)}</p>
                       </div>
                       <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border ${getStatusColor(booking.status)}`}>
-                        {booking.status}
+                        {getStatusText(booking.status)}
                       </span>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                       <div className="flex items-center gap-2">
-                        <RiCalendarLine className="w-4 h-4 text-gray-400" />
+                        <RiCalendarLine className="w-5 h-5 text-gray-500" />
                         <div>
                           <p className="text-xs text-gray-500">Rental Period</p>
                           <p className="text-sm font-medium text-gray-900">
@@ -240,7 +337,7 @@ export default function RentalHistoryPage() {
                       </div>
 
                       <div className="flex items-center gap-2">
-                        <RiTimeLine className="w-4 h-4 text-gray-400" />
+                        <RiTimeLine className="w-5 h-5 text-gray-500" />
                         <div>
                           <p className="text-xs text-gray-500">Duration</p>
                           <p className="text-sm font-medium text-gray-900">
@@ -250,25 +347,25 @@ export default function RentalHistoryPage() {
                       </div>
 
                       <div className="flex items-center gap-2">
-                        <RiMoneyDollarCircleLine className="w-4 h-4 text-gray-400" />
+                        <RiMoneyDollarCircleLine className="w-5 h-5 text-gray-500" />
                         <div>
                           <p className="text-xs text-gray-500">Total Cost</p>
                           <p className="text-sm font-medium text-gray-900">
-                            LKR {(booking.duration * booking.equipment.daily_rate).toFixed(2)}
+                            {formatCurrency(booking.total_cost)}
                           </p>
                         </div>
                       </div>
                     </div>
 
                     {/* Action Buttons */}
-                    <div className="flex items-center gap-3">
+                    <div className="flex flex-wrap items-center gap-3 mt-4">
                       {booking.status === 'PENDING' && (
                         <button
                           onClick={() => handleCancelBooking(booking.id)}
-                          disabled={actionLoading === booking.id}
+                          disabled={loadingBookingId === booking.id}
                           className="px-4 py-2 border border-red-300 text-red-700 rounded-lg text-sm font-medium hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                         >
-                          {actionLoading === booking.id ? (
+                          {loadingBookingId === booking.id ? (
                             <>
                               <RiLoader4Line className="animate-spin" />
                               Cancelling...
@@ -283,25 +380,29 @@ export default function RentalHistoryPage() {
                       )}
 
                       {booking.status === 'APPROVED' && (
-                        <button
-                          onClick={() => router.push(`/dashboard/me/rentals/pay?bookingId=${booking.id}`)}
-                          className="px-4 py-2 bg-gradient-to-r from-[#1b4965] to-[#1b4965]/90 text-white rounded-lg text-sm font-medium hover:from-[#1b4965]/90 hover:to-[#1b4965] transition-all duration-300 shadow-lg flex items-center gap-2"
-                        >
-                          <RiMoneyDollarCircleLine />
-                          Continue to Payment
-                        </button>
+                        <div className="w-full md:w-auto">
+                          <button
+                            onClick={() => router.push(`/dashboard/me/rentals/pay?bookingId=${booking.id}`)}
+                            className="w-full md:w-auto px-6 py-3 bg-[#1b4965] text-white rounded-lg text-base font-medium hover:bg-[#0d3b59] transition-all duration-300 shadow-md flex items-center justify-center gap-2"
+                          >
+                            <RiMoneyDollarCircleLine className="w-5 h-5" />
+                            Pay Now
+                            <RiArrowRightLine className="w-4 h-4" />
+                          </button>
+                          <p className="text-xs text-gray-500 mt-1 text-center md:text-left">Complete payment to confirm your booking</p>
+                        </div>
                       )}
 
                       {booking.status === 'PAID' && (
-                        <div className="flex items-center gap-2 text-green-600">
-                          <RiCheckLine />
+                        <div className="flex items-center gap-2 text-green-600 bg-green-50 px-4 py-2 rounded-lg">
+                          <RiCheckLine className="w-5 h-5" />
                           <span className="text-sm font-medium">Payment Complete</span>
                         </div>
                       )}
 
                       {booking.status === 'REJECTED' && (
-                        <div className="flex items-center gap-2 text-red-600">
-                          <RiCloseLine />
+                        <div className="flex items-center gap-2 text-red-600 bg-red-50 px-4 py-2 rounded-lg">
+                          <RiCloseLine className="w-5 h-5" />
                           <span className="text-sm font-medium">Booking Rejected</span>
                         </div>
                       )}
@@ -312,7 +413,7 @@ export default function RentalHistoryPage() {
                       <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
                         <p className="text-yellow-800 text-sm">
                           <strong>Awaiting Approval:</strong> Your booking request is being reviewed by our team. 
-                          You'll receive a notification once it's approved or if we need additional information.
+                          You&apos;ll receive a notification once it&apos;s approved or if we need additional information.
                         </p>
                       </div>
                     )}
@@ -330,7 +431,7 @@ export default function RentalHistoryPage() {
                       <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
                         <p className="text-green-800 text-sm">
                           <strong>Ready for Pickup/Delivery:</strong> Your payment has been processed. 
-                          We'll contact you with pickup/delivery details soon.
+                          We&apos;ll contact you with pickup/delivery details soon.
                         </p>
                       </div>
                     )}
@@ -350,7 +451,7 @@ export default function RentalHistoryPage() {
             </div>
             <h3 className="text-xl font-semibold text-gray-900 mb-2">No Rental History</h3>
             <p className="text-gray-500 mb-6">
-              You haven't made any equipment rental bookings yet. 
+              You haven&apos;t made any equipment rental bookings yet. 
               Browse our equipment catalog to get started!
             </p>
             <button

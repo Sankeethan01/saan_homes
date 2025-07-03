@@ -6,28 +6,28 @@ import { useState, useEffect } from 'react';
 import { useAuthStore } from "@/app/stores/useAuthStore";
 import { FaCheck, FaTrash } from 'react-icons/fa';
 
-interface Notification {
-    id: number;
-    title: string;
-    message: string;
-    date: string;
-    isRead: boolean;
-}
+// interface Notification {
+//     id: number;
+//     title: string;
+//     message: string;
+//     date: string;
+//     isRead: boolean;
+// }
 
-interface AdminNotification extends Notification {
-    type: 'admin';
-    status: 'pending' | 'approved' | 'rejected';
-    equipmentId: number;
-    rentalDetails: {
-        startDate: string;
-        endDate: string;
-        totalCost: number;
-    };
-}
+// interface AdminNotification extends Notification {
+//     type: 'admin';
+//     status: 'pending' | 'approved' | 'rejected';
+//     equipmentId: number;
+//     rentalDetails: {
+//         startDate: string;
+//         endDate: string;
+//         totalCost: number;
+//     };
+// }
 
-interface GeneralNotification extends Notification {
-    type: 'general';
-}
+// interface GeneralNotification extends Notification {
+//     type: 'general';
+// }
 
 export default function NotificationsPage() {
     const token = useAuthStore((s) => s.token);
@@ -70,7 +70,7 @@ export default function NotificationsPage() {
                     {notifications.map((notification) => {
                         const isPending = notification.status === "pending";
                         const isApproved = notification.status === "approved";
-                        const isRejected = notification.status === "rejected";
+                        // const isRejected = notification.status === "rejected";
 
                         const cardBg = isPending ? "bg-blue-50" : "bg-white";
 
