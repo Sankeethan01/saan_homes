@@ -17,7 +17,8 @@ import { FiClock, FiDollarSign, FiUser } from 'react-icons/fi';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/app/stores/useAuthStore';
-import { fetchWithAuth } from '@/app/utils/auth';
+import toast from 'react-hot-toast';
+import { Toaster } from 'react-hot-toast';
 
 interface Booking {
   id: string;
@@ -27,19 +28,24 @@ interface Booking {
     image: string;
     daily_rate: number;
   };
+  equipment_name: string;
+  equipment_image: string;
+  equipment_daily_rate: number;
   user: {
     id: string;
     first_name: string;
     last_name: string;
     email: string;
   };
+  user_name: string;
+  user_email: string;
+  status: 'PENDING' | 'APPROVED' | 'PAID' | 'RENTED' | 'COMPLETED' | 'REJECTED' | 'CANCELLED';
   start_date: string;
   end_date: string;
-  status: 'PENDING' | 'APPROVED' | 'PAID' | 'REJECTED' | 'CANCELLED';
   notes: string;
   created: string;
   duration: number;
-  total_amount: number;
+  total_cost: number;
 }
 
 const statusTabs = [
@@ -47,6 +53,8 @@ const statusTabs = [
   { key: 'PENDING', label: 'Pending', count: 0 },
   { key: 'APPROVED', label: 'Approved', count: 0 },
   { key: 'PAID', label: 'Paid', count: 0 },
+  { key: 'RENTED', label: 'Rented', count: 0 },
+  { key: 'COMPLETED', label: 'Completed', count: 0 },
   { key: 'REJECTED', label: 'Rejected', count: 0 },
   { key: 'CANCELLED', label: 'Cancelled', count: 0 },
 ];
@@ -75,16 +83,66 @@ export default function RentalsPage() {
       setLoading(true);
       const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api';
       
-      const response = await fetchWithAuth(`${apiBaseUrl}/equipments/bookings/`);
+      console.log('Fetching bookings...');
+      // Use a simple approach to prevent caching
+      const response = await fetch(`${apiBaseUrl}/equipments/bookings/`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        cache: 'no-store' // Ensure we always get fresh data
+      });
       
-      if (response.ok) {
-        const data = await response.json();
-        setBookings(data);
-      } else {
-        console.error('Failed to fetch bookings');
+      // Check if the response is ok
+      if (!response.ok) {
+        const errorText = await response.text();
+        let errorMessage;
+        try {
+          const errorData = JSON.parse(errorText);
+          errorMessage = errorData.detail || errorData.error || `Error ${response.status}: ${response.statusText}`;
+        } catch {
+          errorMessage = `Error ${response.status}: ${response.statusText}`;
+        }
+        throw new Error(errorMessage);
       }
+      
+      const data = await response.json();
+      console.log('Fetched bookings:', data);
+      
+      // Update the state with the fetched data
+      setBookings(data);
+      
+      // Also update filtered bookings based on current activeTab and searchTerm
+      let result = [...data];
+      
+      if (activeTab !== 'All') {
+        result = result.filter(booking => booking.status === activeTab);
+      }
+      
+      if (searchTerm) {
+        const searchLower = searchTerm.toLowerCase();
+        result = result.filter(booking => {
+          // Check equipment name
+          const equipmentName = booking.equipment_name || booking.equipment?.name || '';
+          
+          // Check user name
+          const userName = booking.user_name || 
+            `${booking.user?.first_name || ''} ${booking.user?.last_name || ''}`.trim();
+          
+          // Check user email
+          const userEmail = booking.user_email || booking.user?.email || '';
+          
+          return equipmentName.toLowerCase().includes(searchLower) ||
+                 userName.toLowerCase().includes(searchLower) ||
+                 userEmail.toLowerCase().includes(searchLower);
+        });
+      }
+      
+      setFilteredBookings(result);
     } catch (error) {
       console.error('Error fetching bookings:', error);
+      toast.error('Failed to load bookings: ' + (error instanceof Error ? error.message : String(error)));
     } finally {
       setLoading(false);
     }
@@ -107,38 +165,76 @@ export default function RentalsPage() {
     }
     
     if (searchTerm) {
-      result = result.filter(booking => 
-        booking.equipment.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        `${booking.user.first_name} ${booking.user.last_name}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        booking.user.email.toLowerCase().includes(searchTerm.toLowerCase())
-      );
+      const searchLower = searchTerm.toLowerCase();
+      result = result.filter(booking => {
+        // Check equipment name
+        const equipmentName = booking.equipment_name || booking.equipment?.name || '';
+        
+        // Check user name
+        const userName = booking.user_name || 
+          `${booking.user?.first_name || ''} ${booking.user?.last_name || ''}`.trim();
+        
+        // Check user email
+        const userEmail = booking.user_email || booking.user?.email || '';
+        
+        return equipmentName.toLowerCase().includes(searchLower) ||
+               userName.toLowerCase().includes(searchLower) ||
+               userEmail.toLowerCase().includes(searchLower);
+      });
     }
     
     setFilteredBookings(result);
   }, [activeTab, searchTerm, bookings]);
 
-  const handleApproveBooking = async (bookingId: string) => {
+    const handleApproveBooking = async (bookingId: string) => {
     try {
       setActionLoading(bookingId);
       const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api';
       
-      const response = await fetchWithAuth(`${apiBaseUrl}/equipments/bookings/${bookingId}/`, {
+      const loadingToast = toast.loading('Approving booking...');
+      
+      // Use the dedicated approve endpoint
+      const response = await fetch(`${apiBaseUrl}/equipments/bookings/${bookingId}/approve/`, {
         method: 'PATCH',
-        body: JSON.stringify({ status: 'APPROVED' }),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
       });
-
-      if (response.ok) {
-        // Update local state
-        setBookings(prev => prev.map(booking => 
-          booking.id === bookingId ? { ...booking, status: 'APPROVED' } : booking
-        ));
-        alert('Booking approved successfully!');
-      } else {
-        alert('Failed to approve booking');
+      
+      // Check if the response is ok
+      if (!response.ok) {
+        const errorText = await response.text();
+        let errorMessage;
+        try {
+          const errorData = JSON.parse(errorText);
+          errorMessage = errorData.detail || errorData.error || `Error ${response.status}: ${response.statusText}`;
+        } catch {
+          errorMessage = `Error ${response.status}: ${response.statusText}`;
+        }
+        throw new Error(errorMessage);
       }
+      
+      // Get the updated booking data
+      const data = await response.json();
+      console.log('Booking approved successfully:', data);
+      
+      toast.dismiss(loadingToast);
+      toast.success(data.message || 'Booking approved successfully!');
+      
+      // Immediately update the local state to reflect the change
+      setBookings(prev => 
+        prev.map(booking => 
+          booking.id === bookingId ? { ...booking, status: 'APPROVED' } : booking
+        )
+      );
+      
+      // Then refresh all bookings to ensure we have the latest data
+      await fetchBookings();
     } catch (error) {
       console.error('Error approving booking:', error);
-      alert('Error approving booking');
+      toast.dismiss(); // Dismiss any loading toasts
+      toast.error('Error approving booking: ' + (error instanceof Error ? error.message : String(error)));
     } finally {
       setActionLoading(null);
     }
@@ -149,23 +245,50 @@ export default function RentalsPage() {
       setActionLoading(bookingId);
       const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api';
       
-      const response = await fetchWithAuth(`${apiBaseUrl}/equipments/bookings/${bookingId}/`, {
+      const loadingToast = toast.loading('Rejecting booking...');
+      
+      // Use the dedicated reject endpoint
+      const response = await fetch(`${apiBaseUrl}/equipments/bookings/${bookingId}/reject/`, {
         method: 'PATCH',
-        body: JSON.stringify({ status: 'REJECTED' }),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
       });
-
-      if (response.ok) {
-        // Update local state
-        setBookings(prev => prev.map(booking => 
-          booking.id === bookingId ? { ...booking, status: 'REJECTED' } : booking
-        ));
-        alert('Booking rejected successfully!');
-      } else {
-        alert('Failed to reject booking');
+      
+      // Check if the response is ok
+      if (!response.ok) {
+        const errorText = await response.text();
+        let errorMessage;
+        try {
+          const errorData = JSON.parse(errorText);
+          errorMessage = errorData.detail || errorData.error || `Error ${response.status}: ${response.statusText}`;
+        } catch {
+          errorMessage = `Error ${response.status}: ${response.statusText}`;
+        }
+        throw new Error(errorMessage);
       }
+      
+      // Get the updated booking data
+      const data = await response.json();
+      console.log('Booking rejected successfully:', data);
+      
+      toast.dismiss(loadingToast);
+      toast.success(data.message || 'Booking rejected successfully!');
+      
+      // Immediately update the local state to reflect the change
+      setBookings(prev => 
+        prev.map(booking => 
+          booking.id === bookingId ? { ...booking, status: 'REJECTED' } : booking
+        )
+      );
+      
+      // Then refresh all bookings to ensure we have the latest data
+      await fetchBookings();
     } catch (error) {
       console.error('Error rejecting booking:', error);
-      alert('Error rejecting booking');
+      toast.dismiss(); // Dismiss any loading toasts
+      toast.error('Error rejecting booking: ' + (error instanceof Error ? error.message : String(error)));
     } finally {
       setActionLoading(null);
     }
@@ -179,6 +302,10 @@ export default function RentalsPage() {
         return 'bg-blue-100 text-blue-800 border-blue-200';
       case 'PAID':
         return 'bg-green-100 text-green-800 border-green-200';
+      case 'RENTED':
+        return 'bg-purple-100 text-purple-800 border-purple-200';
+      case 'COMPLETED':
+        return 'bg-teal-100 text-teal-800 border-teal-200';
       case 'REJECTED':
         return 'bg-red-100 text-red-800 border-red-200';
       case 'CANCELLED':
@@ -189,10 +316,17 @@ export default function RentalsPage() {
   };
 
   const getImageUrl = (imageUrl: string) => {
-    if (!imageUrl) return '/assets/images/equipment.png';
+    if (!imageUrl) return '/assets/images/equipments/excavator.jpeg';
     if (imageUrl.startsWith('http')) return imageUrl;
     const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
     return `${apiBaseUrl}${imageUrl}`;
+  };
+
+  const formatCurrency = (amount: number) => {
+    if (amount === undefined || amount === null || isNaN(amount)) {
+      return 'LKR 0.00';
+    }
+    return `LKR ${amount.toFixed(2)}`;
   };
 
   const handleViewBooking = (bookingId: string) => {
@@ -211,6 +345,9 @@ export default function RentalsPage() {
 
   return (
     <div className="space-y-6 px-4 py-8">
+      {/* Toast notifications */}
+      <Toaster position="top-right" />
+      
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -219,6 +356,20 @@ export default function RentalsPage() {
           </h1>
           <p className="text-slate-600 mt-1">Monitor and manage equipment booking requests</p>
         </div>
+        <button
+          onClick={() => fetchBookings()}
+          disabled={loading}
+          className="px-4 py-2 bg-[#1b4965] text-white rounded-lg hover:bg-[#0d3b59] transition-colors flex items-center gap-2 disabled:opacity-50"
+        >
+          {loading ? (
+            <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></span>
+          ) : (
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clipRule="evenodd" />
+            </svg>
+          )}
+          Refresh
+        </button>
       </div>
 
       {/* Stats Cards */}
@@ -268,7 +419,10 @@ export default function RentalsPage() {
             <div>
               <p className="text-sm text-slate-600">Revenue</p>
               <p className="text-2xl font-bold text-slate-900">
-                LKR {bookings.filter(b => b.status === 'PAID').reduce((sum, b) => sum + (b.total_amount || 0), 0).toLocaleString()}
+                LKR {bookings
+                  .filter(b => b.status === 'PAID')
+                  .reduce((sum, b) => sum + (b.total_cost || 0), 0)
+                  .toLocaleString()}
               </p>
             </div>
             <div className="p-3 bg-green-100 rounded-lg">
@@ -334,13 +488,13 @@ export default function RentalsPage() {
                   <div className="flex items-start gap-4 flex-1">
                     <div className="relative w-16 h-16 bg-slate-100 rounded-lg overflow-hidden flex-shrink-0">
                       <Image
-                        src={getImageUrl(booking.equipment.image)}
-                        alt={`${booking.equipment.name} equipment image`}
+                        src={getImageUrl(booking.equipment_image || booking.equipment?.image)}
+                        alt={`${booking.equipment_name || booking.equipment?.name} equipment image`}
                         fill
                         className="object-cover"
                         onError={(e) => {
                           const target = e.target as HTMLImageElement;
-                          target.src = '/assets/images/equipment.png';
+                          target.src = '/assets/images/equipments/excavator.jpeg';
                         }}
                       />
                     </div>
@@ -348,8 +502,8 @@ export default function RentalsPage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between mb-2">
                         <div>
-                          <h3 className="font-semibold text-slate-900 text-lg">{booking.equipment.name}</h3>
-                          <p className="text-slate-600 text-sm">Booking #{booking.id}</p>
+                          <h3 className="font-semibold text-slate-900 text-lg">{booking.equipment_name || booking.equipment?.name}</h3>
+                          <p className="text-slate-600 text-sm">Booking #{booking.id.substring(0, 8)}</p>
                         </div>
                         <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border ${getStatusColor(booking.status)}`}>
                           {booking.status}
@@ -362,7 +516,7 @@ export default function RentalsPage() {
                           <div>
                             <p className="text-xs text-slate-500">Customer</p>
                             <p className="text-sm font-medium text-slate-900">
-                              {booking.user.first_name} {booking.user.last_name}
+                              {booking.user_name || `${booking.user?.first_name || ''} ${booking.user?.last_name || ''}`}
                             </p>
                           </div>
                         </div>
@@ -382,7 +536,7 @@ export default function RentalsPage() {
                           <div>
                             <p className="text-xs text-slate-500">Total Amount</p>
                             <p className="text-sm font-medium text-slate-900">
-                              LKR {(booking.duration * booking.equipment.daily_rate).toFixed(2)}
+                              {formatCurrency(booking.total_cost)}
                             </p>
                           </div>
                         </div>
@@ -392,7 +546,7 @@ export default function RentalsPage() {
                           <div>
                             <p className="text-xs text-slate-500">Duration</p>
                             <p className="text-sm font-medium text-slate-900">
-                              {booking.duration} days
+                              {booking.duration} day{booking.duration !== 1 ? 's' : ''}
                             </p>
                           </div>
                         </div>

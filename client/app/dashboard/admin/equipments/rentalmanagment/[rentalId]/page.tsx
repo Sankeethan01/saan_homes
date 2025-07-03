@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import {
   RiArrowLeftLine,
-  RiCalendarEventLine,
   RiCheckLine,
   RiCloseLine,
   RiTimeLine,
@@ -11,35 +10,40 @@ import {
   RiToolsLine,
   RiUserLine,
   RiMailLine,
-  RiPhoneLine,
-  RiMapPinLine,
   RiAlertLine,
+  RiTruckLine,
+  RiCheckboxCircleLine,
 } from 'react-icons/ri';
 import { FiDollarSign, FiCalendar, FiCheck, FiX } from 'react-icons/fi';
 import Image from 'next/image';
 import { useRouter, useParams } from 'next/navigation';
 import { useAuthStore } from '@/app/stores/useAuthStore';
+import toast, { Toaster } from 'react-hot-toast';
 
 interface Booking {
   id: string;
-  equipment: number;
+  equipment: {
+    id: string;
+    name: string;
+    image: string;
+    daily_rate: number;
+  };
   equipment_name: string;
   equipment_image: string;
-  equipment_daily_rate: string;
-  user: number;
+  equipment_daily_rate: number;
+  user: {
+    id: string;
+    first_name: string;
+    last_name: string;
+    email: string;
+  };
   user_name: string;
   user_email: string;
-  status: 'PENDING' | 'APPROVED' | 'PAID' | 'CANCELLED' | 'COMPLETED';
+  status: 'PENDING' | 'APPROVED' | 'PAID' | 'RENTED' | 'COMPLETED' | 'REJECTED' | 'CANCELLED';
   start_date: string;
   end_date: string;
-  project_name: string;
-  project_description: string;
-  delivery_address: string;
-  delivery_required: boolean;
-  safety_requirements: string;
-  emergency_contact_name: string;
-  emergency_contact_phone: string;
-  total_cost: string;
+  notes: string;
+  total_cost: number;
   duration: number;
   created: string;
 }
@@ -48,17 +52,30 @@ interface Booking {
 const fetchWithAuth = async (url: string, options: RequestInit = {}) => {
   const token = useAuthStore.getState().token;
   
-  const response = await fetch(url, {
+  const headers = {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${token}`,
+    ...options.headers,
+  };
+
+  const config = {
     ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`,
-      ...options.headers,
-    },
-  });
+    headers,
+  };
+  
+  const response = await fetch(url, config);
 
   if (!response.ok) {
-    throw new Error(`HTTP error! status: ${response.status}`);
+    // Try to parse error as JSON
+    const errorText = await response.text();
+    let errorMessage;
+    try {
+      const errorData = JSON.parse(errorText);
+      errorMessage = errorData.detail || errorData.error || errorData.message || `HTTP error! status: ${response.status}`;
+    } catch {
+      errorMessage = `HTTP error! status: ${response.status}. ${errorText}`;
+    }
+    throw new Error(errorMessage);
   }
 
   return response.json();
@@ -84,34 +101,58 @@ export default function RentalDetailPage() {
   const fetchBookingDetails = async () => {
     try {
       setLoading(true);
-      const data = await fetchWithAuth(`http://localhost:8000/api/equipments/bookings/${params.rentalId}/`);
+      const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api';
+      const data = await fetchWithAuth(`${API_BASE_URL}/equipments/bookings/${params.rentalId}/`);
       setBooking(data);
     } catch (error) {
       console.error('Error fetching booking details:', error);
+      toast.error('Failed to load booking details');
       setBooking(null);
     } finally {
       setLoading(false);
     }
   };
 
+  const formatCurrency = (amount: number | string) => {
+    if (amount === undefined || amount === null || isNaN(Number(amount))) {
+      return 'LKR 0.00';
+    }
+    return `LKR ${Number(amount).toFixed(2)}`;
+  };
+
+  const getImageUrl = (imageUrl: string) => {
+    if (!imageUrl) return '/assets/images/equipments/excavator.jpeg';
+    if (imageUrl.startsWith('http')) return imageUrl;
+    const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
+    return `${apiBaseUrl}${imageUrl}`;
+  };
+
   const handleApproveRental = async () => {
     if (!booking) return;
+    
+    const loadingToast = toast.loading('Approving rental...');
     setActionLoading(true);
     
     try {
+      const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api';
+      
+      // Use the dedicated approve endpoint
       const updatedBooking = await fetchWithAuth(
-        `http://localhost:8000/api/equipments/bookings/${params.rentalId}/`,
+        `${API_BASE_URL}/equipments/bookings/${params.rentalId}/approve/`,
         {
-          method: 'PATCH',
-          body: JSON.stringify({ status: 'APPROVED' }),
+          method: 'PATCH'
         }
       );
       
+      // Update the local state with the updated booking
       setBooking(updatedBooking);
-      alert('Rental approved successfully!');
+      
+      toast.dismiss(loadingToast);
+      toast.success(updatedBooking.message || 'Rental approved successfully!');
     } catch (err) {
       console.error('Error approving rental:', err);
-      alert('Error approving rental. Please try again.');
+      toast.dismiss(loadingToast);
+      toast.error(err instanceof Error ? err.message : 'Failed to approve rental. Please try again.');
     } finally {
       setActionLoading(false);
     }
@@ -119,22 +160,92 @@ export default function RentalDetailPage() {
 
   const handleRejectRental = async () => {
     if (!booking) return;
+    
+    const loadingToast = toast.loading('Rejecting rental...');
     setActionLoading(true);
     
     try {
-      await fetchWithAuth(
-        `http://localhost:8000/api/equipments/bookings/${params.rentalId}/`,
+      const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api';
+      
+      // Use the dedicated reject endpoint
+      const updatedBooking = await fetchWithAuth(
+        `${API_BASE_URL}/equipments/bookings/${params.rentalId}/reject/`,
         {
-          method: 'PATCH',
-          body: JSON.stringify({ status: 'CANCELLED' }),
+          method: 'PATCH'
         }
       );
       
-      alert('Rental rejected successfully!');
-      router.back();
+      // Update the local state with the updated booking
+      setBooking(updatedBooking);
+      
+      toast.dismiss(loadingToast);
+      toast.success(updatedBooking.message || 'Rental rejected successfully!');
     } catch (err) {
       console.error('Error rejecting rental:', err);
-      alert('Error rejecting rental. Please try again.');
+      toast.dismiss(loadingToast);
+      toast.error(err instanceof Error ? err.message : 'Failed to reject rental. Please try again.');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleMarkAsRented = async () => {
+    if (!booking) return;
+    
+    const loadingToast = toast.loading('Marking as rented...');
+    setActionLoading(true);
+    
+    try {
+      const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api';
+      
+      // Use the dedicated mark_rented endpoint
+      const updatedBooking = await fetchWithAuth(
+        `${API_BASE_URL}/equipments/bookings/${params.rentalId}/mark_rented/`,
+        {
+          method: 'PATCH'
+        }
+      );
+      
+      // Update the local state with the updated booking
+      setBooking(updatedBooking);
+      
+      toast.dismiss(loadingToast);
+      toast.success(updatedBooking.message || 'Rental marked as rented successfully!');
+    } catch (err) {
+      console.error('Error marking rental as rented:', err);
+      toast.dismiss(loadingToast);
+      toast.error(err instanceof Error ? err.message : 'Failed to update rental status. Please try again.');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleMarkAsCompleted = async () => {
+    if (!booking) return;
+    
+    const loadingToast = toast.loading('Marking as completed...');
+    setActionLoading(true);
+    
+    try {
+      const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api';
+      
+      // Use the dedicated complete endpoint
+      const updatedBooking = await fetchWithAuth(
+        `${API_BASE_URL}/equipments/bookings/${params.rentalId}/complete/`,
+        {
+          method: 'PATCH'
+        }
+      );
+      
+      // Update the local state with the updated booking
+      setBooking(updatedBooking);
+      
+      toast.dismiss(loadingToast);
+      toast.success(updatedBooking.message || 'Rental marked as completed successfully!');
+    } catch (err) {
+      console.error('Error marking rental as completed:', err);
+      toast.dismiss(loadingToast);
+      toast.error(err instanceof Error ? err.message : 'Failed to update rental status. Please try again.');
     } finally {
       setActionLoading(false);
     }
@@ -155,11 +266,15 @@ export default function RentalDetailPage() {
       case 'APPROVED':
         return 'bg-blue-100 text-blue-800 border-blue-200';
       case 'PAID':
+        return 'bg-green-100 text-green-800 border-green-200';
+      case 'RENTED':
         return 'bg-purple-100 text-purple-800 border-purple-200';
       case 'COMPLETED':
-        return 'bg-green-100 text-green-800 border-green-200';
-      case 'CANCELLED':
+        return 'bg-teal-100 text-teal-800 border-teal-200';
+      case 'REJECTED':
         return 'bg-red-100 text-red-800 border-red-200';
+      case 'CANCELLED':
+        return 'bg-gray-100 text-gray-800 border-gray-200';
       default:
         return 'bg-slate-100 text-slate-800 border-slate-200';
     }
@@ -195,6 +310,9 @@ export default function RentalDetailPage() {
 
   return (
     <div className="space-y-6 px-4 py-8">
+      {/* Toast notifications */}
+      <Toaster position="top-right" />
+      
       {/* Header */}
       <div className="flex items-center gap-4">
         <button
@@ -228,87 +346,58 @@ export default function RentalDetailPage() {
             <div className="flex items-start gap-4">
               <div className="relative w-24 h-24 bg-slate-100 rounded-lg overflow-hidden flex-shrink-0">
                 <Image
-                  src={booking.equipment_image || '/assets/images/cmixer.jpg'}
-                  alt={booking.equipment_name}
+                  src={getImageUrl(booking.equipment_image || booking.equipment?.image)}
+                  alt={booking.equipment_name || booking.equipment?.name}
                   fill
                   className="object-cover"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.src = '/assets/images/equipments/excavator.jpeg';
+                  }}
                 />
               </div>
               
               <div className="flex-1">
-                <h3 className="text-xl font-semibold text-slate-900 mb-2">{booking.equipment_name}</h3>
+                <h3 className="text-xl font-semibold text-slate-900 mb-2">{booking.equipment_name || booking.equipment?.name}</h3>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <p className="text-sm text-slate-500">Daily Rate</p>
-                    <p className="font-semibold text-slate-900">LKR {booking.equipment_daily_rate}/day</p>
+                    <p className="font-semibold text-slate-900">{formatCurrency(booking.equipment_daily_rate || booking.equipment?.daily_rate)}/day</p>
                   </div>
                   <div>
                     <p className="text-sm text-slate-500">Total Amount</p>
-                    <p className="font-semibold text-slate-900">LKR {booking.total_cost}</p>
+                    <p className="font-semibold text-slate-900">{formatCurrency(booking.total_cost)}</p>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
-
-          {/* Rental Details */}
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
-            <h2 className="text-lg font-semibold text-slate-900 mb-4 flex items-center gap-2">
-              <RiCalendarEventLine className="w-5 h-5 text-blue-600" />
-              Rental Details
-            </h2>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <p className="text-sm text-slate-500 mb-1">Project</p>
-                <p className="font-semibold text-slate-900">{booking.project_name}</p>
-              </div>
-              
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
               <div>
                 <p className="text-sm text-slate-500 mb-1">Rental Period</p>
-                <p className="font-semibold text-slate-900">{booking.start_date} to {booking.end_date}</p>
+                <p className="font-semibold text-slate-900">
+                  {new Date(booking.start_date).toLocaleDateString()} - {new Date(booking.end_date).toLocaleDateString()}
+                </p>
               </div>
               
               <div>
                 <p className="text-sm text-slate-500 mb-1">Duration</p>
-                <p className="font-semibold text-slate-900">
-                  {booking.duration} days
-                </p>
+                <p className="font-semibold text-slate-900">{booking.duration} days</p>
               </div>
               
               <div>
-                <p className="text-sm text-slate-500 mb-1">
-                  {booking.status === 'PAID' ? 'Days Remaining' : 
-                   booking.status === 'COMPLETED' ? 'Completed' : 'Starts In'}
-                </p>
+                <p className="text-sm text-slate-500 mb-1">Time Remaining</p>
                 <p className="font-semibold text-slate-900">
-                  {booking.status === 'COMPLETED' 
-                    ? 'Project finished' 
-                    : `${calculateDaysRemaining(booking.status === 'PAID' ? booking.end_date : booking.start_date)} days`}
+                  {booking.status === 'PAID' 
+                    ? `${calculateDaysRemaining(booking.end_date)} days until return`
+                    : `${calculateDaysRemaining(booking.start_date)} days`}
                 </p>
               </div>
               
-              {booking.delivery_address && (
-                <div className="md:col-span-2">
-                  <p className="text-sm text-slate-500 mb-1">Delivery Address</p>
-                  <p className="font-semibold text-slate-900 flex items-center gap-2">
-                    <RiMapPinLine className="w-4 h-4 text-slate-400" />
-                    {booking.delivery_address}
-                  </p>
-                </div>
-              )}
-              
-              {booking.project_description && (
+              {booking.notes && (
                 <div className="md:col-span-2">
                   <p className="text-sm text-slate-500 mb-1">Project Description</p>
-                  <p className="text-slate-700 bg-slate-50 p-3 rounded-lg">{booking.project_description}</p>
-                </div>
-              )}
-
-              {booking.safety_requirements && (
-                <div className="md:col-span-2">
-                  <p className="text-sm text-slate-500 mb-1">Safety Requirements</p>
-                  <p className="text-slate-700 bg-slate-50 p-3 rounded-lg">{booking.safety_requirements}</p>
+                  <p className="text-slate-700 bg-slate-50 p-3 rounded-lg">{booking.notes}</p>
                 </div>
               )}
             </div>
@@ -325,7 +414,7 @@ export default function RentalDetailPage() {
               <div>
                 <p className="text-sm text-slate-500 mb-1">Payment Status</p>
                 <div className="flex items-center gap-2">
-                  {booking.status === 'PAID' || booking.status === 'COMPLETED' ? (
+                  {booking.status === 'PAID' ? (
                     <>
                       <FiCheck className="w-4 h-4 text-green-600" />
                       <span className="font-semibold text-green-600">Paid</span>
@@ -341,7 +430,7 @@ export default function RentalDetailPage() {
               
               <div>
                 <p className="text-sm text-slate-500 mb-1">Total Amount</p>
-                <p className="font-semibold text-slate-900">LKR {booking.total_cost}</p>
+                <p className="font-semibold text-slate-900">{formatCurrency(booking.total_cost)}</p>
               </div>
               
               <div>
@@ -351,7 +440,7 @@ export default function RentalDetailPage() {
               
               <div>
                 <p className="text-sm text-slate-500 mb-1">Daily Rate</p>
-                <p className="font-semibold text-slate-900">LKR {booking.equipment_daily_rate}/day</p>
+                <p className="font-semibold text-slate-900">{formatCurrency(booking.equipment_daily_rate || booking.equipment?.daily_rate)}/day</p>
               </div>
             </div>
           </div>
@@ -367,37 +456,21 @@ export default function RentalDetailPage() {
             </h2>
             
             <div className="space-y-4">
-              <div>
-                <p className="text-sm text-slate-500 mb-1">Name</p>
-                <p className="font-semibold text-slate-900">{booking.user_name}</p>
-              </div>
-              
-              <div>
-                <p className="text-sm text-slate-500 mb-1">Email</p>
-                <a 
-                  href={`mailto:${booking.user_email}`}
-                  className="font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-2"
-                >
-                  <RiMailLine className="w-4 h-4" />
-                  {booking.user_email}
-                </a>
-              </div>
-              
-              {booking.emergency_contact_name && (
+              <div className="flex items-center gap-3">
+                <RiUserLine className="w-5 h-5 text-slate-400" />
                 <div>
-                  <p className="text-sm text-slate-500 mb-1">Emergency Contact</p>
-                  <p className="font-semibold text-slate-900">{booking.emergency_contact_name}</p>
-                  {booking.emergency_contact_phone && (
-                    <a 
-                      href={`tel:${booking.emergency_contact_phone}`}
-                      className="font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-2 mt-1"
-                    >
-                      <RiPhoneLine className="w-4 h-4" />
-                      {booking.emergency_contact_phone}
-                    </a>
-                  )}
+                  <p className="text-sm text-slate-500">Customer Name</p>
+                  <p className="font-semibold text-slate-900">{booking.user_name || `${booking.user?.first_name || ''} ${booking.user?.last_name || ''}`}</p>
                 </div>
-              )}
+              </div>
+              
+              <div className="flex items-center gap-3">
+                <RiMailLine className="w-5 h-5 text-slate-400" />
+                <div>
+                  <p className="text-sm text-slate-500">Email</p>
+                  <p className="font-semibold text-slate-900">{booking.user_email || booking.user?.email}</p>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -436,29 +509,67 @@ export default function RentalDetailPage() {
             )}
             
             {booking.status === 'PAID' && (
-              <div className="text-center">
-                <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <FiDollarSign className="w-8 h-8 text-purple-600" />
+              <div className="space-y-3">
+                <div className="text-center mb-4">
+                  <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <FiDollarSign className="w-8 h-8 text-green-600" />
+                  </div>
+                  <p className="text-slate-600 mb-4">Payment received. Equipment ready for pickup/delivery.</p>
                 </div>
-                <p className="text-slate-600 mb-4">Payment received. Equipment ready for pickup/delivery.</p>
+                <button
+                  onClick={handleMarkAsRented}
+                  disabled={actionLoading}
+                  className="w-full px-4 py-3 bg-[#1b4965] text-white rounded-lg hover:from-purple-600 hover:to-purple-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  <RiTruckLine className="w-5 h-5" />
+                  {actionLoading ? 'Updating...' : 'Mark as Rented (Equipment Handed Over)'}
+                </button>
+              </div>
+            )}
+            
+            {booking.status === 'RENTED' && (
+              <div className="space-y-3">
+                <div className="text-center mb-4">
+                  <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <RiTruckLine className="w-8 h-8 text-purple-600" />
+                  </div>
+                  <p className="text-slate-600 mb-4">Equipment is currently rented out.</p>
+                </div>
+                <button
+                  onClick={handleMarkAsCompleted}
+                  disabled={actionLoading}
+                  className="w-full px-4 py-3 bg-gradient-to-r from-teal-500 to-teal-600 text-white rounded-lg hover:from-teal-600 hover:to-teal-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  <RiCheckboxCircleLine className="w-5 h-5" />
+                  {actionLoading ? 'Updating...' : 'Mark as Completed (Equipment Returned)'}
+                </button>
               </div>
             )}
             
             {booking.status === 'COMPLETED' && (
               <div className="text-center">
-                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <FiCheck className="w-8 h-8 text-green-600" />
+                <div className="w-16 h-16 bg-teal-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <RiCheckboxCircleLine className="w-8 h-8 text-teal-600" />
                 </div>
-                <p className="text-slate-600 mb-4">Rental completed successfully.</p>
+                <p className="text-slate-600 mb-4">Rental completed successfully. Equipment has been returned.</p>
+              </div>
+            )}
+            
+            {booking.status === 'REJECTED' && (
+              <div className="text-center">
+                <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <FiX className="w-8 h-8 text-red-600" />
+                </div>
+                <p className="text-slate-600 mb-4">Rental has been rejected.</p>
               </div>
             )}
             
             {booking.status === 'CANCELLED' && (
               <div className="text-center">
-                <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <RiCloseLine className="w-8 h-8 text-red-600" />
+                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <RiCloseLine className="w-8 h-8 text-gray-600" />
                 </div>
-                <p className="text-slate-600 mb-4">Rental has been cancelled.</p>
+                <p className="text-slate-600 mb-4">Rental has been cancelled by the customer.</p>
               </div>
             )}
           </div>
@@ -481,29 +592,40 @@ export default function RentalDetailPage() {
               
               {booking.status !== 'PENDING' && (
                 <div className="flex items-center gap-3">
-                  <div className={`w-3 h-3 rounded-full ${booking.status === 'CANCELLED' ? 'bg-red-600' : 'bg-green-600'}`}></div>
+                  <div className={`w-3 h-3 rounded-full ${booking.status === 'CANCELLED' || booking.status === 'REJECTED' ? 'bg-red-600' : 'bg-green-600'}`}></div>
                   <div>
                     <p className="text-sm font-medium text-slate-900">
-                      {booking.status === 'CANCELLED' ? 'Cancelled' : 'Approved'}
+                      {booking.status === 'CANCELLED' ? 'Cancelled' : 
+                       booking.status === 'REJECTED' ? 'Rejected' : 'Approved'}
                     </p>
                     <p className="text-xs text-slate-500">Status updated</p>
                   </div>
                 </div>
               )}
               
-              {(booking.status === 'PAID' || booking.status === 'COMPLETED') && (
+              {(booking.status === 'PAID' || booking.status === 'RENTED' || booking.status === 'COMPLETED') && (
                 <div className="flex items-center gap-3">
-                  <div className="w-3 h-3 bg-purple-600 rounded-full"></div>
+                  <div className="w-3 h-3 bg-green-600 rounded-full"></div>
                   <div>
                     <p className="text-sm font-medium text-slate-900">Payment Received</p>
                     <p className="text-xs text-slate-500">Customer paid</p>
                   </div>
                 </div>
               )}
-              
+
+              {(booking.status === 'RENTED' || booking.status === 'COMPLETED') && (
+                <div className="flex items-center gap-3">
+                  <div className="w-3 h-3 bg-purple-600 rounded-full"></div>
+                  <div>
+                    <p className="text-sm font-medium text-slate-900">Equipment Handed Over</p>
+                    <p className="text-xs text-slate-500">Customer received equipment</p>
+                  </div>
+                </div>
+              )}
+
               {booking.status === 'COMPLETED' && (
                 <div className="flex items-center gap-3">
-                  <div className="w-3 h-3 bg-green-600 rounded-full"></div>
+                  <div className="w-3 h-3 bg-teal-600 rounded-full"></div>
                   <div>
                     <p className="text-sm font-medium text-slate-900">Rental Completed</p>
                     <p className="text-xs text-slate-500">Equipment returned</p>

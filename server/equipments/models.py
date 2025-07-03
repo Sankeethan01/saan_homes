@@ -170,6 +170,8 @@ class Booking(models.Model):
         PENDING = "PENDING", "Pending"
         APPROVED = "APPROVED", "Approved"
         PAID = "PAID", "Paid"
+        RENTED = "RENTED", "Rented"
+        COMPLETED = "COMPLETED", "Completed"
         REJECTED = "REJECTED", "Rejected"
         CANCELLED = "CANCELLED", "Cancelled"
 

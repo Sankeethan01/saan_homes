@@ -89,6 +89,9 @@ CORS_ALLOW_HEADERS = [
     'user-agent',
     'x-csrftoken',
     'x-requested-with',
+    'cache-control',
+    'pragma',
+    'expires',
 ]
 
 ROOT_URLCONF = 'backend.urls'

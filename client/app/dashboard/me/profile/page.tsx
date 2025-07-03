@@ -71,7 +71,7 @@ export default function ProfilePage() {
         setSaving(false);
         return;
       }
-      const updated = await res.json();
+      //const updated = await res.json();
       setUser({ ...user!, ...form });
       setEditMode(false);
     } catch (err) {
