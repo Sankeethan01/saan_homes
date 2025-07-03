@@ -16,6 +16,7 @@ interface Message {
   showCalendar?: boolean;
   showPricing?: boolean;
   pricingData?: PricingData;
+  showDurationInput?: boolean;
 }
 
 interface Option {
@@ -41,9 +42,40 @@ interface Equipment {
     daily_rate: number;
     weekly_rate?: number;
     monthly_rate?: number;
+    security_deposit: number;
+    late_return_fee: number;
+    weekly_discount?: number;
+    monthly_discount?: number;
   };
   is_available: boolean;
   availability_status: string;
+  specifications?: {
+    operating_weight?: string;
+    engine_power?: string;
+    blade_capacity?: string;
+    fuel_capacity?: string;
+    max_speed?: string;
+    dimensions?: {
+      length?: string;
+      width?: string;
+      height?: string;
+    };
+  };
+  features?: string[];
+  rental_requirements?: {
+    minimum_rental_period: number;
+    maximum_rental_period: number;
+    advance_booking_days: number;
+    operator_license_required: boolean;
+    training_required: boolean;
+    age_restriction: number;
+    insurance_required: boolean;
+    delivery_available: boolean;
+    delivery_radius: number;
+    delivery_fee: number;
+  };
+  current_location?: string;
+  pickup_location?: string;
 }
 
 interface PricingData {
@@ -64,7 +96,7 @@ interface ChatState {
   selectedEquipmentName?: string;
   selectedEquipment?: Equipment;
   startDate?: string;
-  endDate?: string;
+  rentalDays?: number;
   selectedPricing?: 'daily' | 'weekly' | 'monthly';
 }
 
@@ -74,10 +106,11 @@ const CONVERSATION_STEPS = {
   EQUIPMENT_SELECTION: 'equipment_selection',
   EQUIPMENT_GRID: 'equipment_grid',
   START_DATE: 'start_date',
-  END_DATE: 'end_date',
+  RENTAL_DURATION: 'rental_duration',
   AVAILABILITY_CHECK: 'availability_check',
   PRICING_OPTIONS: 'pricing_options',
-  BOOKING_CONFIRMATION: 'booking_confirmation'
+  BOOKING_CONFIRMATION: 'booking_confirmation',
+  AUTH_CHECK: 'auth_check'
 };
 
 export default function ChatBotRentalsPortfolio() {
@@ -124,7 +157,7 @@ export default function ChatBotRentalsPortfolio() {
     return Date.now() + Math.random() * 1000;
   };
 
-  const addBotMessage = (text: string, options?: Option[], equipmentGrid?: Equipment[], showCalendar?: boolean, showPricing?: boolean, pricingData?: PricingData) => {
+  const addBotMessage = (text: string, options?: Option[], equipmentGrid?: Equipment[], showCalendar?: boolean, showPricing?: boolean, pricingData?: PricingData, showDurationInput?: boolean) => {
     const message: Message = {
       id: generateUniqueId(),
       text,
@@ -134,7 +167,8 @@ export default function ChatBotRentalsPortfolio() {
       equipmentGrid,
       showCalendar,
       showPricing,
-      pricingData
+      pricingData,
+      showDurationInput
     };
     setMessages(prev => [...prev, message]);
   };
@@ -181,10 +215,39 @@ export default function ChatBotRentalsPortfolio() {
     try {
       setLoading(true);
       const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://127.0.0.1:8000/api';
-      const response = await fetch(`${apiBaseUrl}/equipments/equipments/`);
+      
+      console.log('Fetching equipment from:', `${apiBaseUrl}/equipments/equipment/`);
+      
+      const response = await fetch(`${apiBaseUrl}/equipments/equipment/`);
+      console.log('Response status:', response.status);
+      
       if (response.ok) {
         const data = await response.json();
-        setAllEquipment(data.results || data);
+        console.log('Raw API response:', data);
+        
+        const equipmentList = data.results || data;
+        console.log('Equipment list:', equipmentList);
+        
+        // Process images to ensure they have proper URLs
+        const processedEquipment = equipmentList.map((eq: Equipment) => {
+          // If image URL doesn't start with http, prepend API base URL
+          if (eq.image && !eq.image.startsWith('http')) {
+            eq.image = `${apiBaseUrl}${eq.image}`;
+          }
+          return eq;
+        });
+        
+        console.log('Processed equipment:', processedEquipment);
+        setAllEquipment(processedEquipment);
+      } else {
+        console.error('Failed to fetch equipment:', response.status, response.statusText);
+        // Try to read error response
+        try {
+          const errorText = await response.text();
+          console.error('Error response:', errorText);
+        } catch (e) {
+          console.error('Could not read error response');
+        }
       }
     } catch (error) {
       console.error('Failed to fetch all equipment:', error);
@@ -198,21 +261,23 @@ export default function ChatBotRentalsPortfolio() {
   const checkAvailability = async (equipmentId: string, startDate: string, endDate: string) => {
     try {
       const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://127.0.0.1:8000/api';
-      const response = await fetch(`${apiBaseUrl}/equipments/equipments/${equipmentId}/bookings/`);
+      const response = await fetch(`${apiBaseUrl}/equipments/equipment/${equipmentId}/bookings/`);
       if (response.ok) {
         const bookings = await response.json();
         
-                 // Check for conflicts
-         const hasConflict = bookings.some((booking: { start_date: string; end_date: string }) => {
-           const bookingStart = new Date(booking.start_date);
-           const bookingEnd = new Date(booking.end_date);
-           const requestStart = new Date(startDate);
-           const requestEnd = new Date(endDate);
-           
-           return (requestStart <= bookingEnd && requestEnd >= bookingStart);
-         });
+        // Check for conflicts
+        const hasConflict = bookings.some((booking: { start_date: string; end_date: string }) => {
+          const bookingStart = new Date(booking.start_date);
+          const bookingEnd = new Date(booking.end_date);
+          const requestStart = new Date(startDate);
+          const requestEnd = new Date(endDate);
+          
+          return (requestStart <= bookingEnd && requestEnd >= bookingStart);
+        });
         
         return !hasConflict;
+      } else {
+        console.error('Failed to check availability:', response.status, response.statusText);
       }
     } catch (error) {
       console.error('Failed to check availability:', error);
@@ -235,25 +300,38 @@ export default function ChatBotRentalsPortfolio() {
       case CONVERSATION_STEPS.EQUIPMENT_SELECTION:
         await handleEquipmentSelection(option.value);
         break;
+      case CONVERSATION_STEPS.RENTAL_DURATION:
+        handleRentalDuration(option.value);
+        break;
       case CONVERSATION_STEPS.PRICING_OPTIONS:
         await handlePricingSelection(option.value);
         break;
-             default:
-         if (option.value === 'restart') {
-           restartConversation();
-         } else if (option.value === 'contact') {
-           router.push('/equipments/contact');
-           setIsOpen(false);
-         } else if (option.value === 'browse') {
-           router.push('/equipments');
-           setIsOpen(false);
-         } else if (option.value === 'book_now') {
-           handleBookNow();
-         } else if (option.value === 'change_dates') {
-           handleChangeDates();
-         } else if (option.value === 'change_pricing') {
-           handleChangePricing();
-         }
+      case CONVERSATION_STEPS.AUTH_CHECK:
+        if (option.value === 'login') {
+          // Redirect to login page with return URL
+          const returnUrl = `/equipments/${chatState.selectedEquipment?.id}/rent`;
+          router.push(`/dashboard/login?returnUrl=${encodeURIComponent(returnUrl)}`);
+          setIsOpen(false);
+        } else if (option.value === 'restart') {
+          restartConversation();
+        }
+        break;
+      default:
+        if (option.value === 'restart') {
+          restartConversation();
+        } else if (option.value === 'contact') {
+          router.push('/equipments/contact');
+          setIsOpen(false);
+        } else if (option.value === 'browse') {
+          router.push('/equipments');
+          setIsOpen(false);
+        } else if (option.value === 'book_now') {
+          handleBookNow();
+        } else if (option.value === 'change_dates') {
+          handleChangeDates();
+        } else if (option.value === 'change_pricing') {
+          handleChangePricing();
+        }
     }
   };
 
@@ -289,7 +367,21 @@ export default function ChatBotRentalsPortfolio() {
       selectedCategory 
     });
     
-    const filteredEquipment = allEquipment.filter((eq: Equipment) => eq.category_name === selectedCategory?.name);
+    console.log('Selected category:', selectedCategory);
+    console.log('All equipment:', allEquipment);
+    
+    // If allEquipment is empty, fetch it now
+    if (allEquipment.length === 0) {
+      await fetchAllEquipment();
+    }
+    
+    // Filter equipment by category
+    const filteredEquipment = allEquipment.filter((eq: Equipment) => {
+      console.log(`Comparing: ${eq.category_name} === ${selectedCategory?.name}`);
+      return eq.category_name === selectedCategory?.name;
+    });
+    
+    console.log('Filtered equipment:', filteredEquipment);
     setEquipmentList(filteredEquipment);
 
     if (filteredEquipment.length > 0) {
@@ -299,8 +391,42 @@ export default function ChatBotRentalsPortfolio() {
         filteredEquipment
       );
     } else {
+      // Try to fetch equipment directly for this category
+      try {
+        const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://127.0.0.1:8000/api';
+        const response = await fetch(`${apiBaseUrl}/equipments/equipment/?category=${selectedCategory?.id}`);
+        
+        if (response.ok) {
+          const data = await response.json();
+          const categoryEquipment = data.results || data;
+          
+          // Process images
+          const processedEquipment = categoryEquipment.map((eq: Equipment) => {
+            if (eq.image && !eq.image.startsWith('http')) {
+              eq.image = `${apiBaseUrl}${eq.image}`;
+            }
+            return eq;
+          });
+          
+          console.log('Category equipment from API:', processedEquipment);
+          
+          if (processedEquipment.length > 0) {
+            setEquipmentList(processedEquipment);
+            addBotMessage(
+              `Here are all available equipment in the ${selectedCategory?.name} category. Please select one to continue:`,
+              [],
+              processedEquipment
+            );
+            return;
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch category equipment:', error);
+      }
+      
+      // If we get here, no equipment was found
       addBotMessage(
-        `Sorry, there is no equipment available in the selected category. Please try another category or contact our team for help.`,
+        `Sorry, there is no equipment available in the ${selectedCategory?.name} category. Please try another category or contact our team for help.`,
         [
           { id: 'restart', text: '🔄 Start Over', value: 'restart' },
           { id: 'contact', text: '📞 Contact Our Team', value: 'contact' }
@@ -329,6 +455,8 @@ export default function ChatBotRentalsPortfolio() {
   };
 
   const handleEquipmentGridSelection = (equipment: Equipment) => {
+    console.log('Selected equipment:', equipment);
+    
     setChatState({ 
       ...chatState, 
       step: CONVERSATION_STEPS.START_DATE,
@@ -337,44 +465,98 @@ export default function ChatBotRentalsPortfolio() {
     
     addUserMessage(`Selected: ${equipment.name}`);
     
+    // Show equipment details
+    const detailsText = `
+Excellent! You've selected ${equipment.name}.
+
+📝 Details:
+• Daily Rate: $${equipment.pricing.daily_rate}
+${equipment.pricing.weekly_rate ? `• Weekly Rate: $${equipment.pricing.weekly_rate}` : ''}
+${equipment.pricing.monthly_rate ? `• Monthly Rate: $${equipment.pricing.monthly_rate}` : ''}
+${equipment.specifications?.operating_weight ? `• Weight: ${equipment.specifications.operating_weight}` : ''}
+${equipment.specifications?.engine_power ? `• Power: ${equipment.specifications.engine_power}` : ''}
+
+Now, when would you like to start your rental? Please select your start date:`;
+
     addBotMessage(
-      `Excellent! You've selected ${equipment.name}. Now, when would you like to start your rental? Please select your start date:`,
+      detailsText,
       [],
       undefined,
       true // showCalendar
     );
   };
 
-  const handleDateSelection = (date: string, isStartDate: boolean) => {
-    if (isStartDate) {
-      setChatState({ 
-        ...chatState, 
-        step: CONVERSATION_STEPS.END_DATE,
-        startDate: date 
-      });
-      
-      addUserMessage(`Start Date: ${date}`);
-      
+  const handleDateSelection = (date: string) => {
+    setChatState({ 
+      ...chatState, 
+      step: CONVERSATION_STEPS.RENTAL_DURATION,
+      startDate: date 
+    });
+    
+    addUserMessage(`Start Date: ${date}`);
+    
+    addBotMessage(
+      "Perfect! How many days would you like to rent this equipment?",
+      [
+        { id: '1', text: '1 day', value: '1' },
+        { id: '3', text: '3 days', value: '3' },
+        { id: '7', text: '7 days', value: '7' },
+        { id: '14', text: '14 days', value: '14' },
+        { id: '30', text: '30 days', value: '30' },
+        { id: 'custom', text: 'Custom duration', value: 'custom' }
+      ]
+    );
+  };
+  
+  const handleRentalDuration = (days: string) => {
+    if (days === 'custom') {
       addBotMessage(
-        "Perfect! Now please select your end date:",
+        "Please enter the number of days you'd like to rent:",
         [],
         undefined,
-        true // showCalendar
+        false,
+        false,
+        undefined,
+        true // Show custom duration input
       );
-    } else {
-      setChatState({ 
-        ...chatState, 
-        step: CONVERSATION_STEPS.AVAILABILITY_CHECK,
-        endDate: date 
-      });
-      
-      addUserMessage(`End Date: ${date}`);
-      
-      checkEquipmentAvailability(date);
+      return;
     }
+    
+    const rentalDays = parseInt(days);
+    setChatState({ 
+      ...chatState, 
+      step: CONVERSATION_STEPS.AVAILABILITY_CHECK,
+      rentalDays
+    });
+    
+    addUserMessage(`Rental Duration: ${rentalDays} days`);
+    
+    checkEquipmentAvailability(rentalDays);
+  };
+  
+  const handleCustomDurationSubmit = (days: number) => {
+    if (isNaN(days) || days < 1) {
+      addBotMessage(
+        "Please enter a valid number of days (minimum 1).",
+        [
+          { id: 'retry', text: 'Try Again', value: 'custom' }
+        ]
+      );
+      return;
+    }
+    
+    setChatState({ 
+      ...chatState, 
+      step: CONVERSATION_STEPS.AVAILABILITY_CHECK,
+      rentalDays: days
+    });
+    
+    addUserMessage(`Rental Duration: ${days} days`);
+    
+    checkEquipmentAvailability(days);
   };
 
-  const checkEquipmentAvailability = async (endDate: string) => {
+  const checkEquipmentAvailability = async (days: number) => {
     if (!chatState.selectedEquipment || !chatState.startDate) {
       console.error('Missing equipment or start date');
       return;
@@ -383,10 +565,16 @@ export default function ChatBotRentalsPortfolio() {
     setLoading(true);
     
     try {
+      // Calculate end date based on start date and rental days
+      const startDate = new Date(chatState.startDate);
+      const endDate = new Date(startDate);
+      endDate.setDate(startDate.getDate() + days - 1); // -1 because rental period includes the start date
+      const endDateString = endDate.toISOString().split('T')[0];
+      
       const isAvailable = await checkAvailability(
         chatState.selectedEquipment.id,
         chatState.startDate,
-        endDate
+        endDateString
       );
       
       if (isAvailable) {
@@ -394,7 +582,7 @@ export default function ChatBotRentalsPortfolio() {
         const newChatState = { 
           ...chatState, 
           step: CONVERSATION_STEPS.PRICING_OPTIONS,
-          endDate 
+          rentalDays: days
         };
         setChatState(newChatState);
         
@@ -422,7 +610,7 @@ export default function ChatBotRentalsPortfolio() {
       const newChatState = { 
         ...chatState, 
         step: CONVERSATION_STEPS.PRICING_OPTIONS,
-        endDate 
+        rentalDays: days
       };
       setChatState(newChatState);
       
@@ -435,14 +623,16 @@ export default function ChatBotRentalsPortfolio() {
   };
 
   const showPricingOptionsWithState = (state: ChatState) => {
-    if (!state.selectedEquipment || !state.startDate || !state.endDate) {
+    if (!state.selectedEquipment || !state.startDate || !state.rentalDays) {
       console.error('Missing required data for pricing options');
       return;
     }
     
     const startDate = new Date(state.startDate);
-    const endDate = new Date(state.endDate);
-    const duration = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+    const endDate = new Date(startDate);
+    endDate.setDate(startDate.getDate() + state.rentalDays - 1); // -1 because rental period includes the start date
+    const endDateString = endDate.toISOString().split('T')[0];
+    const duration = state.rentalDays;
     
     const equipment = state.selectedEquipment;
     const dailyCost = equipment.pricing.daily_rate * duration;
@@ -452,7 +642,7 @@ export default function ChatBotRentalsPortfolio() {
     const pricingData: PricingData = {
       equipment,
       startDate: state.startDate,
-      endDate: state.endDate,
+      endDate: endDateString,
       duration,
       dailyCost,
       weeklyCost,
@@ -462,7 +652,7 @@ export default function ChatBotRentalsPortfolio() {
     };
     
     addBotMessage(
-      `Great! Your ${equipment.name} is available from ${state.startDate} to ${state.endDate} (${duration} days). Here are your pricing options:`,
+      `Great! Your ${equipment.name} is available from ${state.startDate} to ${endDateString} (${duration} days). Here are your pricing options:`,
       [
         { id: 'daily', text: `💰 Daily Rate: $${dailyCost} total`, value: 'daily' },
         { id: 'weekly', text: `💰 Weekly Rate: $${weeklyCost} total`, value: 'weekly' },
@@ -506,7 +696,7 @@ export default function ChatBotRentalsPortfolio() {
 
 📋 Rental Summary:
 • Equipment: ${pricingData.equipment.name}
-• Duration: ${pricingData.startDate} to ${pricingData.endDate}
+• Duration: ${pricingData.duration} days (${pricingData.startDate} to ${pricingData.endDate})
 • Total Amount: $${selectedAmount}
 • Required Deposit: $${depositAmount} (50%)
 
@@ -521,13 +711,40 @@ The remaining amount will be due after admin approval. Would you like to proceed
   };
 
   const handleBookNow = () => {
-    if (!chatState.selectedEquipment) return;
+    if (!chatState.selectedEquipment || !chatState.startDate || !chatState.rentalDays) return;
+    
+    // Check if user is authenticated
+    const token = localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
+    
+    if (!token) {
+      // User is not logged in, show login message
+      setChatState({
+        ...chatState,
+        step: CONVERSATION_STEPS.AUTH_CHECK
+      });
+      
+      addBotMessage(
+        "You need to be logged in to complete your booking. Would you like to log in now?",
+        [
+          { id: 'login', text: '🔑 Log in / Register', value: 'login' },
+          { id: 'restart', text: '🔄 Start Over', value: 'restart' }
+        ]
+      );
+      return;
+    }
+    
+    // Calculate end date from start date and rental days
+    const startDate = new Date(chatState.startDate);
+    const endDate = new Date(startDate);
+    endDate.setDate(startDate.getDate() + chatState.rentalDays - 1);
+    const endDateString = endDate.toISOString().split('T')[0];
     
     // Navigate to booking page with pre-filled data
     const bookingData = {
       equipmentId: chatState.selectedEquipment.id,
       startDate: chatState.startDate,
-      endDate: chatState.endDate,
+      endDate: endDateString,
+      duration: chatState.rentalDays,
       pricingType: chatState.selectedPricing
     };
     
@@ -559,7 +776,7 @@ The remaining amount will be due after admin approval. Would you like to proceed
       ...chatState, 
       step: CONVERSATION_STEPS.START_DATE,
       startDate: undefined,
-      endDate: undefined
+      rentalDays: undefined
     });
     
     addBotMessage(
@@ -571,7 +788,7 @@ The remaining amount will be due after admin approval. Would you like to proceed
   };
 
   const handleChangePricing = () => {
-    if (!chatState.selectedEquipment || !chatState.startDate || !chatState.endDate) return;
+    if (!chatState.selectedEquipment || !chatState.startDate || !chatState.rentalDays) return;
     
     showPricingOptionsWithState(chatState);
   };
@@ -748,11 +965,44 @@ The remaining amount will be due after admin approval. Would you like to proceed
                                                      <input
                              type="date"
                              min={new Date().toISOString().split('T')[0]}
-                             onChange={(e) => handleDateSelection(e.target.value, chatState.step === CONVERSATION_STEPS.START_DATE)}
+                             onChange={(e) => handleDateSelection(e.target.value)}
                              className="w-full p-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1b4965]"
                              aria-label="Select rental date"
                              title="Select rental date"
                            />
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Custom Duration Input */}
+                    {message.showDurationInput && (
+                      <div className="mt-3 p-3 bg-white border border-slate-200 rounded-lg">
+                        <div className="text-center">
+                          <RiCalendarLine className="w-8 h-8 text-[#1b4965] mx-auto mb-2" />
+                          <p className="text-sm text-slate-600 mb-3">Enter rental duration</p>
+                          <form 
+                            onSubmit={(e) => {
+                              e.preventDefault();
+                              const input = e.currentTarget.elements.namedItem('duration') as HTMLInputElement;
+                              handleCustomDurationSubmit(parseInt(input.value));
+                            }}
+                            className="flex items-center gap-2"
+                          >
+                            <input
+                              type="number"
+                              name="duration"
+                              min="1"
+                              placeholder="Number of days"
+                              className="flex-1 p-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1b4965]"
+                              required
+                            />
+                            <button
+                              type="submit"
+                              className="bg-[#1b4965] text-white p-2 rounded-lg hover:bg-[#0d3b59] transition-colors"
+                            >
+                              Submit
+                            </button>
+                          </form>
                         </div>
                       </div>
                     )}
