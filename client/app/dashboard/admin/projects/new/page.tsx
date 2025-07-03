@@ -917,7 +917,7 @@ export default function NewProjectPage() {
                    <FiDollarSign className="text-green-600 mr-2" />
                    <span className="text-sm text-gray-600">Total Budget</span>
                  </div>
-                 <p className="text-lg font-bold">LKR ${boqPreviewData.total_budget.toLocaleString()}</p>
+                 <p className="text-lg font-bold">LKR {boqPreviewData.total_budget.toLocaleString()}</p>
                </div>
                
                <div className="bg-white p-3 rounded-lg">
@@ -1091,7 +1091,7 @@ export default function NewProjectPage() {
                </p>
                {boqPreviewData && (
                  <p className="text-sm font-bold text-green-600 mt-1">
-                   Budget: LKR ${boqPreviewData.total_budget.toLocaleString()}
+                   Budget: LKR {boqPreviewData.total_budget.toLocaleString()}
                  </p>
                )}
              </div>

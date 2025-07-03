@@ -245,7 +245,7 @@ export default function ChatBotRentalsPortfolio() {
         try {
           const errorText = await response.text();
           console.error('Error response:', errorText);
-        } catch (e) {
+        } catch {
           console.error('Could not read error response');
         }
       }
@@ -470,9 +470,9 @@ export default function ChatBotRentalsPortfolio() {
 Excellent! You've selected ${equipment.name}.
 
 📝 Details:
-• Daily Rate: $${equipment.pricing.daily_rate}
-${equipment.pricing.weekly_rate ? `• Weekly Rate: $${equipment.pricing.weekly_rate}` : ''}
-${equipment.pricing.monthly_rate ? `• Monthly Rate: $${equipment.pricing.monthly_rate}` : ''}
+• Daily Rate: LKR ${equipment.pricing.daily_rate}
+${equipment.pricing.weekly_rate ? `• Weekly Rate: LKR ${equipment.pricing.weekly_rate}` : ''}
+${equipment.pricing.monthly_rate ? `• Monthly Rate: LKR ${equipment.pricing.monthly_rate}` : ''}
 ${equipment.specifications?.operating_weight ? `• Weight: ${equipment.specifications.operating_weight}` : ''}
 ${equipment.specifications?.engine_power ? `• Power: ${equipment.specifications.engine_power}` : ''}
 
@@ -654,9 +654,9 @@ Now, when would you like to start your rental? Please select your start date:`;
     addBotMessage(
       `Great! Your ${equipment.name} is available from ${state.startDate} to ${endDateString} (${duration} days). Here are your pricing options:`,
       [
-        { id: 'daily', text: `💰 Daily Rate: $${dailyCost} total`, value: 'daily' },
-        { id: 'weekly', text: `💰 Weekly Rate: $${weeklyCost} total`, value: 'weekly' },
-        { id: 'monthly', text: `💰 Monthly Rate: $${monthlyCost} total`, value: 'monthly' }
+        { id: 'daily', text: `💰 Daily Rate: LKR ${dailyCost} total`, value: 'daily' },
+        { id: 'weekly', text: `💰 Weekly Rate: LKR ${weeklyCost} total`, value: 'weekly' },
+        { id: 'monthly', text: `💰 Monthly Rate: LKR ${monthlyCost} total`, value: 'monthly' }
       ],
       undefined,
       false,
@@ -692,13 +692,13 @@ Now, when would you like to start your rental? Please select your start date:`;
       const depositAmount = selectedAmount * 0.5;
       
       addBotMessage(
-        `Perfect! You've selected the ${pricingType} rate for $${selectedAmount}. 
+        `Perfect! You've selected the ${pricingType} rate for LKR ${selectedAmount}. 
 
 📋 Rental Summary:
 • Equipment: ${pricingData.equipment.name}
 • Duration: ${pricingData.duration} days (${pricingData.startDate} to ${pricingData.endDate})
-• Total Amount: $${selectedAmount}
-• Required Deposit: $${depositAmount} (50%)
+• Total Amount: LKR ${selectedAmount}
+• Required Deposit: LKR ${depositAmount} (50%)
 
 The remaining amount will be due after admin approval. Would you like to proceed with booking?`,
         [
@@ -943,7 +943,7 @@ The remaining amount will be due after admin approval. Would you like to proceed
                                 <div className="flex items-center gap-2 text-xs">
                                   <span className="flex items-center gap-1 text-green-600">
                                     <RiMoneyDollarCircleLine className="w-3 h-3" />
-                                    ${equipment.pricing.daily_rate}/day
+                                    LKR ${equipment.pricing.daily_rate}/day
                                   </span>
                                   {equipment.is_available && (
                                     <span className="text-green-600">• Available</span>
