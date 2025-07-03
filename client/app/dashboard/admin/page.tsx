@@ -105,7 +105,7 @@ function BarChart({ data }: { data: ChartDataItem[] }) {
   const getHeightClass = (value: number) => {
     const percentage = Math.round((value / maxValue) * 100);
     return `h-[${percentage}%]`;
-  };
+  }; // added comment for prevent git conflict
 
   return (
     <div className="mt-4">
