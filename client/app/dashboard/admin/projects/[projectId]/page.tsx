@@ -468,10 +468,10 @@ export default function ProjectDetailsPage({ params }: { params: Promise<{ proje
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.4 }}
-        className="grid grid-cols-1 lg:grid-cols-2 gap-8 px-6 mb-8"
+        className="grid grid-cols-1 lg:grid-cols-2 gap-6 px-6 mb-6"
       >
         {/* Location & Supervisor */}
-        <div className="space-y-6">
+        <div className="space-y-4">
           {/* Location Information */}
           <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg p-6 border border-white/20">
             <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center">
@@ -504,14 +504,14 @@ export default function ProjectDetailsPage({ params }: { params: Promise<{ proje
                     </div>
                   </div>
                 )}
-                                 <div className="mt-6">
-                   <OpenStreetMap
-                     address={project.address}
-                     location={project.location}
-                     height="250px"
-                     className="w-full"
-                   />
-                 </div>
+                <div className="mt-4">
+                  <OpenStreetMap
+                    address={project.address}
+                    location={project.location}
+                    height="200px"
+                    className="w-full rounded-xl overflow-hidden shadow-md"
+                  />
+                </div>
               </div>
             ) : (
               <div className="text-center py-8">
@@ -563,7 +563,7 @@ export default function ProjectDetailsPage({ params }: { params: Promise<{ proje
           </div>
         </div>
 
-        <div className="space-y-6">
+        <div className="space-y-4">
           {/* Client Information */}
           <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg p-6 border border-white/20">
             <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center">
@@ -705,7 +705,7 @@ export default function ProjectDetailsPage({ params }: { params: Promise<{ proje
                             Next Steps
                           </h4>
                           <div className="space-y-2">
-                                                         {project.steps.slice(currentStepIndex + 1, currentStepIndex + 3).map((step) => (
+                            {project.steps.slice(currentStepIndex + 1, currentStepIndex + 3).map((step) => (
                               <div key={step.id} className="flex items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
                                 <div className="w-6 h-6 bg-gray-200 rounded-lg flex items-center justify-center mr-3 text-xs font-semibold text-gray-600">
                                   {step.order}
@@ -785,7 +785,7 @@ export default function ProjectDetailsPage({ params }: { params: Promise<{ proje
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.5 }}
-        className="grid grid-cols-1 lg:grid-cols-2 gap-8 px-6 mb-8"
+        className="grid grid-cols-1 lg:grid-cols-2 gap-6 px-6 mb-6"
       >
         {/* 3D Plan Viewer */}
         <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg overflow-hidden border border-white/20">
@@ -954,7 +954,7 @@ export default function ProjectDetailsPage({ params }: { params: Promise<{ proje
               <div className="text-center py-12">
                 <FiClipboard className="w-16 h-16 text-gray-300 mx-auto mb-4" />
                 <h3 className="text-lg font-medium text-gray-900 mb-2">No project steps</h3>
-                                 <p className="text-gray-500 mb-6">This project doesn&apos;t have any steps defined yet.</p>
+                <p className="text-gray-500 mb-6">This project doesn&apos;t have any steps defined yet.</p>
                 <button className="px-6 py-3 bg-primary text-white rounded-xl hover:bg-primary-600 transition-colors font-semibold">
                   Add Project Steps
                 </button>

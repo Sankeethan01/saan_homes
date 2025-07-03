@@ -38,12 +38,6 @@ const navItems: NavItem[] = [
     
   },
   {
-    title: 'Bills',
-    path: '/dashboard/supervisor/bills',
-    icon: <RiBuildingLine className="text-xl" />,
-    
-  },
-  {
     title: 'Notifications',
     path: '/dashboard/supervisor/notifications',
     icon: <RiNotification3Line className="text-xl" />
