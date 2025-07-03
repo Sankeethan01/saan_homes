@@ -130,7 +130,7 @@ export default function Login() {
         } else if (userRole === UserRoles.SUPERVISOR) {
           router.push(Routes.SUPERVISOR);
         } else {
-          router.push(Routes.USER);
+          router.push(Routes.EQUIPMENTS);
         }
       }, 500);
     } catch (err) {

@@ -204,7 +204,7 @@ export default function EditProjectPage({ params }: { params: { projectId: strin
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 p-6">
+    <div className="min-h-screen p-6">
       <div className="max-w-4xl mx-auto">
         {/* Enhanced Header */}
         <div className="mb-8">
@@ -218,13 +218,13 @@ export default function EditProjectPage({ params }: { params: { projectId: strin
           <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-xl border border-white/20">
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-[#1b4965] bg-clip-text text-transparent mb-2">
+                <h1 className="text-3xl font-bold bg-[#1b4965] bg-clip-text text-transparent mb-2">
                   Edit Project
                 </h1>
                 <p className="text-gray-600">Update project details and settings</p>
               </div>
               <div className="hidden md:block">
-                <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-[#1b4965] rounded-full flex items-center justify-center">
+                <div className="w-16 h-16 bg-[#1b4965] rounded-full flex items-center justify-center">
                   <FiSave className="w-8 h-8 text-white" />
                 </div>
               </div>
@@ -244,7 +244,7 @@ export default function EditProjectPage({ params }: { params: { projectId: strin
           {/* Basic Information - Enhanced */}
           <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-xl border border-white/20">
             <div className="flex items-center mb-6">
-              <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl flex items-center justify-center mr-3">
+              <div className="w-10 h-10 bg-[#1b4965] rounded-xl flex items-center justify-center mr-3">
                 <span className="text-white font-bold">1</span>
               </div>
               <h2 className="text-xl font-semibold text-gray-800">Basic Information</h2>
@@ -378,7 +378,7 @@ export default function EditProjectPage({ params }: { params: { projectId: strin
           {/* Project Timeline - Enhanced */}
           <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-xl border border-white/20">
             <div className="flex items-center mb-6">
-              <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl flex items-center justify-center mr-3">
+              <div className="w-10 h-10 bg-[#1b4965] rounded-xl flex items-center justify-center mr-3">
                 <span className="text-white font-bold">2</span>
               </div>
               <h2 className="text-xl font-semibold text-gray-800">Project Timeline</h2>
@@ -420,7 +420,7 @@ export default function EditProjectPage({ params }: { params: { projectId: strin
           {/* Location Information - Enhanced */}
           <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-xl border border-white/20">
             <div className="flex items-center mb-6">
-              <div className="w-10 h-10 bg-gradient-to-r from-green-500 to-green-600 rounded-xl flex items-center justify-center mr-3">
+              <div className="w-10 h-10 bg-[#1b4965] rounded-xl flex items-center justify-center mr-3">
                 <span className="text-white font-bold">3</span>
               </div>
               <h2 className="text-xl font-semibold text-gray-800">Location Details</h2>
@@ -462,7 +462,7 @@ export default function EditProjectPage({ params }: { params: { projectId: strin
           {/* Client Information - Enhanced */}
           <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-xl border border-white/20">
             <div className="flex items-center mb-6">
-              <div className="w-10 h-10 bg-gradient-to-r from-orange-500 to-orange-600 rounded-xl flex items-center justify-center mr-3">
+              <div className="w-10 h-10 bg-[#1b4965] rounded-xl flex items-center justify-center mr-3">
                 <span className="text-white font-bold">4</span>
               </div>
               <h2 className="text-xl font-semibold text-gray-800">Client Information</h2>
@@ -532,7 +532,7 @@ export default function EditProjectPage({ params }: { params: { projectId: strin
                 className={`px-8 py-3 rounded-xl text-white font-medium transition-all duration-200 flex items-center transform ${
                   saving
                     ? 'bg-gray-400 cursor-not-allowed'
-                    : 'bg-gradient-to-r from-blue-500 to-[#1b4965] hover:from-blue-600 hover:to-[#1b4965] hover:scale-105 shadow-lg hover:shadow-xl'
+                    : 'bg-[#1b4965] hover:scale-105 shadow-lg hover:shadow-xl'
                 }`}
               >
                 {saving ? (

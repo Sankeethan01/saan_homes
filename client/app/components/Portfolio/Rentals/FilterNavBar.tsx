@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { RiHome5Line, RiSearchLine, RiFilter3Line, RiUser3Line, RiDashboardLine, RiLogoutBoxRLine, RiArrowDownSLine } from 'react-icons/ri';
 import { useAuthStore } from '@/app/stores/useAuthStore';
 import { useRouter } from 'next/navigation';
+import { Routes } from '@/app/constants/Routes/Routes';
 
 
 interface Category {
@@ -78,7 +79,7 @@ const FilterSectionRentalsPortfolio = ({
   const handleLogout = () => {
     clear();
     setShowDropdown(false);
-    router.push('/');
+    router.push(Routes.EQUIPMENTS);
   };
 
   // Create category options for dropdown
