@@ -22,19 +22,19 @@ const TestimonialsRentalsPortfolio = () => {
                 name: "John Smith",
                 company: "Smith Construction Co.",
                 testimonial: "The equipment quality and service support from SAAN HOMES has been exceptional. Their flexible rental terms helped us complete our project ahead of schedule.",
-                image: "/testimonials/person1.jpg"
+                image: "/assets/images/user.png"
               },
               {
                 name: "Sarah Johnson",
                 company: "Johnson Builders",
                 testimonial: "We've been renting from SAAN HOMES for over 2 years now. Their equipment is always well-maintained and their team is incredibly responsive.",
-                image: "/testimonials/person2.jpg"
+                image: "/assets/images/user.png"
               },
               {
                 name: "Mike Williams",
                 company: "Williams & Associates",
                 testimonial: "The online rental process is smooth and efficient. Their competitive rates and professional service keep us coming back for all our equipment needs.",
-                image: "/testimonials/person3.jpg"
+                image: "/assets/images/user.png"
               }
             ].map((testimonial, index) => (
               <motion.div

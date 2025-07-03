@@ -74,7 +74,7 @@ const CallActionsRentalsPortfolio = () => {
                 whileTap={{ scale: 0.97 }}
                 className="group inline-flex items-center gap-2 text-white px-8 py-3 rounded-full text-lg font-medium bg-[#1b4965] transition-transform duration-500 focus:outline-none mb-8"
               >
-                <span>Contact Us</span>
+                <span>Rental Inquiry</span>
                 
               </motion.button>
             </Link>
