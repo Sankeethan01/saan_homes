@@ -9,11 +9,7 @@ import {
   RiBuildingLine,
   RiTimeLine,
   RiCheckLine,
-  RiTeamLine,
   RiCalendarLine,
-  RiBarChartBoxLine,
-  RiArrowUpLine,
-  RiArrowDownLine,
   RiRidingLine,
   RiNotificationLine,
   RiSettingsLine,
@@ -62,19 +58,43 @@ const monthlyProgress = {
   ],
 };
 
-const teamPerformance = {
-  labels: ['Team A', 'Team B', 'Team C', 'Team D'],
+// Sample data for Invoices Overview
+const invoicesOverview = {
+  labels: ['Paid', 'Pending', 'Overdue'],
   datasets: [
     {
-      label: 'Performance Score',
-      data: [88, 92, 85, 90],
+      label: 'Invoices',
+      data: [120, 35, 8],
       backgroundColor: [
-        'rgba(59, 130, 246, 0.8)',
-        'rgba(139, 92, 246, 0.8)',
-        'rgba(236, 72, 153, 0.8)',
-        'rgba(34, 197, 94, 0.8)',
+        'rgba(34, 197, 94, 0.7)', // green
+        'rgba(251, 191, 36, 0.7)', // yellow
+        'rgba(239, 68, 68, 0.7)', // red
       ],
       borderRadius: 8,
+      barPercentage: 0.6,
+      categoryPercentage: 0.5,
+    },
+  ],
+};
+
+// Sample data for Project Completion Rate
+const completionRateData = {
+  labels: ['Completed', 'Ongoing', 'Upcoming'],
+  datasets: [
+    {
+      data: [12, 7, 5],
+      backgroundColor: [
+        'rgba(34, 197, 94, 0.7)', // green
+        'rgba(59, 130, 246, 0.7)', // blue
+        'rgba(251, 191, 36, 0.7)', // yellow
+      ],
+      borderColor: [
+        '#22c55e',
+        '#1b4965',
+        '#fbbf24',
+      ],
+      borderWidth: 2,
+      hoverOffset: 8,
     },
   ],
 };
@@ -183,135 +203,62 @@ export default function SupervisorDashboard() {
   }
   
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 p-8">
-      {/* Background Elements */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-20 left-10 w-32 h-32 bg-gradient-to-br from-blue-400/20 to-indigo-500/20 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute top-40 right-20 w-24 h-24 bg-gradient-to-br from-purple-400/20 to-pink-500/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }}></div>
-        <div className="absolute bottom-20 left-1/4 w-20 h-20 bg-gradient-to-br from-emerald-400/20 to-green-500/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '4s' }}></div>
-      </div>
-
-      <div className="relative z-10 max-w-7xl mx-auto space-y-8">
+    <div className="min-h-screen  p-4 md:p-6 relative overflow-x-hidden">
+      {/* Pastel background blobs */}
+      <div className="fixed top-0 left-0 w-40 h-40 bg-[#e3f0ff] rounded-full blur-3xl opacity-60 -z-10" style={{ filter: 'blur(40px)' }} />
+      <div className="fixed top-1/2 right-0 w-48 h-48 bg-[#ffe3ec] rounded-full blur-3xl opacity-50 -z-10" style={{ filter: 'blur(60px)' }} />
+      <div className="fixed bottom-0 left-1/3 w-56 h-56 bg-[#e3ffe9] rounded-full blur-3xl opacity-40 -z-10" style={{ filter: 'blur(70px)' }} />
+      <div className="relative z-10 max-w-7xl mx-auto space-y-3">
         {/* Header */}
         <motion.div 
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-white/80 backdrop-blur-xl rounded-3xl p-8 shadow-2xl border border-white/30"
+          className="bg-gradient-to-br from-white via-[#f0f6ff] to-white rounded-2xl p-2 md:p-3 shadow border border-gray-100"
         >
-          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
-            <div className="flex items-center gap-6">
-              <div className="p-4 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl shadow-xl">
-                <RiBuildingLine className="text-white text-2xl" />
+          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-2">
+            <div className="flex items-center gap-2">
+              <div className="p-1 bg-gradient-to-br from-[#e3f0ff] to-[#cbeafe] rounded-xl">
+                <RiBuildingLine className="text-[#1b4965] text-base" />
               </div>
-              <div className="space-y-3">
-                <div className="relative">
-                  <h1 className="text-5xl font-bold bg-gradient-to-r from-slate-800 via-blue-800 to-indigo-800 bg-clip-text text-transparent leading-tight">
-                    Supervisor Dashboard
-                  </h1>
-                  <div className="absolute -bottom-2 left-0 w-full h-1 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 rounded-full"></div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="w-2 h-2 bg-gradient-to-r from-emerald-500 to-green-600 rounded-full animate-pulse"></div>
-                  <p className="text-base text-slate-600 font-medium">
-                    Welcome back,{' '}
-                    <span className="font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent animate-pulse">
-                      {username}
-                    </span>
-                  </p>
-                </div>
+              <div className="space-y-0.5">
+                <h1 className="text-lg md:text-xl font-bold text-[#1b4965] leading-tight">Supervisor Dashboard</h1>
+                <p className="text-[11px] text-gray-500 font-medium">Welcome back, <span className="font-semibold text-[#1b4965]">{username}</span></p>
               </div>
             </div>
-            
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-1">
               <div className="relative">
-                <RiSearchLine className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
+                <RiSearchLine className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-300 text-xs" />
                 <input
                   type="text"
                   placeholder="Search projects..."
-                  className="pl-10 pr-4 py-3 bg-white/70 backdrop-blur-sm border border-white/50 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="pl-7 pr-2 py-1.5 bg-white border border-gray-200 rounded-xl text-xs focus:outline-none focus:ring-1 focus:ring-[#1b4965] focus:border-[#1b4965]"
+                  style={{ minWidth: 90 }}
                 />
               </div>
-              
               <button
-                className="p-3 bg-white/70 backdrop-blur-sm border border-white/50 rounded-2xl hover:bg-white/90 transition-all duration-300 shadow-lg"
+                className="p-2 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-all duration-200"
                 onClick={() => router.push('/dashboard/supervisor/notifications')}
                 aria-label="Notifications"
               >
-                <RiNotificationLine className="text-lg text-slate-600" />
+                <RiNotificationLine className="text-sm text-gray-400" />
               </button>
-              
               <button
-                className="p-3 bg-white/70 backdrop-blur-sm border border-white/50 rounded-2xl hover:bg-white/90 transition-all duration-300 shadow-lg"
+                className="p-2 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-all duration-200"
                 onClick={() => router.push('/dashboard/supervisor/profile')}
                 aria-label="Settings"
               >
-                <RiSettingsLine className="text-lg text-slate-600" />
+                <RiSettingsLine className="text-sm text-gray-400" />
               </button>
-
               {/* Profile Picture */}
-              <div className="relative group">
-                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 p-0.5 shadow-lg hover:shadow-xl transition-all duration-300 group-hover:scale-105">
-                  <div className="w-full h-full rounded-2xl bg-white flex items-center justify-center overflow-hidden">
-                    <img
-                      src="/assets/images/user.png"
-                      alt="Site Supervisor"
-                      className="w-full h-full object-cover rounded-2xl"
-                      onError={(e) => {
-                        const target = e.currentTarget as HTMLImageElement;
-                        target.style.display = 'none';
-                        const nextSibling = target.nextElementSibling as HTMLElement;
-                        if (nextSibling) {
-                          nextSibling.style.display = 'flex';
-                        }
-                      }}
-                    />
-                    <div className="w-full h-full bg-gradient-to-br from-blue-100 to-indigo-200 rounded-2xl flex items-center justify-center" style={{ display: 'none' }}>
-                      <RiUserLine className="text-lg text-blue-600" />
-                    </div>
-                  </div>
-                </div>
-                {/* Online Status Indicator */}
-                <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 border-2 border-white rounded-full animate-pulse"></div>
-                {/* Profile Tooltip */}
-                <div className="absolute top-full right-0 mt-2 w-48 bg-white/90 backdrop-blur-xl rounded-2xl p-4 shadow-2xl border border-white/30 opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none group-hover:pointer-events-auto z-50">
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 p-0.5">
-                      <div className="w-full h-full rounded-xl bg-white flex items-center justify-center overflow-hidden">
-                        <img
-                          src="/assets/images/user.png"
-                          alt="Site Supervisor"
-                          className="w-full h-full object-cover rounded-xl"
-                          onError={(e) => {
-                            const target = e.currentTarget as HTMLImageElement;
-                            target.style.display = 'none';
-                            const nextSibling = target.nextElementSibling as HTMLElement;
-                            if (nextSibling) {
-                              nextSibling.style.display = 'flex';
-                            }
-                          }}
-                        />
-                        <div className="w-full h-full bg-gradient-to-br from-blue-100 to-indigo-200 rounded-xl flex items-center justify-center" style={{ display: 'none' }}>
-                          <RiUserLine className="text-base text-blue-600" />
-                        </div>
-                      </div>
-                    </div>
-                    <div>
-                      <p className="font-semibold text-slate-800">{username}</p>
-                      <p className="text-sm text-slate-600">Site Supervisor</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-green-600">
-                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                    <span>Online</span>
-                  </div>
-                </div>
+              <div className="w-8 h-8 rounded-xl bg-[#eaf3fb] flex items-center justify-center">
+                <img src="/assets/images/user.png" alt="Site Supervisor" className="w-8 h-8 object-cover rounded-xl" />
               </div>
             </div>
           </div>
         </motion.div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2">
           {[
             { title: 'Total Projects', value: projectStats.total, icon: RiBuildingLine, color: 'blue' },
             { title: 'Ongoing', value: projectStats.ongoing, icon: RiTimeLine, color: 'purple' },
@@ -324,35 +271,42 @@ export default function SupervisorDashboard() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
               whileHover={{ scale: 1.03, y: -2 }}
-              className="group bg-white/80 backdrop-blur-xl p-4 rounded-2xl shadow-md border border-white/30 hover:shadow-lg transition-all duration-300"
+              className={`group p-2 rounded-xl shadow border border-gray-100 hover:shadow-md transition-all duration-200 flex flex-col items-center justify-center text-center ${
+                index === 0 ? 'bg-gradient-to-br from-[#e3f0ff] to-white' :
+                index === 1 ? 'bg-gradient-to-br from-[#ffe3ec] to-white' :
+                index === 2 ? 'bg-gradient-to-br from-[#e3ffe9] to-white' :
+                'bg-gradient-to-br from-[#fffbe3] to-white'
+              }`}
             >
-              <div className="flex items-center justify-between mb-2">
-                <div className={`p-2 bg-gradient-to-r from-${stat.color}-500 to-${stat.color}-600 rounded-xl shadow group-hover:scale-105 transition-transform duration-300`}>
-                  <stat.icon className="text-base text-white" />
-                </div>
+              <div className={
+                `p-1 rounded-lg mb-0.5 flex items-center justify-center ` +
+                (index === 0 ? 'bg-[#cbeafe]' :
+                 index === 1 ? 'bg-[#ffd6e3]' :
+                 index === 2 ? 'bg-[#caffdd]' :
+                 'bg-[#fff7c2]')
+              }>
+                {stat.icon && <stat.icon className="text-base text-[#1b4965]" />}
               </div>
-              <div>
-                <h3 className="text-xl font-bold text-slate-800 mb-0.5">{stat.value}</h3>
-                <p className="text-xs text-slate-600 font-medium">{stat.title}</p>
-              </div>
+              <h3 className="text-lg font-bold text-[#1b4965] mb-0.5">{stat.value}</h3>
+              <p className="text-xs text-gray-500 font-medium">{stat.title}</p>
             </motion.div>
           ))}
         </div>
 
         {/* Charts Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="w-full grid grid-cols-1 xl:grid-cols-2 gap-2">
           {/* Progress Chart */}
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.4 }}
-            className="bg-white/80 backdrop-blur-xl p-8 rounded-3xl shadow-2xl border border-white/30"
+            className="bg-white p-2 rounded-2xl shadow border border-gray-100"
           >
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold text-slate-800">Project Progress</h2>
-              <div className="flex items-center gap-2 text-green-600 font-semibold">
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="text-sm font-bold text-[#1b4965]">Project Progress</h2>
+              <div className="flex items-center gap-1 text-green-600 text-xs font-semibold">
                 <RiRidingLine />
-                {projectStats.average_progress}% average
+                {projectStats.average_progress}% avg
               </div>
             </div>
             <Line
@@ -380,11 +334,12 @@ export default function SupervisorDashboard() {
                 },
                 elements: {
                   point: {
-                    radius: 6,
-                    hoverRadius: 8,
+                    radius: 4,
+                    hoverRadius: 6,
                   },
                 },
               }}
+              height={140}
             />
           </motion.div>
 
@@ -393,10 +348,10 @@ export default function SupervisorDashboard() {
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.5 }}
-            className="bg-white/80 backdrop-blur-xl p-8 rounded-3xl shadow-2xl border border-white/30"
+            className="bg-white p-2 rounded-2xl shadow border border-gray-100"
           >
-            <h2 className="text-2xl font-bold text-slate-800 mb-6">Project Types Distribution</h2>
-            <div className="h-[300px] flex items-center justify-center">
+            <h2 className="text-sm font-bold text-[#1b4965] mb-2">Project Types Distribution</h2>
+            <div className="h-[240px] flex items-center justify-center">
               {Object.keys(projectStats.project_types).length > 0 ? (
                 <Doughnut
                   data={projectTypes}
@@ -413,6 +368,7 @@ export default function SupervisorDashboard() {
                       },
                     },
                   }}
+                  height={140}
                 />
               ) : (
                 <div className="text-center text-gray-500">
@@ -422,53 +378,111 @@ export default function SupervisorDashboard() {
             </div>
           </motion.div>
 
-          {/* Team Performance */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.6 }}
-            className="bg-white/80 backdrop-blur-xl p-8 rounded-3xl shadow-2xl border border-white/30"
-          >
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold text-slate-800">Team Performance</h2>
-              <div className="text-sm text-slate-600">Average: 88.8%</div>
-            </div>
-            <Bar
-              data={teamPerformance}
-              options={{
-                responsive: true,
-                plugins: {
-                  legend: {
-                    display: false,
-                  },
-                },
-                scales: {
-                  y: {
-                    beginAtZero: true,
-                    max: 100,
-                    grid: {
-                      color: 'rgba(0, 0, 0, 0.05)',
+          {/* Project Stats: Invoices Overview and Project Completion Rate as separate cards */}
+          <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-2">
+            {/* Invoices Overview Card */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.6 }}
+              className="bg-white p-2 rounded-2xl shadow border border-gray-100 w-full flex flex-col"
+            >
+              <h2 className="text-sm font-bold text-[#1b4965] mb-2">Invoices Overview</h2>
+              <div className="w-full h-[190px] flex items-center justify-center">
+                <Bar
+                  data={invoicesOverview}
+                  options={{
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                      legend: {
+                        display: false,
+                      },
+                      tooltip: {
+                        backgroundColor: '#1b4965',
+                        titleColor: '#fff',
+                        bodyColor: '#fff',
+                      },
                     },
-                  },
-                  x: {
-                    grid: {
-                      display: false,
+                    scales: {
+                      y: {
+                        beginAtZero: true,
+                        grid: {
+                          color: 'rgba(27, 73, 101, 0.07)',
+                        },
+                        ticks: {
+                          color: '#1b4965',
+                          font: { size: 11, weight: 'bold' },
+                        },
+                      },
+                      x: {
+                        grid: {
+                          display: false,
+                        },
+                        ticks: {
+                          color: '#1b4965',
+                          font: { size: 11, weight: 'bold' },
+                        },
+                      },
                     },
-                  },
-                },
-              }}
-            />
-          </motion.div>
+                  }}
+                  height={140}
+                />
+              </div>
+            </motion.div>
+            {/* Project Completion Rate Card */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.65 }}
+              className="bg-white p-2 rounded-3xl shadow border border-gray-100 w-full flex flex-col"
+            >
+              <h2 className="text-sm font-bold text-[#1b4965] mb-2">Project Completion Rate</h2>
+              <div className="wrap flex-col items-justify justify-center w-full min-h-[140px]">
+                <div className="w-full h-[140px] wrap items-justify justify-center">
+                  <Doughnut
+                    data={completionRateData}
+                    options={{
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      plugins: {
+                        legend: {
+                          display: false,
+                        },
+                        tooltip: {
+                          backgroundColor: '#1b4965',
+                          titleColor: '#fff',
+                          bodyColor: '#fff',
+                        },
+                      },
+                      cutout: '70%',
+                    }}
+                    height={140}
+                  />
+                </div>
+                {/* Custom Legend */}
+                <div className="mt-1 flex flex-col items-center">
+                  {completionRateData.labels.map((label, idx) => (
+                    <div key={label} className="flex items-center gap-1 text-xs text-gray-600 mb-0.5">
+                      <span className="inline-block w-2.5 h-2.5 rounded-full" style={{backgroundColor: [
+                        '#22c55e','#1b4965','#fbbf24'][idx]}}></span>
+                      <span>{label}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </motion.div>
+          </div>
 
-          {/* Recent Activities */}
+          {/* Right: Recent Activities Table (wider) */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.7 }}
-            className="bg-white/80 backdrop-blur-xl p-8 rounded-3xl shadow-2xl border border-white/30"
+            className="bg-white p-2 rounded-2xl shadow border border-gray-100 w-full"
           >
-            <h2 className="text-2xl font-bold text-slate-800 mb-6">Recent Activities</h2>
-            <div className="space-y-6">
+            <h2 className="text-sm font-bold text-[#1b4965] mb-2">Recent Activities</h2>
+            <div className="space-y-1.5">
               {projectStats.recent_activities.length > 0 ? (
                 projectStats.recent_activities.map((activity, index) => (
                   <motion.div
@@ -476,31 +490,73 @@ export default function SupervisorDashboard() {
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.8 + index * 0.1 }}
-                    className="flex items-start gap-4 p-4 bg-white/50 rounded-2xl hover:bg-white/70 transition-all duration-300"
+                    className="flex items-start gap-1.5 p-1.5 bg-gray-50 rounded-xl hover:bg-gray-100 transition-all duration-200"
                   >
-                    <div className={`p-2 rounded-xl ${
-                      activity.type === 'success' ? 'bg-green-100 text-green-600' :
+                    <div className={`p-1 rounded-lg ${
+                      activity.type === 'success' ? 'bg-[#cdb4db]-100 text-[#cdb4db]' :
                       activity.type === 'info' ? 'bg-blue-100 text-blue-600' :
                       activity.type === 'warning' ? 'bg-yellow-100 text-yellow-600' :
                       'bg-indigo-100 text-indigo-600'
                     }`}>
-                      <RiBuildingLine className="text-base" />
+                      <RiBuildingLine className="text-xs" />
                     </div>
                     <div className="flex-1">
-                      <p className="text-slate-800 font-semibold">{activity.activity}</p>
-                      <p className="text-sm text-slate-600">{activity.project}</p>
-                      <p className="text-xs text-slate-500 mt-1">{activity.time}</p>
+                      <p className="text-xs font-semibold text-[#1b4965]">{activity.activity}</p>
+                      <p className="text-[10px] text-gray-500">{activity.project}</p>
+                      <p className="text-[9px] text-gray-400 mt-0.5">{activity.time}</p>
                     </div>
                   </motion.div>
                 ))
               ) : (
-                <div className="text-center text-gray-500 py-8">
+                <div className="text-center text-gray-400 py-2 text-xs">
                   <p>No recent activities</p>
                 </div>
               )}
             </div>
           </motion.div>
         </div>
+
+        {/* Recent Invoices Table - new full width section */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.87 }}
+          className="bg-white p-2 rounded-2xl shadow border border-gray-100 w-full mt-3"
+        >
+          <h2 className="text-xs font-bold text-[#1b4965] mb-2">Recent Invoices</h2>
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-xs text-left">
+              <thead>
+                <tr className="text-[#1b4965] border-b">
+                  <th className="py-1 px-1 font-semibold">Invoice #</th>
+                  <th className="py-1 px-1 font-semibold">Project</th>
+                  <th className="py-1 px-1 font-semibold">Amount</th>
+                  <th className="py-1 px-1 font-semibold">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr className="border-b hover:bg-gray-50">
+                  <td className="py-1 px-1">INV-0012</td>
+                  <td className="py-1 px-1">Green Villa</td>
+                  <td className="py-1 px-1">LKR 120,000</td>
+                  <td className="py-1 px-1 text-green-600 font-semibold">Paid</td>
+                </tr>
+                <tr className="border-b hover:bg-gray-50">
+                  <td className="py-1 px-1">INV-0013</td>
+                  <td className="py-1 px-1">Sunset Homes</td>
+                  <td className="py-1 px-1">LKR 85,000</td>
+                  <td className="py-1 px-1 text-yellow-600 font-semibold">Pending</td>
+                </tr>
+                <tr className="hover:bg-gray-50">
+                  <td className="py-1 px-1">INV-0014</td>
+                  <td className="py-1 px-1">Skyline Towers</td>
+                  <td className="py-1 px-1">LKR 45,000</td>
+                  <td className="py-1 px-1 text-red-600 font-semibold">Overdue</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </motion.div>
       </div>
     </div>
   );

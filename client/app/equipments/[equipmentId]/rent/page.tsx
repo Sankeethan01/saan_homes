@@ -108,6 +108,12 @@ export default function RentEquipmentPage() {
     projectDetails: '',
   });
 
+  const [emergencyErrors, setEmergencyErrors] = useState({
+    name: '',
+    phone: '',
+    relationship: ''
+  });
+
   // Check authentication on mount
   useEffect(() => {
     if (!token) {
@@ -222,9 +228,24 @@ export default function RentEquipmentPage() {
 
     // Validate required fields based on current step
     if (currentStep === 3) {
-      // Validate emergency contact
-      if (!bookingData.emergencyContact.name || !bookingData.emergencyContact.phone || !bookingData.emergencyContact.relationship) {
-        setError('Please fill in all emergency contact fields');
+      // Emergency contact validations
+      let valid = true;
+      const errors = { name: '', phone: '', relationship: '' };
+      if (!bookingData.emergencyContact.name || bookingData.emergencyContact.name.trim().length < 3) {
+        errors.name = 'Name must be at least 3 characters';
+        valid = false;
+      }
+      if (!bookingData.emergencyContact.phone || !/^\d{10,15}$/.test(bookingData.emergencyContact.phone.trim())) {
+        errors.phone = 'Enter a valid phone number (10-15 digits)';
+        valid = false;
+      }
+      if (!bookingData.emergencyContact.relationship || bookingData.emergencyContact.relationship.trim().length < 2) {
+        errors.relationship = 'Relationship must be at least 2 characters';
+        valid = false;
+      }
+      setEmergencyErrors(errors);
+      if (!valid) {
+        setError('Please correct the emergency contact details');
         return;
       }
 
@@ -647,14 +668,20 @@ export default function RentEquipmentPage() {
                           <input
                             type="text"
                             value={bookingData.emergencyContact.name}
-                            onChange={(e) => setBookingData({
-                              ...bookingData, 
-                              emergencyContact: {...bookingData.emergencyContact, name: e.target.value}
-                            })}
+                            onChange={(e) => {
+                              setBookingData({
+                                ...bookingData, 
+                                emergencyContact: {...bookingData.emergencyContact, name: e.target.value}
+                              });
+                              setEmergencyErrors((prev) => ({ ...prev, name: '' }));
+                            }}
                             className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1b4965] focus:border-[#1b4965] transition-all"
                             placeholder="Full name"
                             required
                           />
+                          {emergencyErrors.name && (
+                            <p className="text-red-500 text-xs mt-1">{emergencyErrors.name}</p>
+                          )}
                         </div>
                       </div>
                       
@@ -667,14 +694,20 @@ export default function RentEquipmentPage() {
                           <input
                             type="tel"
                             value={bookingData.emergencyContact.phone}
-                            onChange={(e) => setBookingData({
-                              ...bookingData, 
-                              emergencyContact: {...bookingData.emergencyContact, phone: e.target.value}
-                            })}
+                            onChange={(e) => {
+                              setBookingData({
+                                ...bookingData, 
+                                emergencyContact: {...bookingData.emergencyContact, phone: e.target.value}
+                              });
+                              setEmergencyErrors((prev) => ({ ...prev, phone: '' }));
+                            }}
                             className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1b4965] focus:border-[#1b4965] transition-all"
                             placeholder="Phone number"
                             required
                           />
+                          {emergencyErrors.phone && (
+                            <p className="text-red-500 text-xs mt-1">{emergencyErrors.phone}</p>
+                          )}
                         </div>
                       </div>
                       
@@ -685,14 +718,20 @@ export default function RentEquipmentPage() {
                         <input
                           type="text"
                           value={bookingData.emergencyContact.relationship}
-                          onChange={(e) => setBookingData({
-                            ...bookingData, 
-                            emergencyContact: {...bookingData.emergencyContact, relationship: e.target.value}
-                          })}
+                          onChange={(e) => {
+                            setBookingData({
+                              ...bookingData, 
+                              emergencyContact: {...bookingData.emergencyContact, relationship: e.target.value}
+                            });
+                            setEmergencyErrors((prev) => ({ ...prev, relationship: '' }));
+                          }}
                           className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1b4965] focus:border-[#1b4965] transition-all"
                           placeholder="e.g., Spouse, Parent, Colleague"
                           required
                         />
+                        {emergencyErrors.relationship && (
+                          <p className="text-red-500 text-xs mt-1">{emergencyErrors.relationship}</p>
+                        )}
                       </div>
                     </div>
                   </div>
