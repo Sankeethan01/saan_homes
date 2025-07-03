@@ -49,7 +49,7 @@ const EquipmentRentalsPortfolio = () => {
   const [isHovered, setIsHovered] = useState(false);
 
   return (
-    <section id="rentals" className="py-2 h-[90vh]" style={{ background: 'radial-gradient(ellipse at 20% 40%, #f3f8ff 60%, #f8fafc 100%)' }}>
+    <section id="rentals" className="py-2 h-![90vh]" style={{ background: 'radial-gradient(ellipse at 20% 40%, #f3f8ff 60%, #f8fafc 100%)' }}>
       <div className="container mx-auto px-4">
         <motion.div className="text-center max-w-3xl mx-auto mb-8">
           <motion.h2
@@ -86,7 +86,7 @@ const EquipmentRentalsPortfolio = () => {
             {scrollingEquipments.map((equipment, index) => (
               <div
                 key={index}
-                className="group relative w-96 h-[50vh] flex-shrink-0 overflow-hidden rounded-3xl  transition-all duration-300 bg-white/80 backdrop-blur-md border-2 border-gray-200"
+                className="group relative w-96 h-[55vh] flex-shrink-0 overflow-hidden rounded-3xl  transition-all duration-300 bg-white/80 backdrop-blur-md border-2 border-gray-200"
               >
                 <div className="relative h-[33vh] overflow-hidden">
                   <img src={equipment.image} alt={equipment.name} className="object-fill w-full h-[40vh] group-hover:scale-110 transition-transform duration-500" />
