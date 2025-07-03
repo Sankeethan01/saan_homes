@@ -165,24 +165,26 @@ export default function RentalEquipmentPage() {
   };
 
   const handleBookNow = () => {
-    if (!token) {
-      // Redirect to login with return URL
-      router.push(`/dashboard/login?returnUrl=/equipments/${params.equipmentId}/rent`);
-      return;
-    }
-
     if (!selectedDate) {
       alert("Please select a rental date first");
       return;
     }
 
-    // Navigate to booking page with rental details
+    // Prepare booking parameters
     const bookingParams = new URLSearchParams({
       startDate: selectedDate.toISOString().split('T')[0],
       endDate: endDate?.toISOString().split('T')[0] || '',
       duration: rentalDuration.toString()
     });
     
+    if (!token) {
+      // Redirect to login with return URL including rental details and required role
+      const returnUrl = `/equipments/${params.equipmentId}/rent?${bookingParams.toString()}`;
+      router.push(`/dashboard/login?returnUrl=${encodeURIComponent(returnUrl)}&requiredRole=PUBLIC`);
+      return;
+    }
+
+    // Navigate to booking page with rental details
     router.push(`/equipments/${params.equipmentId}/rent?${bookingParams.toString()}`);
   };
 
