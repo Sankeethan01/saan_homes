@@ -5,7 +5,6 @@ import { motion } from 'framer-motion';
 import {
   RiNotification3Line,
   RiCheckLine,
-  RiTimeLine,
   RiErrorWarningLine,
   RiInformationLine,
   RiDeleteBin6Line,
@@ -240,7 +239,7 @@ export default function NotificationsPage() {
           <div className="text-center py-12">
             <RiNotification3Line className="text-6xl text-gray-400 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-800 mb-2">No Notifications</h3>
-            <p className="text-gray-600">You're all caught up!</p>
+            <p className="text-gray-600">You&apos;re all caught up!</p>
           </div>
         )}
       </div>

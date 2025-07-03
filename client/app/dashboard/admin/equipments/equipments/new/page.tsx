@@ -626,12 +626,6 @@ export default function NewEquipmentPage() {
                 animate={{ opacity: 1, y: 0 }}
                 className="space-y-8"
               >
-                <div>
-                  <h2 className="text-2xl font-bold text-slate-900 mb-2">
-                    {tabs.find(t => t.id === activeTab)?.label}
-                  </h2>
-                  <p className="text-slate-600">This section is under development</p>
-                </div>
               </motion.div>
             )}
 
