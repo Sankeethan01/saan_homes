@@ -15,6 +15,7 @@ import { useAuthStore } from '@/app/stores/useAuthStore';
 import { getUserRole, getAccessToken, setAuthCookies, fetchWithAuth } from '@/app/utils/auth';
 import Image from 'next/image';
 import './dashboard.css'; 
+import { Routes } from '@/app/constants/Routes/Routes';
 
 interface User {
     id: string;
@@ -157,10 +158,16 @@ export default function DashboardLayout({
                     >
                         <div className="p-4 flex items-center justify-between">
                             {!isSidebarCollapsed && (
-                                <Link href="/">
-                                    <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-red-700">
-                                        SAAN
-                                    </h1>
+                                <Link href={Routes.LANDING} className="flex items-center group">
+                                <div className="relative">
+                                  <Image
+                                    src="/assets/logo.jpg"
+                                    alt="SAAN Homes"
+                                    width={80}
+                                    height={80}
+                                    className="relative rounded-xl"
+                                  />
+                                </div>
                                 </Link>
                             )}
                             <button onClick={() => setSidebarCollapsed(!isSidebarCollapsed)} className="p-2 rounded-full hover:bg-[var(--background-color)]">

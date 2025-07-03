@@ -8,4 +8,7 @@ export const Routes = {
     ADMIN: "/dashboard/admin",
     SUPERVISOR: "/dashboard/supervisor",
     USER: "/dashboard/me",
+
+    EQUIPMENTS: "/equipments",
+    LANDING: "/",
 } 
