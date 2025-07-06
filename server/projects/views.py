@@ -40,14 +40,13 @@ from .serializers import (
 def parse_boq_file(file_path):
     """
     Parse a BOQ file using pandas and extract materials, quantities, and costs.
-    Focus on description and quantity, with rates being optional.
-    Handles multiple sheets and skips sheets without required columns.
+    Handles structured BOQ files with multiple steps, each containing multiple materials.
     
     Args:
         file_path: Path to the BOQ file
     
     Returns:
-        dict: Dictionary containing parsed materials and budget
+        dict: Dictionary containing parsed materials, steps, and budget
     """
     try:
         file_ext = os.path.splitext(file_path)[1].lower()
@@ -84,7 +83,7 @@ def parse_boq_file(file_path):
                     
                     # Common column name patterns
                     material_patterns = ['description', 'item', 'material', 'particulars', 'work']
-                    quantity_patterns = ['qty', 'quantity', 'nos', 'number', 'amount', 'count']
+                    quantity_patterns = ['qty', 'quantity', 'nos', 'number', 'count']
                     unit_patterns = ['unit', 'uom', 'measure', 'units']
                     rate_patterns = ['rate', 'price', 'unit price', 'unit rate', 'cost per']
                     amount_patterns = ['amount', 'total', 'cost', 'value', 'sum']
@@ -114,7 +113,18 @@ def parse_boq_file(file_path):
                         materials = {}
                         total_budget = 0
                         
-                        # Create a summary of construction phases for better step creation
+                        # Track identified steps and their materials
+                        steps = []
+                        current_step = None
+                        step_materials = []
+                        
+                        # Common step name patterns to identify step headers
+                        step_patterns = [
+                            'step', 'phase', 'stage', 'foundation', 'structure', 'wall', 
+                            'roof', 'electrical', 'plumbing', 'finish', 'floor', 'paint'
+                        ]
+                        
+                        # Fallback construction phases if no explicit steps are found
                         construction_phases = {
                             "foundation": [],
                             "structure": [],
@@ -135,22 +145,44 @@ def parse_boq_file(file_path):
                                          "ceramic", "marble", "granite", "wood", "laminate", "carpet", "parquet", "vinyl", "epoxy"]
                         }
                         
+                        # Process each row in the dataframe
                         for _, row in df.iterrows():
                             material = str(row[material_col])
                             
-                            # Skip empty or header-like rows
+                            # Skip empty rows
                             if not material.strip() or material.lower() in ['description', 'item', 'total', 'sl no', 'sl.no', 'sl. no.', 'sl no.', 'sl.no.']:
-                                continue
-                                
-                            # Skip rows where material looks like a header (all uppercase, short text)
-                            if len(material) < 15 and material.isupper() and not any(c.isdigit() for c in material):
                                 continue
                                 
                             # Skip NaN values in description
                             if material.lower() == 'nan' or pd.isna(material):
                                 continue
+                                
+                            # Check if this row is a step header
+                            is_step_header = False
+                            if len(material) < 50:  # Step headers are typically short
+                                material_lower = material.lower()
+                                # Check if it matches step patterns
+                                if any(pattern in material_lower for pattern in step_patterns):
+                                    # Additional checks to confirm it's a header (e.g., no quantity or all caps)
+                                    if pd.isna(row.get(quantity_col)) or material.isupper() or material_lower.startswith('step'):
+                                        is_step_header = True
                             
-                            # Get quantity, defaulting to 1 if missing
+                            if is_step_header:
+                                # If we already have a step with materials, save it
+                                if current_step and step_materials:
+                                    step_budget = sum(item["amount"] for item in step_materials)
+                                    steps.append({
+                                        "title": current_step,
+                                        "materials": step_materials,
+                                        "budget": step_budget
+                                    })
+                                
+                                # Start a new step
+                                current_step = material.strip()
+                                step_materials = []
+                                continue
+                            
+                            # Process material row
                             try:
                                 quantity = float(row[quantity_col]) if pd.notna(row.get(quantity_col, np.nan)) else 1
                             except (ValueError, TypeError):
@@ -178,7 +210,7 @@ def parse_boq_file(file_path):
                                 amount = None
                             
                             # If we have rate but no amount, calculate it
-                            if rate is not None and amount is None:
+                            if rate is not None and amount is None and quantity is not None:
                                 amount = rate * quantity
                             
                             # If we have neither rate nor amount, estimate based on quantity
@@ -226,144 +258,91 @@ def parse_boq_file(file_path):
                                 materials[material] = material_entry
                                 total_budget += amount if amount is not None else 0
                                 
-                                # Categorize material into construction phase
-                                material_lower = material.lower()
-                                assigned = False
-                                
-                                for phase, keywords in phase_keywords.items():
-                                    if any(keyword in material_lower for keyword in keywords):
-                                        construction_phases[phase].append({
-                                            "material": material,
-                                            "details": material_entry,
-                                            "amount": amount if amount is not None else 0
-                                        })
-                                        assigned = True
-                                        break
-                                
-                                if not assigned:
-                                    construction_phases["other"].append({
+                                # Add to current step materials
+                                if current_step:
+                                    step_materials.append({
                                         "material": material,
                                         "details": material_entry,
                                         "amount": amount if amount is not None else 0
                                     })
+                                else:
+                                    # Categorize material into construction phase if no explicit steps
+                                    material_lower = material.lower()
+                                    assigned = False
+                                    
+                                    for phase, keywords in phase_keywords.items():
+                                        if any(keyword in material_lower for keyword in keywords):
+                                            construction_phases[phase].append({
+                                                "material": material,
+                                                "details": material_entry,
+                                                "amount": amount if amount is not None else 0
+                                            })
+                                            assigned = True
+                                            break
+                                    
+                                    if not assigned:
+                                        construction_phases["other"].append({
+                                            "material": material,
+                                            "details": material_entry,
+                                            "amount": amount if amount is not None else 0
+                                        })
+                        
+                        # Add the last step if there is one
+                        if current_step and step_materials:
+                            step_budget = sum(item["amount"] for item in step_materials)
+                            steps.append({
+                                "title": current_step,
+                                "materials": step_materials,
+                                "budget": step_budget
+                            })
                         
                         # Calculate phase budgets
                         phase_budgets = {}
                         for phase, items in construction_phases.items():
-                            phase_budget = sum(item["amount"] for item in items)
-                            phase_budgets[phase] = phase_budget
+                            phase_budgets[phase] = sum(item["amount"] for item in items)
                         
-                        return {
+                        # Prepare return data
+                        result = {
                             "materials": materials,
-                            "budget": round(total_budget, 2) if total_budget else 0,
-                            "construction_phases": construction_phases,
-                            "phase_budgets": phase_budgets,
+                            "budget": total_budget,
+                            "sheet_name": sheet_name,
                             "columns": {
                                 "material": material_col,
                                 "quantity": quantity_col,
                                 "unit": unit_col,
                                 "rate": rate_col,
                                 "amount": amount_col
-                            },
-                            "sheet_name": sheet_name
+                            }
                         }
+                        
+                        # Add steps if found, otherwise use construction phases
+                        if steps:
+                            result["steps"] = steps
+                        else:
+                            result["construction_phases"] = construction_phases
+                            result["phase_budgets"] = phase_budgets
+                        
+                        return result
+                        
                 except Exception as e:
                     print(f"Error parsing sheet {sheet_name}: {e}")
                     continue
             
-            # If we get here, we couldn't find any valid sheets
-            return {
-                "materials": {},
-                "budget": 0,
-                "error": "Could not find any valid sheets with required columns (Description/Item/Material and Quantity). Please check your BOQ file format."
-            }
-                
-        elif file_ext == '.csv':
-            # Try to read CSV file
-            df = pd.read_csv(file_path)
-        elif file_ext == '.pdf':
-            # For PDFs, we'd need more advanced parsing, return placeholder for now
-            return {
-                "materials": {"Note": "PDF parsing requires additional processing"},
-                "budget": 0,
-                "error": "PDF files are not supported. Please upload an Excel file."
-            }
+            # If we get here, no valid sheets were found
+            return {"error": "No valid data found in the Excel file"}
+            
         else:
-            # Unsupported format
-            return {
-                "materials": {"Error": "Unsupported file format"},
-                "budget": 0,
-                "error": "Unsupported file format. Please upload an Excel file (.xlsx or .xls)."
-            }
-        
-        # This part is for CSV files or if we somehow reach here with Excel files
-        # Clean up column names and data
-        df.columns = [str(col).strip().lower() for col in df.columns]
-        
-        # Try to identify relevant columns
-        material_col = None
-        quantity_col = None
-        unit_col = None
-        rate_col = None
-        amount_col = None
-        
-        # Common column name patterns
-        material_patterns = ['description', 'item', 'material', 'particulars', 'work']
-        quantity_patterns = ['qty', 'quantity', 'nos', 'number', 'amount', 'count']
-        unit_patterns = ['unit', 'uom', 'measure', 'units']
-        rate_patterns = ['rate', 'price', 'unit price', 'unit rate', 'cost per']
-        amount_patterns = ['amount', 'total', 'cost', 'value', 'sum']
-        
-        # Find columns by pattern matching
-        for col in df.columns:
-            col_lower = col.lower()
+            return {"error": "Unsupported file format"}
             
-            if not material_col and any(pattern in col_lower for pattern in material_patterns):
-                material_col = col
-            
-            if not quantity_col and any(pattern in col_lower for pattern in quantity_patterns):
-                quantity_col = col
-                
-            if not unit_col and any(pattern in col_lower for pattern in unit_patterns):
-                unit_col = col
-                
-            if not rate_col and any(pattern in col_lower for pattern in rate_patterns):
-                rate_col = col
-                
-            if not amount_col and any(pattern in col_lower for pattern in amount_patterns):
-                amount_col = col
-        
-        # Validate that we have the minimum required columns (only description and quantity)
-        missing_columns = []
-        if not material_col:
-            missing_columns.append("Description/Item/Material")
-        if not quantity_col:
-            missing_columns.append("Quantity")
-            
-        if missing_columns:
-            return {
-                "materials": {},
-                "budget": 0,
-                "error": f"BOQ file is missing required columns: {', '.join(missing_columns)}. Please ensure your BOQ file has these columns."
-            }
-        
-        # Process with identified columns (for CSV files)
-        # Rest of the processing is the same as for Excel files
-        # ... (same code as above)
-        
     except Exception as e:
-        # Log the error and return empty result
         print(f"Error parsing BOQ file: {e}")
-        return {
-            "materials": {"Error": f"Failed to parse BOQ: {str(e)}"},
-            "budget": 0,
-            "error": f"Failed to parse BOQ file: {str(e)}"
-        }
+        return {"error": f"Failed to parse BOQ file: {str(e)}"}
 
 
 def create_steps_from_boq(project, boq_data):
     """
-    Create project steps based on construction phases from the BOQ data
+    Create project steps based on either explicit steps found in the BOQ file
+    or construction phases from the BOQ data
     
     Args:
         project: Project object
@@ -374,6 +353,39 @@ def create_steps_from_boq(project, boq_data):
     """
     from .models import Step
     
+    created_steps = []
+    
+    # Check if we have explicit steps from the BOQ file
+    if "steps" in boq_data and boq_data["steps"]:
+        # Create steps directly from the BOQ file structure
+        for order, step_data in enumerate(boq_data["steps"], 1):
+            # Extract material details
+            materials = []
+            for material_item in step_data["materials"]:
+                material_name = material_item["material"]
+                material_details = material_item["details"]
+                materials.append({
+                    "name": material_name,
+                    "quantity": material_details.get("quantity", 0),
+                    "unit": material_details.get("unit", ""),
+                    "rate": material_details.get("rate", 0)
+                })
+            
+            # Create the step
+            step = Step.objects.create(
+                project=project,
+                title=step_data["title"],
+                description=f"Materials for {step_data['title']}",
+                order=order,
+                expected_materials=materials,
+                expected_budget=step_data["budget"]
+            )
+            
+            created_steps.append(step.id)
+        
+        return created_steps
+    
+    # Fallback to construction phases if no explicit steps
     # Get construction phases from BOQ data
     construction_phases = boq_data.get('construction_phases', {})
     phase_budgets = boq_data.get('phase_budgets', {})
@@ -396,8 +408,6 @@ def create_steps_from_boq(project, boq_data):
         "finishing": "Finishing Work",
         "other": "Other Construction Activities"
     }
-    
-    created_steps = []
     
     # Special handling for finishing items - group by room types
     finishing_items = construction_phases.get("finishing", [])
@@ -445,8 +455,16 @@ def create_steps_from_boq(project, boq_data):
                     room_name = room_type.replace("_", " ").title()
                 
                 # Extract material descriptions and quantities
-                expected_materials = [item["material"] for item in items]
-                total_quantity = sum(item["details"].get("quantity", 0) for item in items)
+                expected_materials = []
+                for item in items:
+                    material_name = item["material"]
+                    material_details = item["details"]
+                    expected_materials.append({
+                        "name": material_name,
+                        "quantity": material_details.get("quantity", 0),
+                        "unit": material_details.get("unit", ""),
+                        "rate": material_details.get("rate", 0)
+                    })
                 
                 # Calculate budget for this room
                 room_budget = sum(item["amount"] for item in items)
@@ -458,7 +476,6 @@ def create_steps_from_boq(project, boq_data):
                     description=f"Finishing work for {room_name}",
                     order=room_order,
                     expected_materials=expected_materials,
-                    expected_quantity=total_quantity,
                     expected_budget=room_budget
                 )
                 
@@ -473,8 +490,16 @@ def create_steps_from_boq(project, boq_data):
         title = phase_display_names.get(phase_key, phase_key.replace('_', ' ').title())
         
         # Extract material descriptions and quantities
-        expected_materials = [item["material"] for item in materials]
-        total_quantity = sum(item["details"].get("quantity", 0) for item in materials)
+        expected_materials = []
+        for item in materials:
+            material_name = item["material"]
+            material_details = item["details"]
+            expected_materials.append({
+                "name": material_name,
+                "quantity": material_details.get("quantity", 0),
+                "unit": material_details.get("unit", ""),
+                "rate": material_details.get("rate", 0)
+            })
         
         # Get budget if available
         expected_budget = phase_budgets.get(phase_key, None)
@@ -486,7 +511,6 @@ def create_steps_from_boq(project, boq_data):
             description=f"Materials for {title}",
             order=order,
             expected_materials=expected_materials,
-            expected_quantity=total_quantity,
             expected_budget=expected_budget
         )
         
@@ -662,8 +686,17 @@ class ProjectViewSet(viewsets.ModelViewSet):
             if "sheet_name" in boq_data:
                 response_data["sheet_name"] = boq_data["sheet_name"]
             
-            # Add phase information if available
-            if "phase_budgets" in boq_data:
+            # Check if we have explicit steps from the BOQ
+            if "steps" in boq_data:
+                response_data["steps"] = []
+                for step in boq_data["steps"]:
+                    response_data["steps"].append({
+                        "name": step["title"],
+                        "budget": step["budget"],
+                        "material_count": len(step["materials"])
+                    })
+            # Otherwise, use construction phases
+            elif "phase_budgets" in boq_data:
                 response_data["phases"] = []
                 for phase, budget in boq_data["phase_budgets"].items():
                     if budget > 0:

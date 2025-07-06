@@ -88,13 +88,35 @@ export default function StepDetailsPage({ params }: { params: Promise<{ projectI
   const clearToken = useAuthStore((s) => s.clear);
 
   // Derived data
-  const materials = step ? Object.entries(step.expected_materials).map(([name, details]) => ({
-    name,
-    quantity: details.quantity,
-    unit: details.unit || 'units',
-    rate: details.rate,
-    amount: details.rate ? details.rate * details.quantity : undefined
-  })) : [];
+  const materials = step ? Object.entries(step.expected_materials).map(([key, details], index) => {
+    // Try to extract a proper name from the key if it's a number
+    let materialName = key;
+    if (!isNaN(Number(key))) {
+      // If the key is a number, try to get a name from the details if available
+      if (typeof details === 'object' && details !== null) {
+        if ('name' in details) {
+          materialName = details.name;
+        } else if ('description' in details) {
+          materialName = details.description;
+        } else if ('material' in details) {
+          materialName = details.material;
+        }
+      }
+      // If we still have a numeric key with no name, add a generic name
+      if (materialName === key) {
+        materialName = `Material ${Number(key) + 1}`;
+      }
+    }
+
+    return {
+      id: index,
+      name: materialName,
+      quantity: details.quantity,
+      unit: details.unit || 'units',
+      rate: details.rate,
+      amount: details.rate ? details.rate * details.quantity : undefined
+    };
+  }) : [];
 
   const totalMaterialCost = materials.reduce((sum, material) => sum + (material.amount || 0), 0);
   const billsTotal = step?.bills?.length || 0;
@@ -453,55 +475,57 @@ export default function StepDetailsPage({ params }: { params: Promise<{ projectI
             </div>
           
           {materials.length > 0 ? (
-            <div className="overflow-hidden rounded-xl border border-gray-200">
+            <div className="overflow-x-auto rounded-xl border border-gray-200">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gradient-to-r from-gray-50 to-gray-100">
                   <tr>
-                    <th scope="col" className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                    <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider w-1/3">
                       Material
                     </th>
-                    <th scope="col" className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                    <th scope="col" className="px-4 py-3 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider">
                       Quantity
                     </th>
-                    <th scope="col" className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                    <th scope="col" className="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">
                       Unit
                     </th>
-                    <th scope="col" className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                    <th scope="col" className="px-4 py-3 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider">
                       Rate
                     </th>
-                    <th scope="col" className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                    <th scope="col" className="px-4 py-3 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider">
                       Amount
                     </th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-100">
-                {materials.map((material, index) => (
-                  <tr key={index} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {material.name}
+                {materials.map((material) => (
+                  <tr key={material.id} className="hover:bg-gray-50">
+                    <td className="px-4 py-3 text-sm font-medium text-gray-900">
+                      <div className="truncate max-w-[200px]" title={material.name}>
+                        {material.name}
+                      </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {material.quantity}
+                    <td className="px-4 py-3 text-sm text-gray-500 text-right">
+                      {material.quantity.toLocaleString()}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-4 py-3 text-sm text-gray-500 text-center">
                       {material.unit}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {material.rate ? `LKR ${material.rate.toFixed(2)}` : '-'}
+                    <td className="px-4 py-3 text-sm text-gray-500 text-right">
+                      {material.rate ? `LKR ${material.rate.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}` : '-'}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {material.amount ? `LKR ${material.amount.toFixed(2)}` : '-'}
+                    <td className="px-4 py-3 text-sm text-gray-500 text-right">
+                      {material.amount ? `LKR ${material.amount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}` : '-'}
                     </td>
                   </tr>
                 ))}
                 
                 {/* Total row */}
                 <tr className="bg-gray-50">
-                  <td colSpan={4} className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 text-right">
+                  <td colSpan={4} className="px-4 py-3 text-sm font-medium text-gray-900 text-right">
                     Total
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">
-                    LKR {totalMaterialCost.toFixed(2)}
+                  <td className="px-4 py-3 text-sm font-bold text-gray-900 text-right">
+                    LKR {totalMaterialCost.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
                   </td>
                 </tr>
               </tbody>
