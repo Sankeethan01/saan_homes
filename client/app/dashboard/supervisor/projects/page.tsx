@@ -74,6 +74,16 @@ interface MediaFile {
   filename: string;
 }
 
+interface Invoice {
+  id: string;
+  phase: string;
+  amount: number;
+  status: string;
+  submittedDate: string;
+  verified: boolean;
+  bills: string[];
+}
+
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://127.0.0.1:8000';
 
 export default function SupervisorProjectsPage() {
@@ -240,13 +250,27 @@ export default function SupervisorProjectsPage() {
               >
                 {/* Thumbnail */}
                 <div className="w-full h-40 bg-gray-100 flex items-center justify-center overflow-hidden border-b border-gray-200">
-                  <Image
-                    src={project.thumbnail || '/assets/images/project_saan.png'}
-                    alt={project.name}
-                    width={400}
-                    height={160}
-                    className="object-cover w-full h-full"
-                  />
+                  {project.thumbnail ? (
+                    <img
+                      src={`${process.env.NEXT_PUBLIC_API_BASE_URL}/media/${project.thumbnail}`}
+                      alt={project.name}
+                      className="object-cover w-full h-full"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.style.display = 'none';
+                        target.nextElementSibling?.classList.remove('hidden');
+                      }}
+                    />
+                  ) : null}
+                  <div className={`absolute inset-0 flex items-center justify-center ${project.thumbnail ? 'hidden' : ''}`}>
+                    <Image
+                      src="/assets/images/project_saan.png"
+                      alt={project.name}
+                      width={400}
+                      height={160}
+                      className="object-cover w-full h-full"
+                    />
+                  </div>
                 </div>
                 <div className="relative p-6">
                   <div className="flex items-center justify-between mb-2">
@@ -1064,7 +1088,7 @@ function ProjectTimeline({ project }: { project: Project }) {
 
 // Project Invoices Component
 function ProjectInvoices({ project }: { project: Project }) {
-  const [invoices, setInvoices] = useState([
+  const [invoices, setInvoices] = useState<Invoice[]>([
     {
       id: '1',
       phase: 'Foundation',
@@ -1084,73 +1108,74 @@ function ProjectInvoices({ project }: { project: Project }) {
       bills: ['framing_materials.pdf', 'contractor_bill.pdf']
     }
   ]);
-}
-  // return (
-  //   <div className="space-y-6">
-  //     <div className="flex justify-between items-center">
-  //       <h3 className="text-2xl font-semibold text-gray-800">Project Invoices</h3>
-  //       <button className="flex items-center gap-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white px-6 py-3 rounded-xl font-semibold hover:from-green-700 hover:to-emerald-700 transition-all duration-300 shadow-lg">
-  //         <RiFileTextLine className="text-lg" />
-  //         Generate Invoice
-  //       </button>
-  //     </div>
 
-  //     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-  //       {invoices.map((invoice) => (
-  //         <div key={invoice.id} className="bg-white border border-gray-200 rounded-xl p-6">
-  //           <div className="flex items-center justify-between mb-4">
-  //             <h4 className="text-lg font-semibold text-gray-800">{invoice.phase}</h4>
-  //             <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-  //               invoice.status === 'DRAFT' ? 'bg-yellow-100 text-yellow-700' :
-  //               invoice.status === 'PENDING_VERIFICATION' ? 'bg-blue-100 text-blue-700' :
-  //               invoice.status === 'VERIFIED' ? 'bg-green-100 text-green-700' :
-  //               'bg-gray-100 text-gray-700'
-  //             }`}>
-  //               {invoice.status.replace('_', ' ')}
-  //             </span>
-  //           </div>
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h3 className="text-2xl font-semibold text-gray-800">Project Invoices</h3>
+        <button className="flex items-center gap-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white px-6 py-3 rounded-xl font-semibold hover:from-green-700 hover:to-emerald-700 transition-all duration-300 shadow-lg">
+          <RiFileTextLine className="text-lg" />
+          Generate Invoice
+        </button>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {invoices.map((invoice) => (
+          <div key={invoice.id} className="bg-white border border-gray-200 rounded-xl p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h4 className="text-lg font-semibold text-gray-800">{invoice.phase}</h4>
+              <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                invoice.status === 'DRAFT' ? 'bg-yellow-100 text-yellow-700' :
+                invoice.status === 'PENDING_VERIFICATION' ? 'bg-blue-100 text-blue-700' :
+                invoice.status === 'VERIFIED' ? 'bg-green-100 text-green-700' :
+                'bg-gray-100 text-gray-700'
+              }`}>
+                {invoice.status.replace('_', ' ')}
+              </span>
+            </div>
             
-  //           <div className="space-y-3 mb-4">
-  //             <div className="flex justify-between">
-  //               <span className="text-gray-600">Amount:</span>
-  //               <span className="font-semibold">${invoice.amount.toLocaleString()}</span>
-  //             </div>
-  //             <div className="flex justify-between">
-  //               <span className="text-gray-600">Submitted:</span>
-  //               <span>{new Date(invoice.submittedDate).toLocaleDateString()}</span>
-  //             </div>
-  //             <div className="flex justify-between">
-  //               <span className="text-gray-600">Bills:</span>
-  //               <span>{invoice.bills.length} files</span>
-  //             </div>
-  //           </div>
+            <div className="space-y-3 mb-4">
+              <div className="flex justify-between">
+                <span className="text-gray-600">Amount:</span>
+                <span className="font-semibold">${invoice.amount.toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Submitted:</span>
+                <span>{new Date(invoice.submittedDate).toLocaleDateString()}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Bills:</span>
+                <span>{invoice.bills.length} files</span>
+              </div>
+            </div>
 
-  //           <div className="space-y-2 mb-4">
-  //             <h5 className="font-medium text-gray-800">Attached Bills:</h5>
-  //             {invoice.bills.map((bill, index) => (
-  //               <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
-  //                 <span className="text-sm text-gray-600">{bill}</span>
-  //                 <button className="text-blue-600 hover:text-blue-700">
-  //                   <RiDownloadLine className="text-lg" />
-  //                 </button>
-  //               </div>
-  //             ))}
-  //           </div>
+            <div className="space-y-2 mb-4">
+              <h5 className="font-medium text-gray-800">Attached Bills:</h5>
+              {invoice.bills.map((bill, index) => (
+                <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
+                  <span className="text-sm text-gray-600">{bill}</span>
+                  <button className="text-blue-600 hover:text-blue-700">
+                    <RiDownloadLine className="text-lg" />
+                  </button>
+                </div>
+              ))}
+            </div>
 
-  //           <div className="flex gap-3">
-  //             <button className="flex-1 flex items-center justify-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
-  //               <RiEyeLine />
-  //               View Invoice
-  //             </button>
-  //             <button className="flex-1 flex items-center justify-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors">
-  //               <RiCheckLine />
-  //               Verify
-  //             </button>
-  //           </div>
-  //         </div>
-  //       ))}
-  //     </div>
-  //   </div>
-  // );
+            <div className="flex gap-3">
+              <button className="flex-1 flex items-center justify-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                <RiEyeLine />
+                View Invoice
+              </button>
+              <button className="flex-1 flex items-center justify-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors">
+                <RiCheckLine />
+                Verify
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 

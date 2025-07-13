@@ -38,7 +38,7 @@ const NavbarPortfolio = () => {
             className="flex-shrink-0"
           >
             <Link href="/" className="text-2xl font-bold bg-clip-text text-transparent bg-[#1b4965]">
-              <Image src="/assets/logo.jpg" alt="Logo" width={100} height={0} className="inline-block mr-2" />
+                              <Image src="/assets/logo.jpg" alt="Logo" width={100} height={100} className="inline-block mr-2" style={{ width: 'auto', height: 'auto' }} />
             </Link>
           </motion.div>
 

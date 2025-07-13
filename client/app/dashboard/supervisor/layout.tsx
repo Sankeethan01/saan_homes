@@ -173,7 +173,7 @@ export default function SupervisorLayout({
                 animate={{ opacity: 1 }}
                 className="flex items-center gap-2"
               >
-                <Image src="/assets/logo.jpg" alt="Logo" width={40} height={40} className="rounded-xl" />
+                <Image src="/assets/logo.jpg" alt="Logo" width={40} height={40} className="rounded-xl" style={{ width: 'auto', height: 'auto' }} />
               </motion.div>
             )}
             <button
