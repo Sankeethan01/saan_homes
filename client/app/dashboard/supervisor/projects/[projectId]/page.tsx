@@ -9,6 +9,13 @@ import {
   RiFileTextLine,
   RiEyeLine,
   RiArrowRightLine,
+  RiCameraLine,
+  RiVideoLine,
+  RiUploadLine,
+  RiCloseLine,
+  RiAddLine,
+  RiPlayLine,
+  RiDownloadLine,
 } from "react-icons/ri";
 import { FiSearch } from "react-icons/fi";
 import { fetchWithAuth } from "@/app/utils/auth";
@@ -27,6 +34,7 @@ interface Project {
   thumbnail?: string;
   location: string;
   budget: number;
+  media_files: ProjectMedia[];
   supervisor?: {
     id: string;
     username: string;
@@ -67,6 +75,18 @@ interface MediaFile {
   filename: string;
 }
 
+interface ProjectMedia {
+  id: string;
+  url: string;
+  type: string;
+  title: string;
+  description: string;
+  filename: string;
+  file_size: number;
+  uploaded_by_name: string;
+  uploaded_at: string;
+}
+
 interface Bill {
   id: string;
   pdf: string;
@@ -93,6 +113,15 @@ export default function ProjectDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [progressLogs, setProgressLogs] = useState<ProgressLog[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
+  
+  // Media upload states
+  const [showMediaUpload, setShowMediaUpload] = useState(false);
+  const [mediaUploadData, setMediaUploadData] = useState({
+    title: '',
+    description: '',
+    files: [] as File[]
+  });
+  const [uploading, setUploading] = useState(false);
 
   // Fetch project data
   useEffect(() => {
@@ -142,6 +171,76 @@ export default function ProjectDetailPage() {
 
     fetchProjectData();
   }, [projectId]);
+
+  // Handle media file selection
+  const handleMediaFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const files = Array.from(e.target.files);
+      setMediaUploadData(prev => ({
+        ...prev,
+        files: [...prev.files, ...files]
+      }));
+    }
+  };
+
+  // Remove file from selection
+  const removeMediaFile = (index: number) => {
+    setMediaUploadData(prev => ({
+      ...prev,
+      files: prev.files.filter((_, i) => i !== index)
+    }));
+  };
+
+  // Upload media files
+  const handleMediaUpload = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!project || mediaUploadData.files.length === 0) return;
+
+    setUploading(true);
+    try {
+      const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api';
+      
+      // Upload each file
+      for (const file of mediaUploadData.files) {
+        if (!file || !project?.id) {
+          console.error('Missing file or project ID');
+          continue;
+        }
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('project', project.id);
+        formData.append('title', mediaUploadData.title || file.name);
+        formData.append('description', mediaUploadData.description || '');
+
+        const response = await fetchWithAuth(`${apiBaseUrl}/projects/project-media/`, {
+          method: 'POST',
+          body: formData,
+        });
+
+        // if (!response.ok) {
+        //   const errorText = await response.text();
+        //   console.error(`❌ Failed to upload ${file.name}`, errorText);
+        // }
+      }
+
+      // Refresh project data to get updated media files
+      const projectResponse = await fetchWithAuth(`${apiBaseUrl}/projects/${projectId}/`);
+      if (projectResponse.ok) {
+        const updatedProject = await projectResponse.json();
+        setProject(updatedProject);
+      }
+
+      // Reset form
+      setMediaUploadData({ title: '', description: '', files: [] });
+      setShowMediaUpload(false);
+      
+    } catch (err) {
+      console.error('Error uploading media:', err);
+      setError(err instanceof Error ? err.message : 'Failed to upload media');
+    } finally {
+      setUploading(false);
+    }
+  };
 
   // Calculate stats from real data
   const getStats = () => {
@@ -312,6 +411,7 @@ export default function ProjectDetailPage() {
             { id: "progress", label: "Progress Logs", icon: RiProgress1Line },
             { id: "timeline", label: "Project Timeline", icon: RiTimeLine },
             { id: "invoices", label: "Invoices & Billing", icon: RiFileTextLine },
+            { id: "media", label: "Project Media", icon: RiCameraLine },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -378,9 +478,61 @@ export default function ProjectDetailPage() {
                   </div>
                 </div>
                 <div className="flex-1 flex flex-col gap-4">
-                  <div className="bg-gray-100 rounded-xl p-4 text-center">[Images Upload/View Placeholder]</div>
-                  <div className="bg-gray-100 rounded-xl p-4 text-center">[Videos Upload/View Placeholder]</div>
-                  <div className="bg-gray-100 rounded-xl p-4 text-center">[VR Video View Placeholder]</div>
+                  {/* Project Media Section */}
+                  <div className="bg-gray-100 rounded-xl p-4">
+                    <h4 className="font-semibold mb-2">Project Media</h4>
+                    {project.media_files && project.media_files.length > 0 ? (
+                      <div className="grid grid-cols-1 gap-3">
+                        {project.media_files.map((media) => (
+                          <div key={media.id} className="flex items-center gap-3 border-b border-gray-200 pb-2 mb-2 last:border-b-0 last:mb-0 last:pb-0">
+                            {/* Thumbnail or icon */}
+                            {media.type === 'image' ? (
+                              <img
+                                src={`${process.env.NEXT_PUBLIC_API_BASE_URL}${media.url}`}
+                                alt={media.title || media.filename}
+                                className="w-16 h-16 object-cover rounded-lg border"
+                              />
+                            ) : media.type === 'video' || media.type === 'vr' ? (
+                              <button
+                                onClick={() => window.open(`${process.env.NEXT_PUBLIC_API_BASE_URL}${media.url}`, '_blank')}
+                                className="w-16 h-16 flex items-center justify-center bg-gradient-to-br from-blue-100 to-purple-100 rounded-lg border hover:from-blue-200 hover:to-purple-200"
+                                title="Play Video"
+                              >
+                                <RiPlayLine className="text-2xl text-purple-600" />
+                              </button>
+                            ) : (
+                              <a
+                                href={`${process.env.NEXT_PUBLIC_API_BASE_URL}${media.url}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="w-16 h-16 flex items-center justify-center bg-gray-200 rounded-lg border"
+                                title="Download File"
+                              >
+                                <RiDownloadLine className="text-2xl text-gray-600" />
+                              </a>
+                            )}
+                            {/* Info */}
+                            <div className="flex-1 min-w-0">
+                              <div className="font-medium text-gray-800 truncate">{media.title || media.filename}</div>
+                              <div className="text-xs text-gray-500 truncate">{media.type.toUpperCase()} • {media.uploaded_by_name} • {new Date(media.uploaded_at).toLocaleDateString()}</div>
+                            </div>
+                            {/* Download button */}
+                            <a
+                              href={`${process.env.NEXT_PUBLIC_API_BASE_URL}${media.url}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="ml-2 text-blue-600 hover:text-blue-800"
+                              title="Download"
+                            >
+                              <RiDownloadLine className="w-5 h-5" />
+                            </a>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center text-gray-400 py-4">No media files uploaded yet.</div>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
@@ -481,8 +633,167 @@ export default function ProjectDetailPage() {
               )}
             </div>
           )}
+          {activeTab === "media" && (
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold">Project Media</h2>
+                <button
+                  onClick={() => setShowMediaUpload(true)}
+                  className="flex items-center gap-2 px-4 py-2 bg-[#1b4965] text-white rounded-lg hover:bg-[#1b4965]/90 transition-colors"
+                >
+                  <RiAddLine className="w-4 h-4" />
+                  Upload Media
+                </button>
+              </div>
+              
+              {project.media_files && project.media_files.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {project.media_files.map((media) => (
+                    <div key={media.id} className="border border-gray-200 rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          {media.type === 'image' && <RiCameraLine className="w-5 h-5 text-blue-500" />}
+                          {media.type === 'video' && <RiVideoLine className="w-5 h-5 text-red-500" />}
+                          {media.type === 'vr' && <RiPlayLine className="w-5 h-5 text-purple-500" />}
+                          <span className="text-sm text-gray-500">{media.type.toUpperCase()}</span>
+                        </div>
+                        <a
+                          href={`${process.env.NEXT_PUBLIC_API_BASE_URL}${media.url}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:text-blue-800"
+                        >
+                          <RiDownloadLine className="w-4 h-4" />
+                        </a>
+                      </div>
+                      <h3 className="font-semibold text-gray-800 mb-1">{media.title || media.filename}</h3>
+                      {media.description && (
+                        <p className="text-sm text-gray-600 mb-2">{media.description}</p>
+                      )}
+                      <div className="text-xs text-gray-500 space-y-1">
+                        <div>File: {media.filename}</div>
+                        <div>Size: {(media.file_size / 1024 / 1024).toFixed(2)} MB</div>
+                        <div>Uploaded by: {media.uploaded_by_name}</div>
+                        <div>Date: {new Date(media.uploaded_at).toLocaleDateString()}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center text-gray-500 py-8">
+                  <RiCameraLine className="w-12 h-12 mx-auto mb-2 text-gray-300" />
+                  <p>No media files uploaded yet</p>
+                  <p className="text-sm">Click "Upload Media" to add images, videos, or VR content</p>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
+
+      {/* Media Upload Modal */}
+      {showMediaUpload && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md mx-4">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">Upload Project Media</h3>
+              <button
+                onClick={() => setShowMediaUpload(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <RiCloseLine className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <form onSubmit={handleMediaUpload} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Title (Optional)
+                </label>
+                <input
+                  type="text"
+                  value={mediaUploadData.title}
+                  onChange={(e) => setMediaUploadData(prev => ({ ...prev, title: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1b4965]"
+                  placeholder="Enter media title"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Description (Optional)
+                </label>
+                <textarea
+                  value={mediaUploadData.description}
+                  onChange={(e) => setMediaUploadData(prev => ({ ...prev, description: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1b4965]"
+                  rows={3}
+                  placeholder="Enter media description"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Select Files</label>
+                <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center">
+                  <RiUploadLine className="text-4xl text-gray-400 mx-auto mb-2" />
+                  <p className="text-gray-600 mb-2">Drag and drop files here or click to browse</p>
+                  <p className="text-sm text-gray-500 mb-4">Supports: Images, Videos, VR Content</p>
+                  <input 
+                    type="file" 
+                    multiple 
+                    accept="image/*,video/*"
+                    onChange={handleMediaFileChange}
+                    className="hidden" 
+                    id="media-upload"
+                  />
+                  <label 
+                    htmlFor="media-upload"
+                    className="inline-block bg-blue-600 text-white px-4 py-2 rounded-lg cursor-pointer hover:bg-blue-700"
+                  >
+                    Choose Files
+                  </label>
+                </div>
+                
+                {/* Selected Files */}
+                {mediaUploadData.files.length > 0 && (
+                  <div className="mt-4 space-y-2">
+                    <h4 className="font-medium text-gray-700">Selected Files:</h4>
+                    {mediaUploadData.files.map((file, index) => (
+                      <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
+                        <span className="text-sm text-gray-600">{file.name}</span>
+                        <button
+                          type="button"
+                          onClick={() => removeMediaFile(index)}
+                          className="text-red-500 hover:text-red-700"
+                        >
+                          <RiCloseLine />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              
+              <div className="flex gap-4">
+                <button
+                  type="button"
+                  onClick={() => setShowMediaUpload(false)}
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={uploading || mediaUploadData.files.length === 0}
+                  className="flex-1 px-4 py-2 bg-[#1b4965] text-white rounded-lg hover:bg-[#1b4965]/90 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {uploading ? 'Uploading...' : 'Upload Media'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

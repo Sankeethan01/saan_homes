@@ -1,5 +1,5 @@
 # projects/views.py
-from rest_framework import viewsets, permissions, status
+from rest_framework import viewsets, permissions, status, serializers
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.filters import OrderingFilter, SearchFilter
@@ -22,6 +22,8 @@ from .models import (
     Invoice,
     VRVideo,
     SupervisorNote,
+    ProgressLogMedia,
+    ProjectMedia,
 )
 from .serializers import (
     ProjectSerializer,
@@ -31,6 +33,8 @@ from .serializers import (
     InvoiceSerializer,
     VRVideoSerializer,
     SupervisorNoteSerializer,
+    ProgressLogMediaSerializer,
+    ProjectMediaSerializer,
 )
 
 
@@ -971,17 +975,161 @@ class StepViewSet(viewsets.ModelViewSet):
 
 
 class ProgressLogViewSet(viewsets.ModelViewSet):
-    queryset = ProgressLog.objects.select_related("step", "supervisor").all()
+    queryset = ProgressLog.objects.select_related("step", "supervisor").prefetch_related("media_files").all()
     serializer_class = ProgressLogSerializer
     permission_classes = [IsAdminOrSupervisorOrReadOnly]
     filter_backends = [OrderingFilter]
     ordering = ["-created"]
+    parser_classes = (MultiPartParser, FormParser, JSONParser)
 
     def perform_create(self, serializer):
         """
         Automatically set the supervisor when creating a progress log
         """
-        serializer.save(supervisor=self.request.user)
+        progress_log = serializer.save(supervisor=self.request.user)
+        
+        # Handle multiple media files
+        files = self.request.FILES.getlist('media')
+        for file in files:
+            # Determine media type based on file extension
+            file_ext = os.path.splitext(file.name)[1].lower()
+            media_type = 'DOCUMENT'
+            
+            if file_ext in ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp']:
+                media_type = 'IMAGE'
+            elif file_ext in ['.mp4', '.avi', '.mov', '.wmv', '.flv', '.webm']:
+                media_type = 'VIDEO'
+            elif file_ext in ['.mp4', '.avi', '.mov'] and 'vr' in file.name.lower():
+                media_type = 'VR'
+            
+            # Create media file record
+            ProgressLogMedia.objects.create(
+                progress_log=progress_log,
+                file=file,
+                media_type=media_type,
+                filename=file.name,
+                file_size=file.size
+            )
+
+
+class ProgressLogMediaViewSet(viewsets.ModelViewSet):
+    queryset = ProgressLogMedia.objects.select_related("progress_log").all()
+    serializer_class = ProgressLogMediaSerializer
+    permission_classes = [IsAdminOrSupervisorOrReadOnly]
+    filter_backends = [OrderingFilter]
+    ordering = ["-uploaded_at"]
+    parser_classes = (MultiPartParser, FormParser, JSONParser)
+
+    def perform_create(self, serializer):
+        """
+        Handle media file upload for progress logs
+        """
+        file = self.request.FILES.get('file')
+        progress_log_id = self.request.data.get('progress_log')
+        
+        if not file or not progress_log_id:
+            raise serializers.ValidationError("File and progress_log are required")
+        
+        try:
+            progress_log = ProgressLog.objects.get(id=progress_log_id)
+        except ProgressLog.DoesNotExist:
+            raise serializers.ValidationError("Progress log not found")
+        
+        # Determine media type based on file extension
+        file_ext = os.path.splitext(file.name)[1].lower()
+        media_type = 'DOCUMENT'
+        
+        if file_ext in ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp']:
+            media_type = 'IMAGE'
+        elif file_ext in ['.mp4', '.avi', '.mov', '.wmv', '.flv', '.webm']:
+            media_type = 'VIDEO'
+        elif file_ext in ['.mp4', '.avi', '.mov'] and 'vr' in file.name.lower():
+            media_type = 'VR'
+        
+        serializer.save(
+            progress_log=progress_log,
+            file=file,
+            media_type=media_type,
+            filename=file.name,
+            file_size=file.size
+        )
+
+
+class ProjectMediaViewSet(viewsets.ModelViewSet):
+    queryset = ProjectMedia.objects.select_related("project", "uploaded_by").all()
+    serializer_class = ProjectMediaSerializer
+    permission_classes = [IsAdminOrSupervisorOrReadOnly]
+    filter_backends = [OrderingFilter]
+    ordering = ["-uploaded_at"]
+    parser_classes = (MultiPartParser, FormParser)  # ✅ remove JSONParser here
+
+    def create(self, request, *args, **kwargs):
+        print("📥 create() called")  # ✅ Confirm it's running
+
+        file = request.FILES.get('file')
+        project_id = request.data.get('project')
+        title = request.data.get('title', '')
+        description = request.data.get('description', '')
+
+        if not file or not project_id:
+            return Response({'error': 'File and project are required.'}, status=400)
+
+        try:
+            project = Project.objects.get(id=project_id)
+        except Project.DoesNotExist:
+            return Response({'error': 'Project not found.'}, status=404)
+
+        file_ext = os.path.splitext(file.name)[1].lower()
+        media_type = 'DOCUMENT'
+        if file_ext in ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp']:
+            media_type = 'IMAGE'
+        elif file_ext in ['.mp4', '.avi', '.mov', '.wmv', '.flv', '.webm']:
+            media_type = 'VIDEO'
+        if file_ext in ['.mp4', '.avi', '.mov'] and 'vr' in file.name.lower():
+            media_type = 'VR'
+
+        data = {
+            'project': project_id,
+            'file': file,
+            'media_type': media_type,
+            'title': title,
+            'description': description,
+            'filename': file.name,
+            'file_size': file.size
+        }
+
+        serializer = self.get_serializer(data=data)
+        if not serializer.is_valid():
+            print("🔥 Serializer errors:", serializer.errors)  # ✅ You must see this
+            return Response(serializer.errors, status=400)
+
+        serializer.save(uploaded_by=request.user)
+        return Response(serializer.data, status=201)
+
+
+    @action(detail=False, methods=['get'])
+    def by_project(self, request):
+        """
+        Get all media files for a specific project
+        """
+        project_id = request.query_params.get('project')
+        if not project_id:
+            return Response(
+                {"error": "Project ID is required"}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            project = Project.objects.get(id=project_id)
+        except Project.DoesNotExist:
+            return Response(
+                {"error": "Project not found"}, 
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        media_files = ProjectMedia.objects.filter(project=project)
+        serializer = self.get_serializer(media_files, many=True)
+        return Response(serializer.data)
 
 
 class BillViewSet(viewsets.ModelViewSet):
