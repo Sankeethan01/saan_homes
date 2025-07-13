@@ -33,7 +33,7 @@ const testimonials = [
       'Working with SAAN Homes was a fantastic experience. Their team was professional, responsive, and committed to delivering high-quality results on time. From planning to completion, every step was handled with care and expertise. We are extremely satisfied with the outcome and highly recommend SAAN Homes for any construction project.QuickMatch made finding a reliable service provider so easy! The booking process was seamless, and the service quality exceeded my expectations. Highly recommend this app for hassle-free service bookings.'
   },
   {
-    name: 'Deluxshana Sankeethan',
+    name: 'John Smith',
     location: 'Galle, Sri Lanka',
     avatar: '/assets/images/user.png',
     feedback:

@@ -50,7 +50,7 @@ const services = [
 
 const OurServicesPortfolio = () => {
   return (
-    <section className="py-15 md:py-20" style={{ background: 'radial-gradient(ellipse at 20% 40%, #f3f8ff 60%, #f8fafc 100%)' }}>
+    <section className="py-5 md:py-20" style={{ background: 'radial-gradient(ellipse at 20% 40%, #f3f8ff 60%, #f8fafc 100%)' }}>
       <div className="max-w-6xl mx-auto flex flex-col md:flex-row gap-12 px-4 items-end">
         {/* Left Section: Heading + Button + 2 Grids */}
         <div className="flex flex-col justify-between h-full text-left w-full md:w-1/2">

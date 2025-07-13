@@ -12,9 +12,9 @@ const teamMembers = [
       description: "10+ years in construction industry"
     },
     {
-      name: "Mr. Tharmathayalan Sankeethan",
+      name: "Mrs. Lixsana Vanojithan",
       position: "Co-founder & Site Engineer",
-      image: "/assets/images/sankee.jpg",
+      image: "/assets/images/lix.jpg",
       description: "Expert in large-scale projects"
     },
     {
