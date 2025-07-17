@@ -969,7 +969,20 @@ class StepViewSet(viewsets.ModelViewSet):
                 project.is_completed = True
                 
             project.save()
-            
+        
+        # --- Auto-generate invoice if not exists ---
+        from .models import Invoice
+        if not hasattr(step, 'invoice'):
+            Invoice.objects.create(
+                step=step,
+                data={
+                    'amount': float(step.expected_budget) if step.expected_budget else 0,
+                    'description': f'Invoice for {step.title}'
+                },
+                is_approved=False
+            )
+        # --- End auto-generate invoice ---
+        
         serializer = self.get_serializer(step)
         return Response(serializer.data)
 
@@ -1070,6 +1083,7 @@ class ProjectMediaViewSet(viewsets.ModelViewSet):
         project_id = request.data.get('project')
         title = request.data.get('title', '')
         description = request.data.get('description', '')
+        step_id = request.data.get('step')
 
         if not file or not project_id:
             return Response({'error': 'File and project are required.'}, status=400)
@@ -1078,6 +1092,13 @@ class ProjectMediaViewSet(viewsets.ModelViewSet):
             project = Project.objects.get(id=project_id)
         except Project.DoesNotExist:
             return Response({'error': 'Project not found.'}, status=404)
+
+        step = None
+        if step_id:
+            try:
+                step = Step.objects.get(id=step_id, project=project)
+            except Step.DoesNotExist:
+                return Response({'error': 'Step not found for this project.'}, status=404)
 
         file_ext = os.path.splitext(file.name)[1].lower()
         media_type = 'DOCUMENT'
@@ -1089,21 +1110,37 @@ class ProjectMediaViewSet(viewsets.ModelViewSet):
             media_type = 'VR'
 
         data = {
-            'project': project_id,
+            'project': project.id,
             'file': file,
             'media_type': media_type,
             'title': title,
             'description': description,
             'filename': file.name,
-            'file_size': file.size
+            'file_size': file.size,
+            'step': step.id if step else None,
         }
 
         serializer = self.get_serializer(data=data)
         if not serializer.is_valid():
-            print("🔥 Serializer errors:", serializer.errors)  # ✅ You must see this
+            print("🔥 Serializer errors:", serializer.errors)
             return Response(serializer.errors, status=400)
 
-        serializer.save(uploaded_by=request.user)
+        media_instance = serializer.save(uploaded_by=request.user, step=step)
+
+        if step:
+            progress_log = ProgressLog.objects.create(
+                step=step,
+                supervisor=request.user,
+                message=description or f"Media uploaded: {file.name}",
+            )
+            ProgressLogMedia.objects.create(
+                progress_log=progress_log,
+                file=file,
+                media_type=media_type,
+                filename=file.name,
+                file_size=file.size,
+            )
+
         return Response(serializer.data, status=201)
 
 

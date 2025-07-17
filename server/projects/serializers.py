@@ -28,6 +28,8 @@ class ProjectMediaSerializer(serializers.ModelSerializer):
     url = serializers.SerializerMethodField()
     type = serializers.SerializerMethodField()
     uploaded_by_name = serializers.SerializerMethodField()
+    step_id = serializers.SerializerMethodField()
+    step_title = serializers.SerializerMethodField()
 
     class Meta:
         model = ProjectMedia
@@ -35,7 +37,8 @@ class ProjectMediaSerializer(serializers.ModelSerializer):
             'id', 'project', 'file', 'media_type',
             'title', 'description', 'filename', 'file_size',
             'uploaded_by_name', 'uploaded_at',
-            'url', 'type'
+            'url', 'type',
+            'step_id', 'step_title',
         ]
         read_only_fields = [
             'id', 'uploaded_at', 'filename', 'file_size', 'uploaded_by_name'
@@ -49,6 +52,12 @@ class ProjectMediaSerializer(serializers.ModelSerializer):
 
     def get_uploaded_by_name(self, obj):
         return f"{obj.uploaded_by.first_name} {obj.uploaded_by.last_name}" if obj.uploaded_by else "Unknown"
+
+    def get_step_id(self, obj):
+        return str(obj.step.id) if obj.step else None
+
+    def get_step_title(self, obj):
+        return obj.step.title if obj.step else None
 
     def create(self, validated_data):
         request = self.context.get('request')
@@ -69,6 +78,12 @@ class ProgressLogSerializer(serializers.ModelSerializer):
     media = serializers.SerializerMethodField()
     timestamp = serializers.DateTimeField(source='created')
     type = serializers.SerializerMethodField()
+      # ✅ Accept stepId in input and map to `step`
+    stepId = serializers.PrimaryKeyRelatedField(
+        source='step',
+        queryset=Step.objects.all(),
+        write_only=True
+    )
     
     class Meta:
         model = ProgressLog

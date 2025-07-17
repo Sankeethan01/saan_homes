@@ -19,6 +19,8 @@ import {
 } from "react-icons/ri";
 import { FiSearch } from "react-icons/fi";
 import { fetchWithAuth } from "@/app/utils/auth";
+import ProgressLogs from "../components/ProgressLogs";
+import axios from "axios";
 
 interface Project {
   id: string;
@@ -85,6 +87,8 @@ interface ProjectMedia {
   file_size: number;
   uploaded_by_name: string;
   uploaded_at: string;
+  step_id?: string;
+  step_title?: string;
 }
 
 interface Bill {
@@ -117,11 +121,159 @@ export default function ProjectDetailPage() {
   // Media upload states
   const [showMediaUpload, setShowMediaUpload] = useState(false);
   const [mediaUploadData, setMediaUploadData] = useState({
-    title: '',
+    step: '', // <-- new required field
     description: '',
     files: [] as File[]
   });
   const [uploading, setUploading] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
+
+  // Add at the top, after useState declarations
+  const [showEditMediaModal, setShowEditMediaModal] = useState(false);
+  const [editingMedia, setEditingMedia] = useState<ProjectMedia | null>(null);
+  // Update editMediaForm state to include step and file
+  const [editMediaForm, setEditMediaForm] = useState({ title: '', description: '', step: '', file: null as File | null });
+  const [editMediaSaving, setEditMediaSaving] = useState(false);
+
+  // Delete media from both project.media_files and all log.media arrays
+  const handleDeleteMedia = async (mediaId: string) => {
+    const confirmed = window.confirm("Are you sure you want to delete this media? This action cannot be undone.");
+    if (!confirmed) return;
+    try {
+      const token = localStorage.getItem("access_token");
+      // Find the media object to get filename/url before deletion
+      let deletedMedia: any = null;
+      setProject((prev) => {
+        if (!prev) return prev;
+        deletedMedia = prev.media_files.find((media: any) => String(media.id) === String(mediaId));
+        return prev;
+      });
+      await axios.delete(`${process.env.NEXT_PUBLIC_API_BASE_URL}/projects/project-media/${mediaId}/`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      // Also delete ProgressLogMedia with matching filename or url
+      if (deletedMedia && project) {
+        // Loop through all logs and their media
+        for (const step of project.steps) {
+          for (const log of step.logs) {
+            for (const media of log.media as any[]) {
+              // Match by filename or url
+              if (
+                (media.filename && media.filename === deletedMedia.filename) ||
+                (media.url && deletedMedia.url && media.url === deletedMedia.url)
+              ) {
+                try {
+                  await axios.delete(`${process.env.NEXT_PUBLIC_API_BASE_URL}/projects/progress-media/${media.id}/`, {
+                    headers: {
+                      Authorization: `Bearer ${token}`,
+                    },
+                  });
+                  setToast("Progress log media deleted successfully");
+                  setTimeout(() => setToast(null), 3000);
+                } catch (err) {
+                  console.error("Error deleting progress log media:", err);
+                }
+              }
+            }
+          }
+        }
+      }
+      setProject((prev) => {
+        if (!prev) return prev;
+        // Remove from top-level media_files
+        const updatedMediaFiles = prev.media_files.filter(
+          (media: any) => String(media.id) !== String(mediaId)
+        );
+        // Remove from nested logs under each step
+        const updatedSteps = prev.steps.map((step) => ({
+          ...step,
+          logs: step.logs.map((log) => ({
+            ...log,
+            media: (log.media as any[]).filter(
+              (media) => String(media.id) !== String(mediaId) && (!deletedMedia || media.filename !== deletedMedia.filename)
+            ),
+          })),
+        }));
+        // Create updated project with all changes
+        const updatedProject = {
+          ...prev,
+          media_files: updatedMediaFiles,
+          steps: updatedSteps,
+        };
+        // Ensure React sees this as a new reference for re-render
+        return structuredClone(updatedProject);
+      });
+      setToast("Media deleted successfully");
+      setTimeout(() => setToast(null), 3000);
+    } catch (error) {
+      console.error("Error deleting media:", error);
+      setToast("Failed to delete media");
+      setTimeout(() => setToast(null), 3000);
+    }
+  };
+  
+  // Handler to open edit modal
+  const handleEditMedia = (media: ProjectMedia) => {
+    setEditingMedia(media);
+    setEditMediaForm({
+      title: media.title || '',
+      description: media.description || '',
+      step: media.step_id || '',
+      file: null,
+    });
+    setShowEditMediaModal(true);
+  };
+
+  // Handler to save edit
+  const handleEditMediaSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingMedia) return;
+    setEditMediaSaving(true);
+    try {
+      const token = localStorage.getItem("access_token");
+      const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api';
+      const formData = new FormData();
+      formData.append('title', editMediaForm.title);
+      formData.append('description', editMediaForm.description);
+      if (editMediaForm.step) formData.append('step', editMediaForm.step);
+      if (editMediaForm.file) formData.append('file', editMediaForm.file);
+      const response = await axios.patch(
+        `${apiBaseUrl}/projects/project-media/${editingMedia.id}/`,
+        formData,
+        { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' } }
+      );
+      // Update project state with new media info
+      setProject((prev) => {
+        if (!prev) return prev;
+        const updatedMediaFiles = prev.media_files.map((m) =>
+          m.id === editingMedia.id ? { ...m, ...response.data } : m
+        );
+        return { ...prev, media_files: updatedMediaFiles };
+      });
+      setShowEditMediaModal(false);
+      setEditingMedia(null);
+      setToast("Media updated successfully");
+      setTimeout(() => setToast(null), 3000);
+    } catch (err) {
+      setToast("Failed to update media");
+      setTimeout(() => setToast(null), 3000);
+    } finally {
+      setEditMediaSaving(false);
+    }
+  };
+
+  // Add refetchProject function
+  const refetchProject = async () => {
+    if (!projectId) return;
+    const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api';
+    const projectResponse = await fetchWithAuth(`${apiBaseUrl}/projects/${projectId}/`);
+    if (projectResponse.ok) {
+      const updatedProject = await projectResponse.json();
+      setProject(updatedProject);
+    }
+  };
 
   // Fetch project data
   useEffect(() => {
@@ -172,9 +324,23 @@ export default function ProjectDetailPage() {
     fetchProjectData();
   }, [projectId]);
 
+  useEffect(() => {
+    if (!project) return;
+    const fetchInvoices = async () => {
+      const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api';
+      const res = await fetchWithAuth(`${apiBaseUrl}/projects/invoices/?project=${project.id}`);
+      if (res.ok) {
+        const data = await res.json();
+        setInvoices(data); // setInvoices should be a useState hook
+      }
+    };
+    fetchInvoices();
+  }, [project]);
+
   // Handle media file selection
   const handleMediaFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
+      alert('File selected!');
       const files = Array.from(e.target.files);
       setMediaUploadData(prev => ({
         ...prev,
@@ -194,46 +360,44 @@ export default function ProjectDetailPage() {
   // Upload media files
   const handleMediaUpload = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!project || mediaUploadData.files.length === 0) return;
+    if (!project || mediaUploadData.files.length === 0 || !mediaUploadData.step) return;
 
     setUploading(true);
+    setError('');
     try {
       const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api';
-      
-      // Upload each file
-      for (const file of mediaUploadData.files) {
-        if (!file || !project?.id) {
-          console.error('Missing file or project ID');
-          continue;
-        }
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('project', project.id);
-        formData.append('title', mediaUploadData.title || file.name);
-        formData.append('description', mediaUploadData.description || '');
 
-        const response = await fetchWithAuth(`${apiBaseUrl}/projects/project-media/`, {
-          method: 'POST',
-          body: formData,
-        });
+      // Prepare form data for ProjectMedia upload
+      const formDataToSend = new FormData();
+      formDataToSend.append('project', project.id);
+      formDataToSend.append('step', mediaUploadData.step);
+      formDataToSend.append('description', mediaUploadData.description || '');
+      mediaUploadData.files.forEach(file => {
+        formDataToSend.append('file', file);
+      });
 
-        // if (!response.ok) {
-        //   const errorText = await response.text();
-        //   console.error(`❌ Failed to upload ${file.name}`, errorText);
-        // }
+      // If your main urls.py has path('api/projects/', ...)
+      const response = await fetchWithAuth(`${apiBaseUrl}/projects/project-media/`, {
+        method: 'POST',
+        body: formDataToSend,
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Upload failed with:', errorText);
+        throw new Error('Failed to upload project media');
       }
 
-      // Refresh project data to get updated media files
-      const projectResponse = await fetchWithAuth(`${apiBaseUrl}/projects/${projectId}/`);
+      // Refresh project data
+      const projectResponse = await fetchWithAuth(`${apiBaseUrl}/projects/${project.id}/`);
       if (projectResponse.ok) {
         const updatedProject = await projectResponse.json();
         setProject(updatedProject);
       }
 
-      // Reset form
-      setMediaUploadData({ title: '', description: '', files: [] });
+      setMediaUploadData({ step: '', description: '', files: [] });
       setShowMediaUpload(false);
-      
+
     } catch (err) {
       console.error('Error uploading media:', err);
       setError(err instanceof Error ? err.message : 'Failed to upload media');
@@ -538,40 +702,29 @@ export default function ProjectDetailPage() {
             </div>
           )}
           {activeTab === "progress" && (
-            <div>
-              <h2 className="text-xl font-bold mb-4">Progress Logs</h2>
-              {progressLogs.length > 0 ? (
-                <div className="space-y-4">
-                  {progressLogs.map((log) => (
-                    <div key={log.id} className="border border-gray-200 rounded-lg p-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <h3 className="font-semibold">{log.title}</h3>
-                        <span className="text-sm text-gray-500">{new Date(log.timestamp).toLocaleDateString()}</span>
-                      </div>
-                      <p className="text-gray-600 mb-2">{log.description}</p>
-                      {log.media && log.media.length > 0 && (
-                        <div className="flex gap-2 mt-2">
-                          {log.media.map((media) => (
-                            <div key={media.id} className="text-sm text-blue-600">
-                              <a 
-                                href={`${process.env.NEXT_PUBLIC_API_BASE_URL}${media.url}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="hover:underline"
-                              >
-                                📎 {media.filename}
-                              </a>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center text-gray-500 py-8">No progress logs found</div>
-              )}
-            </div>
+            <ProgressLogs
+              project={{
+                ...project,
+                steps: project.steps.map((step) => ({
+                  ...step,
+                  logs: step.logs.map((log) => ({
+                    ...log,
+                    type:
+                      log.type === "TEXT" || log.type === "PHOTO" || log.type === "VIDEO"
+                        ? log.type
+                        : "TEXT",
+                    media: log.media.map((media) => ({
+                      ...media,
+                      type:
+                        media.type === "image" || media.type === "video" || media.type === "pdf"
+                          ? media.type
+                          : "image",
+                    })),
+                  })),
+                })),
+              }}
+              onMediaEdited={refetchProject}
+            />
           )}
           {activeTab === "timeline" && (
             <div>
@@ -609,28 +762,80 @@ export default function ProjectDetailPage() {
           {activeTab === "invoices" && (
             <div>
               <h2 className="text-xl font-bold mb-4">Invoices & Billing</h2>
-              {invoices.length > 0 ? (
-                <div className="space-y-4">
-                  {invoices.map((invoice) => (
-                    <div key={invoice.id} className="border border-gray-200 rounded-lg p-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <h3 className="font-semibold">{invoice.step?.title || 'Unknown Step'}</h3>
-                        <span className={`px-2 py-1 rounded-full text-xs ${
-                          invoice.is_approved ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                        }`}>
-                          {invoice.is_approved ? 'Approved' : 'Pending'}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between text-sm text-gray-500">
-                        <span>Data: {JSON.stringify(invoice.data)}</span>
-                        <span>Created: {new Date(invoice.created).toLocaleDateString()}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center text-gray-500 py-8">No invoices found</div>
-              )}
+              <div className="overflow-x-auto">
+                <table className="min-w-full bg-white border rounded-xl">
+                  <thead>
+                    <tr>
+                      <th className="px-4 py-2 text-left">Step</th>
+                      <th className="px-4 py-2 text-left">Amount</th>
+                      <th className="px-4 py-2 text-left">Status</th>
+                      <th className="px-4 py-2 text-left">Date</th>
+                      <th className="px-4 py-2 text-left">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {project.steps && project.steps.length > 0 ? (
+                      project.steps.map((step) => {
+                        const invoice = invoices.find(inv => inv.step && inv.step.title === step.title);
+                        let status = '';
+                        let badgeClass = '';
+                        let amount = '';
+                        let date = '';
+                        if (invoice) {
+                          amount = invoice.data?.amount?.toLocaleString() || step.expected_budget?.toLocaleString() || '0';
+                          date = invoice.created ? new Date(invoice.created).toLocaleDateString() : '';
+                          if (invoice.is_approved) {
+                            status = 'Approved';
+                            badgeClass = 'bg-green-100 text-green-800';
+                          } else {
+                            status = 'Submitted';
+                            badgeClass = 'bg-blue-100 text-blue-800';
+                          }
+                        } else {
+                          amount = step.expected_budget?.toLocaleString() || '0';
+                          status = 'Auto-generated (not submitted)';
+                          badgeClass = 'bg-yellow-100 text-yellow-800';
+                        }
+                        return (
+                          <tr key={step.id} className="border-b last:border-b-0">
+                            <td className="px-4 py-2 font-medium">{step.title}</td>
+                            <td className="px-4 py-2">{amount}</td>
+                            <td className="px-4 py-2">
+                              <span className={`px-2 py-1 rounded text-xs font-semibold ${badgeClass}`}>{status}</span>
+                            </td>
+                            <td className="px-4 py-2">{date}</td>
+                            <td className="px-4 py-2">
+                              {!invoice && step.status === 'COMPLETED' && (
+                                <button
+                                  className="px-3 py-1 bg-green-700 text-white rounded hover:bg-green-800 text-xs"
+                                  onClick={() => {
+                                    // Open invoice modal for this step (reuse ProgressLogs logic)
+                                    // You may need to lift invoice modal state up or trigger a custom event
+                                    const logsSection = document.getElementById('progress-logs-section');
+                                    if (logsSection) {
+                                      logsSection.scrollIntoView({ behavior: 'smooth' });
+                                    }
+                                    alert('To submit invoice, please use the Progress Logs section for this step.');
+                                  }}
+                                >
+                                  Submit Invoice
+                                </button>
+                              )}
+                              {invoice && (
+                                <span className="text-gray-400 text-xs">{status === 'Approved' ? 'Locked' : 'Submitted'}</span>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })
+                    ) : (
+                      <tr>
+                        <td colSpan={5} className="text-center text-gray-500 py-8">No steps found</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
           {activeTab === "media" && (
@@ -649,7 +854,7 @@ export default function ProjectDetailPage() {
               {project.media_files && project.media_files.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {project.media_files.map((media) => (
-                    <div key={media.id} className="border border-gray-200 rounded-lg p-4">
+                    <div key={media.id} className="border border-gray-200 rounded-lg p-4 bg-white shadow flex flex-col h-full">
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2">
                           {media.type === 'image' && <RiCameraLine className="w-5 h-5 text-blue-500" />}
@@ -657,24 +862,44 @@ export default function ProjectDetailPage() {
                           {media.type === 'vr' && <RiPlayLine className="w-5 h-5 text-purple-500" />}
                           <span className="text-sm text-gray-500">{media.type.toUpperCase()}</span>
                         </div>
-                        <a
-                          href={`${process.env.NEXT_PUBLIC_API_BASE_URL}${media.url}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-600 hover:text-blue-800"
-                        >
-                          <RiDownloadLine className="w-4 h-4" />
-                        </a>
+                        <div className="flex items-center gap-2">
+                          <a
+                            href={`${process.env.NEXT_PUBLIC_API_BASE_URL}${media.url}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:text-blue-800"
+                            title="Download"
+                          >
+                            <RiDownloadLine className="w-5 h-5" />
+                          </a>
+                          <button
+                            className="text-green-600 hover:text-green-800"
+                            title="Edit"
+                            onClick={() => handleEditMedia(media)}
+                          >
+                            <RiFileTextLine className="w-5 h-5" />
+                          </button>
+                          <button
+                            className="text-red-600 hover:text-red-800"
+                            title="Delete"
+                            onClick={() => handleDeleteMedia(media.id)}
+                          >
+                            <RiCloseLine className="w-5 h-5" />
+                          </button>
+                        </div>
                       </div>
-                      <h3 className="font-semibold text-gray-800 mb-1">{media.title || media.filename}</h3>
-                      {media.description && (
-                        <p className="text-sm text-gray-600 mb-2">{media.description}</p>
+                      <h3 className="font-semibold text-gray-800 mb-1 break-words">{media.title || media.filename}</h3>
+                      {media.step_title && (
+                        <div className="text-xs text-indigo-700 font-semibold mb-1">Step: {media.step_title}</div>
                       )}
-                      <div className="text-xs text-gray-500 space-y-1">
-                        <div>File: {media.filename}</div>
-                        <div>Size: {(media.file_size / 1024 / 1024).toFixed(2)} MB</div>
-                        <div>Uploaded by: {media.uploaded_by_name}</div>
-                        <div>Date: {new Date(media.uploaded_at).toLocaleDateString()}</div>
+                      {media.description && (
+                        <p className="text-sm text-gray-600 mb-2 break-words">{media.description}</p>
+                      )}
+                      <div className="text-xs text-gray-500 space-y-1 mt-auto">
+                        <div><span className="font-semibold">File:</span> {media.filename}</div>
+                        <div><span className="font-semibold">Size:</span> {(media.file_size / 1024 / 1024).toFixed(2)} MB</div>
+                        <div><span className="font-semibold">Uploaded by:</span> {media.uploaded_by_name}</div>
+                        <div><span className="font-semibold">Date:</span> {new Date(media.uploaded_at).toLocaleDateString()}</div>
                       </div>
                     </div>
                   ))}
@@ -704,21 +929,23 @@ export default function ProjectDetailPage() {
                 <RiCloseLine className="w-5 h-5" />
               </button>
             </div>
-            
             <form onSubmit={handleMediaUpload} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Title (Optional)
+                  Step *
                 </label>
-                <input
-                  type="text"
-                  value={mediaUploadData.title}
-                  onChange={(e) => setMediaUploadData(prev => ({ ...prev, title: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1b4965]"
-                  placeholder="Enter media title"
-                />
+                <select
+                  value={mediaUploadData.step}
+                  onChange={e => setMediaUploadData(prev => ({ ...prev, step: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                  required
+                >
+                  <option value="">Select Step</option>
+                  {project.steps.map(step => (
+                    <option key={step.id} value={step.id}>{step.title}</option>
+                  ))}
+                </select>
               </div>
-              
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Description (Optional)
@@ -731,7 +958,6 @@ export default function ProjectDetailPage() {
                   placeholder="Enter media description"
                 />
               </div>
-              
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Select Files</label>
                 <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center">
@@ -745,6 +971,7 @@ export default function ProjectDetailPage() {
                     onChange={handleMediaFileChange}
                     className="hidden" 
                     id="media-upload"
+                    required
                   />
                   <label 
                     htmlFor="media-upload"
@@ -756,20 +983,50 @@ export default function ProjectDetailPage() {
                 
                 {/* Selected Files */}
                 {mediaUploadData.files.length > 0 && (
-                  <div className="mt-4 space-y-2">
-                    <h4 className="font-medium text-gray-700">Selected Files:</h4>
-                    {mediaUploadData.files.map((file, index) => (
-                      <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
-                        <span className="text-sm text-gray-600">{file.name}</span>
-                        <button
-                          type="button"
-                          onClick={() => removeMediaFile(index)}
-                          className="text-red-500 hover:text-red-700"
-                        >
-                          <RiCloseLine />
-                        </button>
-                      </div>
-                    ))}
+                  <div className="mt-4 grid grid-cols-1 gap-2">
+                    {mediaUploadData.files.map((file, index) => {
+                      let fileType = 'file';
+                      if (file.type) {
+                        if (file.type.startsWith('image')) fileType = 'image';
+                        else if (file.type.startsWith('video')) fileType = 'video';
+                      } else {
+                        // fallback by extension
+                        const ext = (file.name.split('.').pop() || '').toLowerCase();
+                        if (["jpg","jpeg","png","gif","bmp","webp"].includes(ext)) fileType = 'image';
+                        else if (["mp4","avi","mov","wmv","flv","webm"].includes(ext)) fileType = 'video';
+                      }
+                      return (
+                        <div key={index} className="border border-gray-200 rounded-lg p-4 bg-white shadow flex flex-col h-full">
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                              {fileType === 'image' && <RiCameraLine className="w-5 h-5 text-blue-500" />}
+                              {fileType === 'video' && <RiVideoLine className="w-5 h-5 text-red-500" />}
+                              {fileType === 'file' && <RiFileTextLine className="w-5 h-5 text-gray-500" />}
+                              <span className="text-sm text-gray-500 uppercase">{fileType}</span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => removeMediaFile(index)}
+                              className="text-red-500 hover:text-red-700 ml-2"
+                              title="Remove"
+                            >
+                              <RiCloseLine />
+                            </button>
+                          </div>
+                          <div className="font-medium text-gray-800 mb-1 break-words">{file.name}</div>
+                          {mediaUploadData.description && (
+                            <div className="text-sm text-gray-600 mb-2 break-words">{mediaUploadData.description}</div>
+                          )}
+                          <div className="text-xs text-gray-500 space-y-1 mt-auto">
+                            <div><span className="font-semibold">File:</span> {file.name}</div>
+                            <div><span className="font-semibold">Size:</span> {(file.size / 1024 / 1024).toFixed(2)} MB</div>
+                            {mediaUploadData.step && (
+                              <div><span className="font-semibold">Step:</span> {project.steps.find(s => s.id === mediaUploadData.step)?.title || mediaUploadData.step}</div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </div>
@@ -784,7 +1041,7 @@ export default function ProjectDetailPage() {
                 </button>
                 <button
                   type="submit"
-                  disabled={uploading || mediaUploadData.files.length === 0}
+                  disabled={uploading || mediaUploadData.files.length === 0 || !mediaUploadData.step}
                   className="flex-1 px-4 py-2 bg-[#1b4965] text-white rounded-lg hover:bg-[#1b4965]/90 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {uploading ? 'Uploading...' : 'Upload Media'}
@@ -792,6 +1049,89 @@ export default function ProjectDetailPage() {
               </div>
             </form>
           </div>
+        </div>
+      )}
+      {showEditMediaModal && editingMedia && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md mx-4">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">Edit Media</h3>
+              <button
+                onClick={() => setShowEditMediaModal(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <RiCloseLine className="w-5 h-5" />
+              </button>
+            </div>
+            <form onSubmit={handleEditMediaSave} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+                <input
+                  type="text"
+                  value={editMediaForm.title}
+                  onChange={e => setEditMediaForm(f => ({ ...f, title: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                  placeholder="Enter media title"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                <textarea
+                  value={editMediaForm.description}
+                  onChange={e => setEditMediaForm(f => ({ ...f, description: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                  rows={3}
+                  placeholder="Enter media description"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Step</label>
+                <select
+                  value={editMediaForm.step}
+                  onChange={e => setEditMediaForm(f => ({ ...f, step: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                >
+                  <option value="">Select Step</option>
+                  {project.steps.map(step => (
+                    <option key={step.id} value={step.id}>{step.title}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Replace File (optional)</label>
+                <input
+                  type="file"
+                  accept="image/*,video/*"
+                  onChange={e => setEditMediaForm(f => ({ ...f, file: e.target.files ? e.target.files[0] : null }))}
+                  className="w-full"
+                />
+                {editingMedia.url && (
+                  <div className="mt-2 text-xs text-gray-500">Current file: {editingMedia.filename}</div>
+                )}
+              </div>
+              <div className="flex gap-4">
+                <button
+                  type="button"
+                  onClick={() => setShowEditMediaModal(false)}
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={editMediaSaving}
+                  className="flex-1 px-4 py-2 bg-[#1b4965] text-white rounded-lg hover:bg-[#1b4965]/90 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {editMediaSaving ? 'Saving...' : 'Save Changes'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+      {toast && (
+        <div className="fixed top-6 right-6 z-50 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg animate-fade-in">
+          {toast}
         </div>
       )}
     </div>

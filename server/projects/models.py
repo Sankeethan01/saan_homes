@@ -176,6 +176,7 @@ class ProjectMedia(models.Model):
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     project = models.ForeignKey(Project, related_name='media_files', on_delete=models.CASCADE)
+    step = models.ForeignKey('Step', related_name='project_media', null=True, blank=True, on_delete=models.SET_NULL)
     file = models.FileField(upload_to="project_media/")
     media_type = models.CharField(max_length=10, choices=MediaType.choices)
     title = models.CharField(max_length=200, blank=True)
