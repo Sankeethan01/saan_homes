@@ -104,7 +104,7 @@ export default function ProgressLogs({ project, onMediaEdited }: { project: Proj
           }
         }
       } catch (e) {
-        // fallback: do nothing
+        // fallback: do nothing if error
       } finally {
         setLoadingInvoice(false);
       }
