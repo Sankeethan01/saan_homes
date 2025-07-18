@@ -12,6 +12,7 @@ import {
   RiDownloadLine,
 } from "react-icons/ri";
 import { fetchWithAuth } from "@/app/utils/auth";
+import SupervisorInvoiceModal from "./SupervisorInvoiceModal";
 
 interface ProjectStep {
   id: string;
@@ -69,15 +70,41 @@ export default function ProgressLogs({ project, onMediaEdited }: { project: Proj
   // Invoice modal state
   const [showInvoiceModal, setShowInvoiceModal] = useState(false);
   const [invoiceStepId, setInvoiceStepId] = useState<string | null>(null);
-  const [invoiceForm, setInvoiceForm] = useState({
-    amount: '',
-    description: '',
-    files: [] as File[],
-    invoiceId: '',
-    isApproved: false,
-    status: '',
-  });
+  const [currentInvoice, setCurrentInvoice] = useState<any>(null);
+  const [currentStep, setCurrentStep] = useState<any>(null);
   const [loadingInvoice, setLoadingInvoice] = useState(false);
+
+  const handleInvoiceClick = async (stepId: string) => {
+    setLoadingInvoice(true);
+    const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api';
+    let invoice = null;
+    let step = project.steps.find((s: any) => s.id === stepId);
+    if (!step) {
+      setLoadingInvoice(false);
+      return;
+    }
+    let res = await fetchWithAuth(`${apiBaseUrl}/projects/invoices/?step=${stepId}`);
+    if (res.ok) {
+      const data = await res.json();
+      invoice = Array.isArray(data) ? data[0] : data;
+    }
+    // If not found, create it by approving the step if not already completed
+    if (!invoice) {
+      if (step.status !== "COMPLETED") {
+        await fetchWithAuth(`${apiBaseUrl}/projects/steps/${stepId}/approve/`, { method: "POST" });
+      }
+      // Fetch again
+      res = await fetchWithAuth(`${apiBaseUrl}/projects/invoices/?step=${stepId}`);
+      if (res.ok) {
+        const data = await res.json();
+        invoice = Array.isArray(data) ? data[0] : data;
+      }
+    }
+    setCurrentStep(step);
+    setCurrentInvoice(invoice);
+    setShowInvoiceModal(true);
+    setLoadingInvoice(false);
+  };
 
   // Fetch invoice when modal opens
   useEffect(() => {
@@ -92,15 +119,11 @@ export default function ProgressLogs({ project, onMediaEdited }: { project: Proj
           // If list, get first invoice
           const invoice = Array.isArray(data) ? data[0] : data;
           if (invoice) {
-            setInvoiceForm((prev) => ({
-              ...prev,
-              amount: invoice.data?.amount?.toString() || '',
-              description: invoice.data?.description || '',
-              invoiceId: invoice.id,
-              isApproved: invoice.is_approved,
-              status: invoice.is_approved ? 'APPROVED' : 'SUBMITTED',
-              files: [],
-            }));
+            // The new SupervisorInvoiceModal handles its own state, so we don't need to set it here.
+            // We just need to ensure the modal is open and the invoice data is passed.
+            setShowInvoiceModal(true);
+            setCurrentInvoice(invoice);
+            setCurrentStep(project.steps.find((s: any) => s.id === invoiceStepId));
           }
         }
       } catch (e) {
@@ -110,49 +133,10 @@ export default function ProgressLogs({ project, onMediaEdited }: { project: Proj
       }
     };
     if (showInvoiceModal && invoiceStepId) fetchInvoice();
-  }, [showInvoiceModal, invoiceStepId]);
+  }, [showInvoiceModal, invoiceStepId, project.steps]);
 
   // Sort steps by order
   const sortedSteps = [...project.steps].sort((a, b) => a.order - b.order);
-
-  // Move handleInvoiceSubmit above the return statement so it is defined for the invoice modal
-  const handleInvoiceSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!invoiceForm.invoiceId || !invoiceStepId) return;
-    setLoadingInvoice(true);
-    try {
-      const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api';
-      // Update invoice
-      await fetchWithAuth(`${apiBaseUrl}/projects/invoices/${invoiceForm.invoiceId}/`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          data: {
-            amount: invoiceForm.amount,
-            description: invoiceForm.description,
-          },
-        }),
-      });
-      // Upload bills
-      for (const file of invoiceForm.files) {
-        const formData = new FormData();
-        formData.append('step', invoiceStepId);
-        formData.append('pdf', file);
-        await fetchWithAuth(`${apiBaseUrl}/projects/bills/`, {
-          method: 'POST',
-          body: formData,
-        });
-      }
-      setShowInvoiceModal(false);
-      setInvoiceStepId(null);
-      setInvoiceForm({ amount: '', description: '', files: [], invoiceId: '', isApproved: false, status: '', });
-      alert('Invoice submitted for admin review!');
-    } catch (err) {
-      alert('Failed to submit invoice.');
-    } finally {
-      setLoadingInvoice(false);
-    }
-  };
 
   return (
     <div className="space-y-8">
@@ -209,10 +193,7 @@ export default function ProgressLogs({ project, onMediaEdited }: { project: Proj
                 {/* Invoice Button for COMPLETED steps */}
                 {isCompleted && (
                   <button
-                    onClick={() => {
-                      setInvoiceStepId(step.id);
-                      setShowInvoiceModal(true);
-                    }}
+                    onClick={() => handleInvoiceClick(step.id)}
                     className="flex items-center gap-2 px-4 py-2 bg-green-700 text-white rounded-lg hover:bg-green-800 transition-colors mb-4 ml-2"
                   >
                     <RiFileTextLine className="w-4 h-4" />
@@ -336,137 +317,19 @@ export default function ProgressLogs({ project, onMediaEdited }: { project: Proj
 
       {/* Invoice Modal */}
       {showInvoiceModal && (
-        <StepInvoiceModal
+        <SupervisorInvoiceModal
           open={showInvoiceModal}
+          step={currentStep}
+          invoice={currentInvoice}
           onClose={() => {
             setShowInvoiceModal(false);
             setInvoiceStepId(null);
-            setInvoiceForm({ amount: '', description: '', files: [], invoiceId: '', isApproved: false, status: '', });
+            setCurrentInvoice(null);
+            setCurrentStep(null);
           }}
-          form={invoiceForm}
-          setForm={setInvoiceForm}
-          onSubmit={handleInvoiceSubmit}
-          loading={loadingInvoice}
+          onSaved={onMediaEdited}
         />
       )}
-    </div>
-  );
-} 
-
-function StepInvoiceModal({ open, onClose, form, setForm, onSubmit, loading }: {
-  open: boolean;
-  onClose: () => void;
-  form: { amount: string; description: string; files: File[]; invoiceId?: string; isApproved?: boolean; status?: string };
-  setForm: React.Dispatch<React.SetStateAction<any>>;
-  onSubmit: (e: React.FormEvent) => void;
-  loading?: boolean;
-}) {
-  return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-2xl p-6 w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold">Step Invoice</h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
-            <RiCloseLine className="w-5 h-5" />
-          </button>
-        </div>
-        {form.status && (
-          <div className={`mb-2 px-3 py-1 rounded text-xs font-semibold ${form.isApproved ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>{form.status}</div>
-        )}
-        <form onSubmit={onSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Amount *</label>
-            <input
-              type="number"
-              value={form.amount}
-              onChange={(e) => setForm((prev: any) => ({ ...prev, amount: e.target.value }))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-700"
-              placeholder="Enter invoice amount"
-              required
-              disabled={!!form.isApproved || loading}
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Description *</label>
-            <textarea
-              value={form.description}
-              onChange={(e) => setForm((prev: any) => ({ ...prev, description: e.target.value }))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-700"
-              rows={3}
-              placeholder="Describe the bill or invoice details"
-              required
-              disabled={!!form.isApproved || loading}
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Upload Bill (PDF/Image) *</label>
-            <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center">
-              <RiUploadLine className="text-4xl text-gray-400 mx-auto mb-2" />
-              <p className="text-gray-600 mb-2">Drag and drop files here or click to browse</p>
-              <p className="text-sm text-gray-500 mb-4">Supports: PDF, Images</p>
-              <input
-                type="file"
-                multiple
-                accept="application/pdf,image/*"
-                onChange={(e) => {
-                  if (e.target.files) {
-                    const files = Array.from(e.target.files);
-                    setForm((prev: any) => ({ ...prev, files: [...prev.files, ...files] }));
-                  }
-                }}
-                className="hidden"
-                id="invoice-upload"
-                required={form.files.length === 0}
-                disabled={!!form.isApproved || loading}
-              />
-              <label
-                htmlFor="invoice-upload"
-                className={`inline-block bg-green-700 text-white px-4 py-2 rounded-lg cursor-pointer hover:bg-green-800 ${form.isApproved || loading ? 'opacity-50 cursor-not-allowed' : ''}`}
-                style={{ pointerEvents: form.isApproved || loading ? 'none' : 'auto' }}
-              >
-                Choose Files
-              </label>
-            </div>
-            {/* Selected Files */}
-            {form.files.length > 0 && (
-              <div className="mt-4 space-y-2">
-                <h4 className="font-medium text-gray-700">Selected Files:</h4>
-                {form.files.map((file: File, index: number) => (
-                  <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
-                    <span className="text-sm text-gray-600">{file.name}</span>
-                    {!form.isApproved && !loading && (
-                      <button
-                        type="button"
-                        onClick={() => setForm((prev: any) => ({ ...prev, files: prev.files.filter((_: File, i: number) => i !== index) }))}
-                        className="text-red-500 hover:text-red-700"
-                      >
-                        <RiCloseLine />
-                      </button>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-          <div className="flex gap-4">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
-              disabled={loading}
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="flex-1 px-4 py-2 bg-green-700 text-white rounded-lg hover:bg-green-800 disabled:opacity-50 disabled:cursor-not-allowed"
-              disabled={!!form.isApproved || loading}
-            >
-              {loading ? 'Submitting...' : 'Submit Invoice'}
-            </button>
-          </div>
-        </form>
-      </div>
     </div>
   );
 } 
