@@ -12,7 +12,8 @@ import {
   RiArrowDownSLine,
   RiMenuFoldLine,
   RiMenuUnfoldLine,
-  RiLogoutBoxRLine
+  RiLogoutBoxRLine,
+  RiFileTextLine
 } from 'react-icons/ri';
 import { useAuthStore } from '@/app/stores/useAuthStore';
 import { getUserRole, getAccessToken, setAuthCookies, fetchWithAuth } from '@/app/utils/auth';
@@ -35,6 +36,12 @@ const navItems: NavItem[] = [
     title: 'Projects',
     path: '/dashboard/supervisor/projects',
     icon: <RiBuildingLine className="text-xl" />,
+    
+  },
+  {
+    title: 'Bills',
+    path: '/dashboard/supervisor/bills',
+    icon: <RiFileTextLine className="text-xl" />,
     
   },
   {
