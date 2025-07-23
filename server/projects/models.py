@@ -200,6 +200,14 @@ class Bill(models.Model):
     ocr_data = models.JSONField(default=dict)           # {'items': [...], 'total': 123}
     uploaded_at = models.DateTimeField(auto_now_add=True)
     verified = models.BooleanField(default=False)
+    uploaded_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="bills_uploaded"
+    )
+    is_submitted_to_admin = models.BooleanField(default=False)
 
 
 class Invoice(models.Model):

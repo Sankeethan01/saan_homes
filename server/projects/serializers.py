@@ -145,10 +145,24 @@ class ProgressLogSerializer(serializers.ModelSerializer):
 
 
 class BillSerializer(serializers.ModelSerializer):
+    file_size = serializers.SerializerMethodField()
+    uploaded_by_name = serializers.SerializerMethodField()
+
     class Meta:
         model = Bill
-        fields = "__all__"
-        read_only_fields = ("id", "uploaded_at", "verified")
+        fields = "__all__"  # includes uploaded_by, file_size, uploaded_by_name
+        read_only_fields = ("id", "uploaded_at", "verified", "uploaded_by")
+
+    def get_file_size(self, obj):
+        if obj.pdf and hasattr(obj.pdf, 'size'):
+            return obj.pdf.size
+        return None
+
+    def get_uploaded_by_name(self, obj):
+        if obj.uploaded_by:
+            name = f"{obj.uploaded_by.first_name} {obj.uploaded_by.last_name}".strip()
+            return name if name else obj.uploaded_by.username
+        return "Unknown"
 
     # Example: human-friendly filename
     def validate_pdf(self, file):

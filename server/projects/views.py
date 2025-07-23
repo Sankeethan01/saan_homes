@@ -928,6 +928,13 @@ class ProjectViewSet(viewsets.ModelViewSet):
         
         return Response(stats)
 
+    @action(detail=True, methods=['get'])
+    def steps(self, request, pk=None):
+        project = self.get_object()
+        steps = project.steps.all()
+        from .serializers import StepSerializer
+        return Response(StepSerializer(steps, many=True).data)
+
 
 class StepViewSet(viewsets.ModelViewSet):
     queryset = Step.objects.select_related("project").all()
@@ -1175,6 +1182,30 @@ class BillViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAdminOrSupervisorOrReadOnly]
     filter_backends = [OrderingFilter]
     ordering = ["-uploaded_at"]
+
+    def perform_create(self, serializer):
+        bill = serializer.save(uploaded_by=self.request.user)
+        # Auto-generate invoice if not already exists for this step
+        if not hasattr(bill.step, 'invoice'):
+            from .models import Invoice
+            Invoice.objects.create(
+                step=bill.step,
+                data={
+                    'amount': bill.ocr_data.get('total', 0) if bill.ocr_data else 0,
+                    'description': f'Invoice for {bill.step.title}',
+                    'bill_id': str(bill.id),
+                },
+                is_approved=False
+            )
+
+    @action(detail=True, methods=['post'])
+    def submit_to_admin(self, request, pk=None):
+        bill = self.get_object()
+        bill.is_submitted_to_admin = True
+        bill.save()
+
+        # (Optional: notification code here)
+        return Response({'status': 'submitted'})
 
 
 class InvoiceViewSet(viewsets.ModelViewSet):
