@@ -3,9 +3,73 @@ from rest_framework import serializers
 from .models import SupervisorNote
 from django.contrib.auth.password_validation import validate_password
 from django.contrib.auth import get_user_model
-from .models import Project, Step, ProgressLog, Bill, Invoice, VRVideo, SupervisorNote
+from .models import Project, Step, ProgressLog, Bill, Invoice, VRVideo, SupervisorNote, ProgressLogMedia, ProjectMedia
 
 User = get_user_model()
+
+
+class ProgressLogMediaSerializer(serializers.ModelSerializer):
+    url = serializers.SerializerMethodField()
+    type = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = ProgressLogMedia
+        fields = ['id', 'url', 'type', 'filename', 'file_size', 'uploaded_at']
+        read_only_fields = ['id', 'uploaded_at']
+    
+    def get_url(self, obj):
+        return obj.file.url if obj.file else None
+    
+    def get_type(self, obj):
+        return obj.media_type.lower()
+
+
+class ProjectMediaSerializer(serializers.ModelSerializer):
+    url = serializers.SerializerMethodField()
+    type = serializers.SerializerMethodField()
+    uploaded_by_name = serializers.SerializerMethodField()
+    step_id = serializers.SerializerMethodField()
+    step_title = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ProjectMedia
+        fields = [
+            'id', 'project', 'file', 'media_type',
+            'title', 'description', 'filename', 'file_size',
+            'uploaded_by_name', 'uploaded_at',
+            'url', 'type',
+            'step_id', 'step_title',
+        ]
+        read_only_fields = [
+            'id', 'uploaded_at', 'filename', 'file_size', 'uploaded_by_name'
+        ]
+
+    def get_url(self, obj):
+        return obj.file.url if obj.file else None
+
+    def get_type(self, obj):
+        return obj.media_type.lower()
+
+    def get_uploaded_by_name(self, obj):
+        return f"{obj.uploaded_by.first_name} {obj.uploaded_by.last_name}" if obj.uploaded_by else "Unknown"
+
+    def get_step_id(self, obj):
+        return str(obj.step.id) if obj.step else None
+
+    def get_step_title(self, obj):
+        return obj.step.title if obj.step else None
+
+    def create(self, validated_data):
+        request = self.context.get('request')
+        user = request.user if request else None
+        file = validated_data.get('file')
+
+        validated_data['uploaded_by'] = user
+        validated_data['filename'] = file.name if file else ''
+        validated_data['file_size'] = file.size if file else 0
+
+        return super().create(validated_data)
+
 
 
 class ProgressLogSerializer(serializers.ModelSerializer):
@@ -14,6 +78,12 @@ class ProgressLogSerializer(serializers.ModelSerializer):
     media = serializers.SerializerMethodField()
     timestamp = serializers.DateTimeField(source='created')
     type = serializers.SerializerMethodField()
+      # ✅ Accept stepId in input and map to `step`
+    stepId = serializers.PrimaryKeyRelatedField(
+        source='step',
+        queryset=Step.objects.all(),
+        write_only=True
+    )
     
     class Meta:
         model = ProgressLog
@@ -27,18 +97,39 @@ class ProgressLogSerializer(serializers.ModelSerializer):
         return f"Progress Log - {obj.created.strftime('%Y-%m-%d')}"
     
     def get_media(self, obj):
-        """Format media files for frontend"""
+        """Format media files for frontend - support both new and legacy media"""
+        media_files = []
+        
+        # Add new media files
+        for media in obj.media_files.all():
+            media_files.append({
+                "id": str(media.id),
+                "url": media.file.url,
+                "type": media.media_type.lower(),
+                "filename": media.filename
+            })
+        
+        # Add legacy media for backward compatibility
         if obj.media:
-            return [{
+            media_files.append({
                 "id": str(obj.id),
                 "url": obj.media.url,
                 "type": obj.media_type.lower() if obj.media_type else "image",
                 "filename": obj.media.name.split('/')[-1]
-            }]
-        return []
+            })
+        
+        return media_files
     
     def get_type(self, obj):
         """Get log type based on media"""
+        if obj.media_files.exists():
+            # Check if any media is video or VR
+            if obj.media_files.filter(media_type__in=['VIDEO', 'VR']).exists():
+                return "VIDEO"
+            elif obj.media_files.filter(media_type='IMAGE').exists():
+                return "PHOTO"
+        
+        # Legacy check
         if obj.media_type == "VIDEO":
             return "VIDEO"
         elif obj.media_type == "IMAGE":
@@ -54,10 +145,24 @@ class ProgressLogSerializer(serializers.ModelSerializer):
 
 
 class BillSerializer(serializers.ModelSerializer):
+    file_size = serializers.SerializerMethodField()
+    uploaded_by_name = serializers.SerializerMethodField()
+
     class Meta:
         model = Bill
-        fields = "__all__"
-        read_only_fields = ("id", "uploaded_at", "verified")
+        fields = "__all__"  # includes uploaded_by, file_size, uploaded_by_name
+        read_only_fields = ("id", "uploaded_at", "verified", "uploaded_by")
+
+    def get_file_size(self, obj):
+        if obj.pdf and hasattr(obj.pdf, 'size'):
+            return obj.pdf.size
+        return None
+
+    def get_uploaded_by_name(self, obj):
+        if obj.uploaded_by:
+            name = f"{obj.uploaded_by.first_name} {obj.uploaded_by.last_name}".strip()
+            return name if name else obj.uploaded_by.username
+        return "Unknown"
 
     # Example: human-friendly filename
     def validate_pdf(self, file):
@@ -106,6 +211,7 @@ class SupervisorSerializer(serializers.ModelSerializer):
 class ProjectSerializer(serializers.ModelSerializer):
     boq_file = serializers.FileField(required=False, allow_null=True)
     steps = StepSerializer(many=True, read_only=True)
+    media_files = ProjectMediaSerializer(many=True, read_only=True)
     
     # Computed fields for frontend
     progress = serializers.SerializerMethodField()

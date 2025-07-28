@@ -9,16 +9,20 @@ from projects.views import (
     InvoiceViewSet,
     VRVideoViewSet,
     SupervisorNoteViewSet,
+    ProgressLogMediaViewSet,
+    ProjectMediaViewSet,
 )
 
 router = DefaultRouter()
-router.register(r"", ProjectViewSet)
 router.register(r"steps", StepViewSet)
 router.register(r"logs", ProgressLogViewSet)
 router.register(r"bills", BillViewSet)
 router.register(r"invoices", InvoiceViewSet)
 router.register(r"vr-videos", VRVideoViewSet)
 router.register(r"supervisor-notes", SupervisorNoteViewSet, basename="supervisornote")
+router.register(r"progress-media", ProgressLogMediaViewSet)
+router.register(r"project-media", ProjectMediaViewSet)
+router.register(r"", ProjectViewSet)
 
 urlpatterns = [
     path("", include(router.urls)),

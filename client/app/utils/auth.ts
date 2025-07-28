@@ -142,21 +142,31 @@ export function clearAllAuthData() {
 // Helper function to make authenticated API calls
 export async function fetchWithAuth(url: string, options: RequestInit = {}) {
   const token = getAccessToken();
-  
-  const headers = {
-    'Content-Type': 'application/json',
+
+  // Build headers, but do NOT set Content-Type for FormData
+  let headers: Record<string, string> = {
     'Accept': 'application/json',
-    ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
-    ...(options.headers || {})
+    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
   };
-  
+
+  // Safely merge any additional headers
+  if (options.headers) {
+    const additionalHeaders = options.headers as Record<string, string>;
+    Object.assign(headers, additionalHeaders);
+  }
+
+  // Only set Content-Type if not sending FormData
+  if (!(options.body instanceof FormData)) {
+    headers['Content-Type'] = 'application/json';
+  }
+
   const config: RequestInit = {
     ...options,
     headers,
     credentials: 'include',
     mode: 'cors'
   };
-  
+
   try {
     const response = await fetch(url, config);
     return response;

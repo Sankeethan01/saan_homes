@@ -2,6 +2,13 @@
 
 from django.contrib import admin
 from .models import Project, Step, ProgressLog, Bill, Invoice, VRVideo
+from .models import ProjectMedia  # 👈 Add import at the top
+
+@admin.register(ProjectMedia)
+class ProjectMediaAdmin(admin.ModelAdmin):
+    list_display = ("project", "media_type", "filename", "uploaded_by", "uploaded_at")
+    list_filter = ("media_type", "uploaded_at", "uploaded_by")
+    search_fields = ("filename", "title", "description", "project__name")
 
 
 @admin.register(Project)

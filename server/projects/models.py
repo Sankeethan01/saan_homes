@@ -124,6 +124,28 @@ class Step(models.Model):
         return f"{self.project.name} – Step {self.order}"
 
 
+class ProgressLogMedia(models.Model):
+    """
+    Media files attached to progress logs
+    """
+    class MediaType(models.TextChoices):
+        IMAGE = "IMAGE", "Image"
+        VIDEO = "VIDEO", "Video"
+        VR = "VR", "VR Video"
+        DOCUMENT = "DOCUMENT", "Document"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    progress_log = models.ForeignKey('ProgressLog', related_name='media_files', on_delete=models.CASCADE)
+    file = models.FileField(upload_to="progress_media/")
+    media_type = models.CharField(max_length=10, choices=MediaType.choices)
+    filename = models.CharField(max_length=255)
+    file_size = models.PositiveIntegerField()  # Size in bytes
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+    
+    def __str__(self):
+        return f"{self.filename} ({self.media_type})"
+
+
 class ProgressLog(models.Model):
     """
     Text + media log submitted by supervisor for a given step.
@@ -134,12 +156,38 @@ class ProgressLog(models.Model):
     message = models.TextField(blank=True)
     created = models.DateTimeField(default=timezone.now)
 
+    # Legacy fields for backward compatibility
+    media = models.FileField(upload_to="progress_media/", null=True, blank=True)
+    media_type = models.CharField(max_length=10, choices=ProgressLogMedia.MediaType.choices, null=True, blank=True)
+
+    def __str__(self):
+        return f"Progress Log - {self.step.title} - {self.created.strftime('%Y-%m-%d')}"
+
+
+class ProjectMedia(models.Model):
+    """
+    Media files directly attached to projects (images, videos, VR)
+    """
     class MediaType(models.TextChoices):
         IMAGE = "IMAGE", "Image"
         VIDEO = "VIDEO", "Video"
+        VR = "VR", "VR Video"
+        DOCUMENT = "DOCUMENT", "Document"
 
-    media = models.FileField(upload_to="progress_media/", null=True, blank=True)
-    media_type = models.CharField(max_length=10, choices=MediaType.choices, null=True, blank=True)
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    project = models.ForeignKey(Project, related_name='media_files', on_delete=models.CASCADE)
+    step = models.ForeignKey('Step', related_name='project_media', null=True, blank=True, on_delete=models.SET_NULL)
+    file = models.FileField(upload_to="project_media/")
+    media_type = models.CharField(max_length=10, choices=MediaType.choices)
+    title = models.CharField(max_length=200, blank=True)
+    description = models.TextField(blank=True)
+    filename = models.CharField(max_length=255)
+    file_size = models.PositiveIntegerField()  # Size in bytes
+    uploaded_by = models.ForeignKey(User, on_delete=models.CASCADE, limit_choices_to={"role": "SUPERVISOR"})
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+    
+    def __str__(self):
+        return f"{self.title or self.filename} ({self.media_type})"
 
 
 class Bill(models.Model):
@@ -152,6 +200,14 @@ class Bill(models.Model):
     ocr_data = models.JSONField(default=dict)           # {'items': [...], 'total': 123}
     uploaded_at = models.DateTimeField(auto_now_add=True)
     verified = models.BooleanField(default=False)
+    uploaded_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="bills_uploaded"
+    )
+    is_submitted_to_admin = models.BooleanField(default=False)
 
 
 class Invoice(models.Model):
