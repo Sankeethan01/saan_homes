@@ -4,8 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuthStore } from "@/app/stores/useAuthStore";
 import { 
-  RiLockLine, 
-  RiCheckLine, 
+  RiLockLine,  
   RiArrowLeftLine, 
   RiLoader4Line, 
   RiVisaLine, 
@@ -15,13 +14,23 @@ import {
 } from "react-icons/ri";
 import Image from "next/image";
 import { toast, Toaster } from "react-hot-toast";
-import { motion } from "framer-motion";
+
+interface Booking {
+  id: string;
+  equipment_name: string;
+  equipment_image?: string;
+  start_date: string;
+  end_date: string;
+  duration: number;
+  total_cost: number;
+  status?: string;
+}
 
 export default function PayNowPage() {
   const token = useAuthStore(state => state.token);
   const clear = useAuthStore(state => state.clear);
   
-  const [booking, setBooking] = useState<any>(null);
+  const [booking, setBooking] = useState<Booking | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [cardDetails, setCardDetails] = useState({

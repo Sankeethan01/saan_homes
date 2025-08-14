@@ -1,4 +1,12 @@
 import { RiPhoneLine, RiMailLine, RiMapPin2Line } from 'react-icons/ri';
+import { IconType } from 'react-icons';
+
+interface ContactItem {
+  icon: IconType;
+  title: string;
+  lines: string[];
+  delay: number;
+}
 
 export const contactItems: ContactItem[] = [
   {

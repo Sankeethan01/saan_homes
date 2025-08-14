@@ -330,7 +330,7 @@ export default function NewProjectPage() {
           <h1 className="text-4xl font-bold bg-[#1b4965] bg-clip-text text-transparent mb-2">
             Create New Project
           </h1>
-          <p className="text-gray-600 text-lg">Let's bring your construction project to life</p>
+          <p className="text-gray-600 text-lg">Let&apos;s bring your construction project to life</p>
         </motion.div>
 
         {/* Progress Indicator */}
@@ -530,9 +530,22 @@ export default function NewProjectPage() {
 
  // Step Components
  interface StepProps {
-   formData: typeof formData;
-   setFormData: (data: typeof formData) => void;
- }
+  formData: {
+    name: string;
+    description: string;
+    project_type: string;
+    priority: string;
+    start_date: string;
+    estimated_end_date: string;
+    location: string;
+    address: string;
+    client_name: string;
+    client_email: string;
+    client_phone: string;
+    supervisor: string;
+  };
+  setFormData: (data: StepProps['formData']) => void;
+}
 
  const ProjectBasicsStep = ({ formData, setFormData }: StepProps) => (
    <div className="space-y-6">
@@ -665,23 +678,27 @@ export default function NewProjectPage() {
              <label className="block text-sm font-medium text-gray-700 mb-2">
                Start Date *
              </label>
-             <input
-               type="date"
-               className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all"
-               value={formData.start_date}
-               onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
-             />
+                           <input
+                type="date"
+                title="Start Date"
+                aria-label="Start Date"
+                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all"
+                value={formData.start_date}
+                onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
+              />
            </div>
            <div>
              <label className="block text-sm font-medium text-gray-700 mb-2">
                Estimated End Date *
              </label>
-             <input
-               type="date"
-               className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all"
-               value={formData.estimated_end_date}
-               onChange={(e) => setFormData({ ...formData, estimated_end_date: e.target.value })}
-             />
+                           <input
+                type="date"
+                title="Estimated End Date"
+                aria-label="Estimated End Date"
+                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all"
+                value={formData.estimated_end_date}
+                onChange={(e) => setFormData({ ...formData, estimated_end_date: e.target.value })}
+              />
            </div>
          </div>
        </motion.div>
@@ -700,11 +717,13 @@ export default function NewProjectPage() {
            <label className="block text-sm font-medium text-gray-700 mb-2">
              Project Supervisor
            </label>
-           <select
-             className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-purple-500 focus:ring-2 focus:ring-purple-100 transition-all"
-             value={formData.supervisor}
-             onChange={(e) => setFormData({ ...formData, supervisor: e.target.value })}
-           >
+                       <select
+              title="Project Supervisor"
+              aria-label="Project Supervisor"
+              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-purple-500 focus:ring-2 focus:ring-purple-100 transition-all"
+              value={formData.supervisor}
+              onChange={(e) => setFormData({ ...formData, supervisor: e.target.value })}
+            >
              <option value="">Choose a supervisor...</option>
              {supervisors.map((supervisor) => (
                <option key={supervisor.id} value={supervisor.id}>
@@ -943,12 +962,14 @@ export default function NewProjectPage() {
            <label className="block text-sm font-medium text-gray-700 mb-2">
              Project Thumbnail
            </label>
-           <input
-             type="file"
-             accept="image/*"
-             onChange={(e) => setThumbnailFile(e.target.files?.[0] || null)}
-             className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-blue-100 file:text-blue-700 hover:file:bg-blue-200"
-           />
+                       <input
+              type="file"
+              title="Project Thumbnail"
+              aria-label="Project Thumbnail"
+              accept="image/*"
+              onChange={(e) => setThumbnailFile(e.target.files?.[0] || null)}
+              className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-blue-100 file:text-blue-700 hover:file:bg-blue-200"
+            />
            {thumbnailFile && (
              <p className="text-xs text-green-600 mt-1">✓ {thumbnailFile.name}</p>
            )}
@@ -958,13 +979,15 @@ export default function NewProjectPage() {
            <label className="block text-sm font-medium text-gray-700 mb-2">
              Project Images
            </label>
-           <input
-             type="file"
-             accept="image/*"
-             multiple
-             onChange={handleImageChange}
-             className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-purple-100 file:text-purple-700 hover:file:bg-purple-200"
-           />
+                       <input
+              type="file"
+              title="Project Images"
+              aria-label="Project Images"
+              accept="image/*"
+              multiple
+              onChange={handleImageChange}
+              className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-purple-100 file:text-purple-700 hover:file:bg-purple-200"
+            />
            {projectImages.length > 0 && (
              <p className="text-xs text-green-600 mt-1">✓ {projectImages.length} images selected</p>
            )}
@@ -974,12 +997,14 @@ export default function NewProjectPage() {
            <label className="block text-sm font-medium text-gray-700 mb-2">
              3D Model
            </label>
-           <input
-             type="file"
-             accept=".glb,.gltf,.obj,.fbx"
-             onChange={(e) => setModel3dFile(e.target.files?.[0] || null)}
-             className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-orange-100 file:text-orange-700 hover:file:bg-orange-200"
-           />
+                       <input
+              type="file"
+              title="3D Model"
+              aria-label="3D Model"
+              accept=".glb,.gltf,.obj,.fbx"
+              onChange={(e) => setModel3dFile(e.target.files?.[0] || null)}
+              className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-orange-100 file:text-orange-700 hover:file:bg-orange-200"
+            />
            {model3dFile && (
              <p className="text-xs text-green-600 mt-1">✓ {model3dFile.name}</p>
            )}
@@ -990,8 +1015,8 @@ export default function NewProjectPage() {
  );
 
  interface ReviewStepProps {
-   formData: any;
-   boqFile: File | null;
+  formData: StepProps['formData'];
+  boqFile: File | null;
    thumbnailFile: File | null;
    model3dFile: File | null;
    projectImages: File[];

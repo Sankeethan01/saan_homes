@@ -2,7 +2,8 @@
 
 import { useAuthStore } from '@/app/stores/useAuthStore';
 import { useEffect, useState } from 'react';
-import axios from 'axios';
+import Image from 'next/image';
+import axios, { AxiosError } from 'axios';
 import { useRouter } from 'next/navigation';
 import {
   RiUser3Line,
@@ -208,10 +209,11 @@ export default function UpdateProfilePage() {
     // Optionally log out
     // useAuthStore.getState().logout();
     // router.push('/login');
-  } catch (error: any) {
-    if (axios.isAxiosError(error) && error.response) {
+  } catch (error: unknown) {
+    const axiosError = error as AxiosError<{detail?: string}>;
+    if (axios.isAxiosError(axiosError) && axiosError.response) {
       // ✅ Show error from backend
-      const detail = error.response.data.detail || 'Failed to update password.';
+      const detail = axiosError.response.data.detail || 'Failed to update password';
       alert(`Error: ${detail}`);
     } else {
       alert('Something went wrong!');
@@ -231,7 +233,7 @@ export default function UpdateProfilePage() {
         </nav>
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold mb-2" style={{ color: '#1b4965' }}>
+          <h1 className="text-3xl font-bold mb-2 text-[#1b4965]">
             <span className="inline-block animate-fade-in">Profile Settings</span>
           </h1>
           <p className="text-gray-600 animate-fade-in [animation-delay:200ms]">Manage your personal and professional information</p>
@@ -249,7 +251,9 @@ export default function UpdateProfilePage() {
               return (
                 <div key={tab.id} className="relative flex flex-col items-center z-10">
                   <button
-                    onClick={() => setActiveTab(tab.id as any)}
+                    title={`Switch to ${tab.label}`}
+                    aria-label={`Switch to ${tab.label}`}
+                    onClick={() => setActiveTab(tab.id as 'personal' | 'professional' | 'password')}
                     onMouseEnter={() => setHoveredTab(tab.id)}
                     onMouseLeave={() => setHoveredTab(null)}
                     className={`flex items-center justify-center w-14 h-14 rounded-full border-2 transition-all duration-200 mb-2 md:mb-6 shadow-md bg-white group ${
@@ -289,12 +293,13 @@ export default function UpdateProfilePage() {
                 {/* Profile Image Section */}
                 <div className="flex items-center space-x-6 mb-8 p-6 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl">
                   <div className="relative">
-                    <img
+                    <Image
                       src={`http://localhost:8000${profileData.personalInfo.profileImage}`}
                       alt="Profile"
                       width={120}
                       height={120}
                       className="rounded-full object-cover border-4 border-white shadow-lg"
+                      priority
                     />
                     <div className="absolute -bottom-2 -right-2 bg-[#1b4965] rounded-full p-2 shadow-lg">
                       <RiCameraLine className="text-white text-lg" />
@@ -306,6 +311,8 @@ export default function UpdateProfilePage() {
                     </label>
                     <input
                       type="file"
+                      title="Profile Picture"
+                      aria-label="Update Profile Picture"
                       accept="image/*"
                       onChange={(e) => {
                         const file = e.target.files?.[0];
@@ -349,6 +356,9 @@ export default function UpdateProfilePage() {
                       <div className="relative">
                         <input
                           type={type}
+                          title={label}
+                          aria-label={label}
+                          placeholder={label}
                           value={profileData.personalInfo[field as keyof PersonalInfo] ?? ''}
                           onChange={(e) =>
                             setProfileData((prev) =>
@@ -436,6 +446,9 @@ export default function UpdateProfilePage() {
                         </label>
                         <input
                           type="password"
+                          title={label}
+                          aria-label={label}
+                          placeholder={label}
                           value={field === 'currentPassword' ? currentPassword : field === 'newPassword' ? newPassword : confirmPassword}
                           onChange={(e) => {
                             if (field === 'currentPassword') setCurrentPassword(e.target.value);

@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { RiBuilding4Line, RiTimeLine, RiCheckLine, RiCalendarLine, RiTeamLine, RiMapPinLine, RiArrowRightLine,} from 'react-icons/ri';
@@ -205,7 +205,7 @@ export default function ProjectsPage() {
     };
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+  }, [showNavbar]);
 
   const ProjectCard = ({ project }: { project: Project }) => (
     <motion.div

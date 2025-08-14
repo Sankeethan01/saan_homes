@@ -5,10 +5,6 @@ import {
   RiFileTextLine,
   RiCameraLine,
   RiVideoLine,
-  RiUploadLine,
-  RiCloseLine,
-  RiAddLine,
-  RiPlayLine,
   RiDownloadLine,
 } from "react-icons/ri";
 import { fetchWithAuth } from "@/app/utils/auth";
@@ -48,6 +44,7 @@ interface MediaFile {
   url: string;
   type: 'image' | 'video' | 'pdf';
   filename: string;
+  step_id?: string;
 }
 
 interface Project {
@@ -56,31 +53,28 @@ interface Project {
   steps: ProjectStep[];
 }
 
-interface MediaUploadData {
+interface Invoice {
+  id: string;
   step: string;
-  title: string;
+  amount: number;
   description: string;
-  files: File[];
+  is_approved: boolean;
+  date: string;
+  status?: string;
 }
 
-export default function ProgressLogs({ project, onMediaEdited }: { project: Project & { media_files?: any[] }, onMediaEdited?: () => void }) {
-  // Remove: Add Progress Log button, upload modal, and handleSubmit logic
-  // Only display logs/media for each step that have media attached
+export default function ProgressLogs({ project, onMediaEdited }: { project: Project & { media_files?: MediaFile[] }, onMediaEdited?: () => void }) {
 
   // Invoice modal state
   const [showInvoiceModal, setShowInvoiceModal] = useState(false);
   const [invoiceStepId, setInvoiceStepId] = useState<string | null>(null);
-  const [currentInvoice, setCurrentInvoice] = useState<any>(null);
-  const [currentStep, setCurrentStep] = useState<any>(null);
-  const [loadingInvoice, setLoadingInvoice] = useState(false);
-
+  const [currentInvoice, setCurrentInvoice] = useState<Invoice | null>(null);
+  const [currentStep, setCurrentStep] = useState<ProjectStep | null>(null);
   const handleInvoiceClick = async (stepId: string) => {
-    setLoadingInvoice(true);
     const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api';
     let invoice = null;
-    let step = project.steps.find((s: any) => s.id === stepId);
+    const step = project.steps.find((s) => s.id === stepId);
     if (!step) {
-      setLoadingInvoice(false);
       return;
     }
     let res = await fetchWithAuth(`${apiBaseUrl}/projects/invoices/?step=${stepId}`);
@@ -103,14 +97,13 @@ export default function ProgressLogs({ project, onMediaEdited }: { project: Proj
     setCurrentStep(step);
     setCurrentInvoice(invoice);
     setShowInvoiceModal(true);
-    setLoadingInvoice(false);
   };
 
   // Fetch invoice when modal opens
   useEffect(() => {
     const fetchInvoice = async () => {
       if (!invoiceStepId) return;
-      setLoadingInvoice(true);
+
       try {
         const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api';
         const res = await fetchWithAuth(`${apiBaseUrl}/projects/invoices/?step=${invoiceStepId}`);
@@ -123,13 +116,11 @@ export default function ProgressLogs({ project, onMediaEdited }: { project: Proj
             // We just need to ensure the modal is open and the invoice data is passed.
             setShowInvoiceModal(true);
             setCurrentInvoice(invoice);
-            setCurrentStep(project.steps.find((s: any) => s.id === invoiceStepId));
+            setCurrentStep(project.steps.find((s) => s.id === invoiceStepId) || null);
           }
         }
-      } catch (e) {
-        // fallback: do nothing if error
+      } catch {
       } finally {
-        setLoadingInvoice(false);
       }
     };
     if (showInvoiceModal && invoiceStepId) fetchInvoice();
@@ -142,7 +133,7 @@ export default function ProgressLogs({ project, onMediaEdited }: { project: Proj
     <div className="space-y-8">
       <h2 className="text-xl font-bold mb-6">Project Timeline</h2>
       <div className="relative border-l-4 border-[#1b4965]/30 ml-4">
-        {sortedSteps.map((step, idx) => {
+        {sortedSteps.map((step) => {
           const isCurrent = step.status === 'IN_PROGRESS';
           const isCompleted = step.status === 'COMPLETED';
           console.log('All media_files:', project.media_files);
@@ -234,14 +225,16 @@ export default function ProgressLogs({ project, onMediaEdited }: { project: Proj
                               </div>
                             )}
                             <div className="absolute inset-0 bg-black/0 group-hover/media:bg-black/10 transition-all duration-300 rounded-xl"></div>
-                            <a
-                              href={`${process.env.NEXT_PUBLIC_API_BASE_URL}${media.url}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/media:opacity-100 transition-opacity duration-300"
-                            >
-                              <RiDownloadLine className="text-white text-xl" />
-                            </a>
+                                                          <a
+                                href={`${process.env.NEXT_PUBLIC_API_BASE_URL}${media.url}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/media:opacity-100 transition-opacity duration-300"
+                                title={`Download ${media.filename}`}
+                                aria-label={`Download ${media.filename}`}
+                              >
+                                <RiDownloadLine className="text-white text-xl" />
+                              </a>
                           </div>
                         ))}
                       </div>
@@ -292,14 +285,16 @@ export default function ProgressLogs({ project, onMediaEdited }: { project: Proj
                                       </div>
                                     )}
                                     <div className="absolute inset-0 bg-black/0 group-hover/media:bg-black/10 transition-all duration-300 rounded-xl"></div>
-                                    <a
-                                      href={`${process.env.NEXT_PUBLIC_API_BASE_URL}${media.url}`}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/media:opacity-100 transition-opacity duration-300"
-                                    >
-                                      <RiDownloadLine className="text-white text-xl" />
-                                    </a>
+                                                                  <a
+                                href={`${process.env.NEXT_PUBLIC_API_BASE_URL}${media.url}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/media:opacity-100 transition-opacity duration-300"
+                                title={`Download ${media.filename}`}
+                                aria-label={`Download ${media.filename}`}
+                              >
+                                <RiDownloadLine className="text-white text-xl" />
+                              </a>
                                   </div>
                                 ))}
                               </div>
@@ -319,8 +314,8 @@ export default function ProgressLogs({ project, onMediaEdited }: { project: Proj
       {showInvoiceModal && (
         <SupervisorInvoiceModal
           open={showInvoiceModal}
-          step={currentStep}
-          invoice={currentInvoice}
+          step={currentStep || { id: '', title: '' }}
+          invoice={currentInvoice ? { ...currentInvoice, status: currentInvoice.is_approved ? 'approved' : 'pending' } : undefined}
           onClose={() => {
             setShowInvoiceModal(false);
             setInvoiceStepId(null);

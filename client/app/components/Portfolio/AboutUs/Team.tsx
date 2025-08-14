@@ -1,7 +1,6 @@
 "use client";
 
 import { motion } from "framer-motion";
-import {  RiUser3Line } from "react-icons/ri";
 import Image from "next/image";
 
 const teamMembers = [

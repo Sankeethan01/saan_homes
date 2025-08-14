@@ -1,10 +1,11 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import axios from 'axios';
-import { useAuthStore } from '@/app/stores/useAuthStore';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
+import axios, { AxiosError } from "axios";
+import { useAuthStore } from "@/app/stores/useAuthStore";
+import { useRouter } from "next/navigation";
+import Image from "next/image";
 import {
   RiBuildingLine,
   RiTimeLine,
@@ -13,9 +14,8 @@ import {
   RiRidingLine,
   RiNotificationLine,
   RiSettingsLine,
-  RiUserLine,
   RiSearchLine,
-} from 'react-icons/ri';
+} from "react-icons/ri";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -28,8 +28,8 @@ import {
   Legend,
   ArcElement,
   Filler,
-} from 'chart.js';
-import { Line, Bar, Doughnut } from 'react-chartjs-2';
+} from "chart.js";
+import { Line, Bar, Doughnut } from "react-chartjs-2";
 
 // Register ChartJS components
 ChartJS.register(
@@ -47,13 +47,13 @@ ChartJS.register(
 
 // Sample data for charts (keeping these as fallback)
 const monthlyProgress = {
-  labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+  labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
   datasets: [
     {
-      label: 'Project Progress',
+      label: "Project Progress",
       data: [65, 35, 78, 50, 89, 93],
-      borderColor: '#1b4965',
-      backgroundColor: 'rgba(59, 130, 246, 0.1)',
+      borderColor: "#1b4965",
+      backgroundColor: "rgba(59, 130, 246, 0.1)",
       tension: 0.4,
       fill: true,
     },
@@ -62,16 +62,12 @@ const monthlyProgress = {
 
 // Sample data for Invoices Overview
 const invoicesOverview = {
-  labels: ['Paid', 'Pending', 'Overdue'],
+  labels: ["Paid", "Pending", "Overdue"],
   datasets: [
     {
-      label: 'Invoices',
+      label: "Invoices",
       data: [120, 35, 8],
-      backgroundColor: [
-        '#cbf3f0', 
-        '#e7c6ff', 
-        '#ffcad4', 
-      ],
+      backgroundColor: ["#cbf3f0", "#e7c6ff", "#ffcad4"],
       borderRadius: 8,
       barPercentage: 0.6,
       categoryPercentage: 0.5,
@@ -81,20 +77,12 @@ const invoicesOverview = {
 
 // Sample data for Project Completion Rate
 const completionRateData = {
-  labels: ['Completed', 'Ongoing', 'Upcoming'],
+  labels: ["Completed", "Ongoing", "Upcoming"],
   datasets: [
     {
       data: [12, 7, 5],
-      backgroundColor: [
-        '#f4acb7',
-        '#9a8c98',
-        '#b7e4c7',
-      ],
-      borderColor: [
-        '#f4acb7',
-        '#9a8c98',
-        '#b7e4c7',
-      ],
+      backgroundColor: ["#f4acb7", "#9a8c98", "#b7e4c7"],
+      borderColor: ["#f4acb7", "#9a8c98", "#b7e4c7"],
       borderWidth: 2,
       hoverOffset: 8,
     },
@@ -117,9 +105,9 @@ interface ProjectStats {
     progress: number;
   }>;
 }
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://127.0.0.1:8000/api';
+const API_BASE =
+  process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api";
 export default function SupervisorDashboard() {
-  const [selectedPeriod, setSelectedPeriod] = useState('monthly');
   const [projectStats, setProjectStats] = useState<ProjectStats>({
     total: 0,
     ongoing: 0,
@@ -127,32 +115,39 @@ export default function SupervisorDashboard() {
     upcoming: 0,
     average_progress: 0,
     project_types: {},
-    recent_activities: []
+    recent_activities: [],
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
+
   const token = useAuthStore((s) => s.token);
-  const username = typeof window !== 'undefined' ? localStorage.getItem('username') : 'User';
+  const username =
+    typeof window !== "undefined" ? localStorage.getItem("username") : "User";
   const router = useRouter();
 
   useEffect(() => {
     const fetchProjectStats = async () => {
       if (!token) {
-        setError('No authentication token found');
+        setError("No authentication token found");
         setLoading(false);
         return;
       }
 
       try {
-        const response = await axios.get(`${API_BASE}/projects/supervisor_stats/`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const response = await axios.get(
+          `${API_BASE}/projects/supervisor_stats/`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
         setProjectStats(response.data);
         setError(null);
-      } catch (err: any) {
-        console.error('Failed to fetch project stats:', err);
-        setError(err.response?.data?.error || 'Failed to fetch project statistics');
+      } catch (err: unknown) {
+        const error = err as AxiosError<{ error?: string }>;
+        console.error("Failed to fetch project stats:", error);
+        setError(
+          error.response?.data?.error || "Failed to fetch project statistics"
+        );
       } finally {
         setLoading(false);
       }
@@ -168,15 +163,15 @@ export default function SupervisorDashboard() {
       {
         data: Object.values(projectStats.project_types),
         backgroundColor: [
-          '#be95c4',
-          '#b7b7a4',
-          '#bbdefb',
-          '#f3d5b5',
-          '#a4c3b2',
-          '#aeb8fe',
+          "#be95c4",
+          "#b7b7a4",
+          "#bbdefb",
+          "#f3d5b5",
+          "#a4c3b2",
+          "#aeb8fe",
         ],
         borderWidth: 2,
-        borderColor: '#ffffff',
+        borderColor: "#ffffff",
       },
     ],
   };
@@ -203,16 +198,16 @@ export default function SupervisorDashboard() {
       </div>
     );
   }
-  
+
   return (
     <div className="min-h-screen  p-4 md:p-6 relative overflow-x-hidden">
       {/* Pastel background blobs */}
-      <div className="fixed top-0 left-0 w-40 h-40 bg-[#e3f0ff] rounded-full blur-3xl opacity-60 -z-10" style={{ filter: 'blur(40px)' }} />
-      <div className="fixed top-1/2 right-0 w-48 h-48 bg-[#ffe3ec] rounded-full blur-3xl opacity-50 -z-10" style={{ filter: 'blur(60px)' }} />
-      <div className="fixed bottom-0 left-1/3 w-56 h-56 bg-[#e3ffe9] rounded-full blur-3xl opacity-40 -z-10" style={{ filter: 'blur(70px)' }} />
+      <div className="fixed top-0 left-0 w-40 h-40 bg-[#e3f0ff] rounded-full blur-3xl opacity-60 -z-10" />
+      <div className="fixed top-1/2 right-0 w-48 h-48 bg-[#ffe3ec] rounded-full blur-3xl opacity-50 -z-10" />
+      <div className="fixed bottom-0 left-1/3 w-56 h-56 bg-[#e3ffe9] rounded-full blur-3xl opacity-40 -z-10" />
       <div className="relative z-10 max-w-7xl mx-auto space-y-3">
         {/* Header */}
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           className="bg-gradient-to-br from-white via-[#f0f6ff] to-white rounded-2xl p-2 md:p-3 shadow border border-gray-100"
@@ -223,8 +218,15 @@ export default function SupervisorDashboard() {
                 <RiBuildingLine className="text-[#1b4965] text-base" />
               </div>
               <div className="space-y-0.5">
-                <h1 className="text-lg md:text-xl font-bold text-[#1b4965] leading-tight">Supervisor Dashboard</h1>
-                <p className="text-[11px] text-gray-500 font-medium">Welcome back, <span className="font-semibold text-[#1b4965]">{username}</span></p>
+                <h1 className="text-lg md:text-xl font-bold text-[#1b4965] leading-tight">
+                  Supervisor Dashboard
+                </h1>
+                <p className="text-[11px] text-gray-500 font-medium">
+                  Welcome back,{" "}
+                  <span className="font-semibold text-[#1b4965]">
+                    {username}
+                  </span>
+                </p>
               </div>
             </div>
             <div className="flex items-center gap-1">
@@ -233,27 +235,35 @@ export default function SupervisorDashboard() {
                 <input
                   type="text"
                   placeholder="Search projects..."
-                  className="pl-7 pr-2 py-1.5 bg-white border border-gray-200 rounded-xl text-xs focus:outline-none focus:ring-1 focus:ring-[#1b4965] focus:border-[#1b4965]"
-                  style={{ minWidth: 90 }}
+                  className="pl-7 pr-2 py-1.5 bg-white border border-gray-200 rounded-xl text-xs focus:outline-none focus:ring-1 focus:ring-[#1b4965] focus:border-[#1b4965] min-w-[90px]"
                 />
               </div>
               <button
                 className="p-2 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-all duration-200"
-                onClick={() => router.push('/dashboard/supervisor/notifications')}
+                onClick={() =>
+                  router.push("/dashboard/supervisor/notifications")
+                }
                 aria-label="Notifications"
               >
                 <RiNotificationLine className="text-sm text-gray-400" />
               </button>
               <button
                 className="p-2 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-all duration-200"
-                onClick={() => router.push('/dashboard/supervisor/profile')}
+                onClick={() => router.push("/dashboard/supervisor/profile")}
                 aria-label="Settings"
               >
                 <RiSettingsLine className="text-sm text-gray-400" />
               </button>
               {/* Profile Picture */}
-              <div className="w-8 h-8 rounded-xl bg-[#eaf3fb] flex items-center justify-center">
-                <img src="/assets/images/user.png" alt="Site Supervisor" className="w-8 h-8 object-cover rounded-xl" />
+              <div className="w-8 h-8 rounded-xl bg-[#eaf3fb] flex items-center justify-center relative">
+                <Image
+                  src="/assets/images/user.png"
+                  alt="Site Supervisor"
+                  fill
+                  sizes="32px"
+                  className="object-cover rounded-xl"
+                  priority
+                />
               </div>
             </div>
           </div>
@@ -262,10 +272,30 @@ export default function SupervisorDashboard() {
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2">
           {[
-            { title: 'Total Projects', value: projectStats.total, icon: RiBuildingLine, color: 'blue' },
-            { title: 'Ongoing', value: projectStats.ongoing, icon: RiTimeLine, color: 'purple' },
-            { title: 'Completed', value: projectStats.completed, icon: RiCheckLine, color: 'green' },
-            { title: 'Upcoming', value: projectStats.upcoming, icon: RiCalendarLine, color: 'pink' },
+            {
+              title: "Total Projects",
+              value: projectStats.total,
+              icon: RiBuildingLine,
+              color: "blue",
+            },
+            {
+              title: "Ongoing",
+              value: projectStats.ongoing,
+              icon: RiTimeLine,
+              color: "purple",
+            },
+            {
+              title: "Completed",
+              value: projectStats.completed,
+              icon: RiCheckLine,
+              color: "green",
+            },
+            {
+              title: "Upcoming",
+              value: projectStats.upcoming,
+              icon: RiCalendarLine,
+              color: "pink",
+            },
           ].map((stat, index) => (
             <motion.div
               key={stat.title}
@@ -274,22 +304,34 @@ export default function SupervisorDashboard() {
               transition={{ delay: index * 0.1 }}
               whileHover={{ scale: 1.03, y: -2 }}
               className={`group p-2 rounded-xl shadow border border-gray-100 hover:shadow-md transition-all duration-200 flex flex-col items-center justify-center text-center ${
-                index === 0 ? 'bg-gradient-to-br from-[#e3f0ff] to-white' :
-                index === 1 ? 'bg-gradient-to-br from-[#ffe3ec] to-white' :
-                index === 2 ? 'bg-gradient-to-br from-[#e3ffe9] to-white' :
-                'bg-gradient-to-br from-[#fffbe3] to-white'
+                index === 0
+                  ? "bg-gradient-to-br from-[#e3f0ff] to-white"
+                  : index === 1
+                  ? "bg-gradient-to-br from-[#ffe3ec] to-white"
+                  : index === 2
+                  ? "bg-gradient-to-br from-[#e3ffe9] to-white"
+                  : "bg-gradient-to-br from-[#fffbe3] to-white"
               }`}
             >
-              <div className={
-                `p-1 rounded-lg mb-0.5 flex items-center justify-center ` +
-                (index === 0 ? 'bg-[#cbeafe]' :
-                 index === 1 ? 'bg-[#ffd6e3]' :
-                 index === 2 ? 'bg-[#caffdd]' :
-                 'bg-[#fff7c2]')
-              }>
-                {stat.icon && <stat.icon className="text-base text-[#1b4965]" />}
+              <div
+                className={
+                  `p-1 rounded-lg mb-0.5 flex items-center justify-center ` +
+                  (index === 0
+                    ? "bg-[#cbeafe]"
+                    : index === 1
+                    ? "bg-[#ffd6e3]"
+                    : index === 2
+                    ? "bg-[#caffdd]"
+                    : "bg-[#fff7c2]")
+                }
+              >
+                {stat.icon && (
+                  <stat.icon className="text-base text-[#1b4965]" />
+                )}
               </div>
-              <h3 className="text-lg font-bold text-[#1b4965] mb-0.5">{stat.value}</h3>
+              <h3 className="text-lg font-bold text-[#1b4965] mb-0.5">
+                {stat.value}
+              </h3>
               <p className="text-xs text-gray-500 font-medium">{stat.title}</p>
             </motion.div>
           ))}
@@ -305,7 +347,9 @@ export default function SupervisorDashboard() {
             className="bg-white p-2 rounded-2xl shadow border border-gray-100"
           >
             <div className="flex items-center justify-between mb-2">
-              <h2 className="text-sm font-bold text-[#1b4965]">Project Progress</h2>
+              <h2 className="text-sm font-bold text-[#1b4965]">
+                Project Progress
+              </h2>
               <div className="flex items-center gap-1 text-green-600 text-xs font-semibold">
                 <RiRidingLine />
                 {projectStats.average_progress}% avg
@@ -325,7 +369,7 @@ export default function SupervisorDashboard() {
                     beginAtZero: true,
                     max: 100,
                     grid: {
-                      color: 'rgba(0, 0, 0, 0.05)',
+                      color: "rgba(0, 0, 0, 0.05)",
                     },
                   },
                   x: {
@@ -352,7 +396,9 @@ export default function SupervisorDashboard() {
             transition={{ delay: 0.5 }}
             className="bg-white p-2 rounded-2xl shadow border border-gray-100"
           >
-            <h2 className="text-sm font-bold text-[#1b4965] mb-2">Project Types Distribution</h2>
+            <h2 className="text-sm font-bold text-[#1b4965] mb-2">
+              Project Types Distribution
+            </h2>
             <div className="h-[240px] flex items-center justify-center">
               {Object.keys(projectStats.project_types).length > 0 ? (
                 <Doughnut
@@ -362,7 +408,7 @@ export default function SupervisorDashboard() {
                     maintainAspectRatio: false,
                     plugins: {
                       legend: {
-                        position: 'bottom',
+                        position: "bottom",
                         labels: {
                           padding: 20,
                           usePointStyle: true,
@@ -389,7 +435,9 @@ export default function SupervisorDashboard() {
               transition={{ delay: 0.6 }}
               className="bg-white p-2 rounded-2xl shadow border border-gray-100 w-full flex flex-col"
             >
-              <h2 className="text-sm font-bold text-[#1b4965] mb-2">Invoices Overview</h2>
+              <h2 className="text-sm font-bold text-[#1b4965] mb-2">
+                Invoices Overview
+              </h2>
               <div className="w-full h-[190px] flex items-center justify-center">
                 <Bar
                   data={invoicesOverview}
@@ -401,20 +449,20 @@ export default function SupervisorDashboard() {
                         display: false,
                       },
                       tooltip: {
-                        backgroundColor: '#1b4965',
-                        titleColor: '#fff',
-                        bodyColor: '#fff',
+                        backgroundColor: "#1b4965",
+                        titleColor: "#fff",
+                        bodyColor: "#fff",
                       },
                     },
                     scales: {
                       y: {
                         beginAtZero: true,
                         grid: {
-                          color: 'rgba(27, 73, 101, 0.07)',
+                          color: "rgba(27, 73, 101, 0.07)",
                         },
                         ticks: {
-                          color: '#1b4965',
-                          font: { size: 11, weight: 'bold' },
+                          color: "#1b4965",
+                          font: { size: 11, weight: "bold" },
                         },
                       },
                       x: {
@@ -422,8 +470,8 @@ export default function SupervisorDashboard() {
                           display: false,
                         },
                         ticks: {
-                          color: '#1b4965',
-                          font: { size: 11, weight: 'bold' },
+                          color: "#1b4965",
+                          font: { size: 11, weight: "bold" },
                         },
                       },
                     },
@@ -439,7 +487,9 @@ export default function SupervisorDashboard() {
               transition={{ delay: 0.65 }}
               className="bg-white p-2 rounded-3xl shadow border border-gray-100 w-full flex flex-col"
             >
-              <h2 className="text-sm font-bold text-[#1b4965] mb-2">Project Completion Rate</h2>
+              <h2 className="text-sm font-bold text-[#1b4965] mb-2">
+                Project Completion Rate
+              </h2>
               <div className="wrap flex-col items-justify justify-center w-full min-h-[140px]">
                 <div className="w-full h-[140px] wrap items-justify justify-center">
                   <Doughnut
@@ -452,12 +502,12 @@ export default function SupervisorDashboard() {
                           display: false,
                         },
                         tooltip: {
-                          backgroundColor: '#1b4965',
-                          titleColor: '#fff',
-                          bodyColor: '#fff',
+                          backgroundColor: "#1b4965",
+                          titleColor: "#fff",
+                          bodyColor: "#fff",
                         },
                       },
-                      cutout: '70%',
+                      cutout: "70%",
                     }}
                     height={140}
                   />
@@ -465,9 +515,19 @@ export default function SupervisorDashboard() {
                 {/* Custom Legend */}
                 <div className="mt-1 flex flex-col items-center">
                   {completionRateData.labels.map((label, idx) => (
-                    <div key={label} className="flex items-center gap-1 text-xs text-gray-600 mb-0.5">
-                      <span className="inline-block w-2.5 h-2.5 rounded-full" style={{backgroundColor: [
-                        '#f4acb7','#9a8c98','#b7e4c7'][idx]}}></span> 
+                    <div
+                      key={label}
+                      className="flex items-center gap-1 text-xs text-gray-600 mb-0.5"
+                    >
+                      <span
+                        className={`inline-block w-2.5 h-2.5 rounded-full ${
+                          idx === 0
+                            ? "bg-[#f4acb7]"
+                            : idx === 1
+                            ? "bg-[#9a8c98]"
+                            : "bg-[#b7e4c7]"
+                        }`}
+                      ></span>
                       <span>{label}</span>
                     </div>
                   ))}
@@ -483,7 +543,9 @@ export default function SupervisorDashboard() {
             transition={{ delay: 0.7 }}
             className="bg-white p-2 rounded-2xl shadow border border-gray-100 w-full"
           >
-            <h2 className="text-sm font-bold text-[#1b4965] mb-2">Recent Activities</h2>
+            <h2 className="text-sm font-bold text-[#1b4965] mb-2">
+              Recent Activities
+            </h2>
             <div className="space-y-1.5">
               {projectStats.recent_activities.length > 0 ? (
                 projectStats.recent_activities.map((activity, index) => (
@@ -494,18 +556,29 @@ export default function SupervisorDashboard() {
                     transition={{ delay: 0.8 + index * 0.1 }}
                     className="flex items-start gap-1.5 p-1.5 bg-gray-50 rounded-xl hover:bg-gray-100 transition-all duration-200"
                   >
-                    <div className={`p-1 rounded-lg ${
-                      activity.type === 'success' ? 'bg-[#cdb4db]-100 text-[#cdb4db]' :
-                      activity.type === 'info' ? 'bg-blue-100 text-blue-600' :
-                      activity.type === 'warning' ? 'bg-yellow-100 text-yellow-600' :
-                      'bg-indigo-100 text-indigo-600'
-                    }`}>
+                    <div
+                      className={`p-1 rounded-lg ${
+                        activity.type === "success"
+                          ? "bg-[#cdb4db]-100 text-[#cdb4db]"
+                          : activity.type === "info"
+                          ? "bg-blue-100 text-blue-600"
+                          : activity.type === "warning"
+                          ? "bg-yellow-100 text-yellow-600"
+                          : "bg-indigo-100 text-indigo-600"
+                      }`}
+                    >
                       <RiBuildingLine className="text-xs" />
                     </div>
                     <div className="flex-1">
-                      <p className="text-xs font-semibold text-[#1b4965]">{activity.activity}</p>
-                      <p className="text-[10px] text-gray-500">{activity.project}</p>
-                      <p className="text-[9px] text-gray-400 mt-0.5">{activity.time}</p>
+                      <p className="text-xs font-semibold text-[#1b4965]">
+                        {activity.activity}
+                      </p>
+                      <p className="text-[10px] text-gray-500">
+                        {activity.project}
+                      </p>
+                      <p className="text-[9px] text-gray-400 mt-0.5">
+                        {activity.time}
+                      </p>
                     </div>
                   </motion.div>
                 ))
@@ -525,7 +598,9 @@ export default function SupervisorDashboard() {
           transition={{ delay: 0.87 }}
           className="bg-white p-2 rounded-2xl shadow border border-gray-100 w-full mt-3"
         >
-          <h2 className="text-sm font-bold text-[#1b4965] mb-2">Recent Invoices</h2>
+          <h2 className="text-sm font-bold text-[#1b4965] mb-2">
+            Recent Invoices
+          </h2>
           <div className="overflow-x-auto">
             <table className="min-w-full text-sm text-left">
               <thead>
@@ -541,19 +616,25 @@ export default function SupervisorDashboard() {
                   <td className="py-1 px-1">INV-0012</td>
                   <td className="py-1 px-1">Green Villa</td>
                   <td className="py-1 px-1">LKR 120,000</td>
-                  <td className="py-1 px-1 text-green-600 font-semibold">Paid</td>
+                  <td className="py-1 px-1 text-green-600 font-semibold">
+                    Paid
+                  </td>
                 </tr>
                 <tr className="border-b hover:bg-gray-50">
                   <td className="py-1 px-1">INV-0013</td>
                   <td className="py-1 px-1">Sunset Homes</td>
                   <td className="py-1 px-1">LKR 85,000</td>
-                  <td className="py-1 px-1 text-yellow-600 font-semibold">Pending</td>
+                  <td className="py-1 px-1 text-yellow-600 font-semibold">
+                    Pending
+                  </td>
                 </tr>
                 <tr className="hover:bg-gray-50">
                   <td className="py-1 px-1">INV-0014</td>
                   <td className="py-1 px-1">Skyline Towers</td>
                   <td className="py-1 px-1">LKR 45,000</td>
-                  <td className="py-1 px-1 text-red-600 font-semibold">Overdue</td>
+                  <td className="py-1 px-1 text-red-600 font-semibold">
+                    Overdue
+                  </td>
                 </tr>
               </tbody>
             </table>

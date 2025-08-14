@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 
 const CTAAboutUsPortfolio = () => {
     const router = useRouter();
@@ -10,10 +11,12 @@ const CTAAboutUsPortfolio = () => {
     <section className="py-20 bg-[#1b4965] text-white relative overflow-hidden">
         {/* Background Image */}
         <div className="absolute inset-0 z-0">
-          <img
+          <Image
             src="/assets/images/bg01.jpeg"
             alt="CTA Background"
             className="w-full h-full object-cover"
+            fill
+            priority
           />
           {/* Overlay */}
           <div className="absolute inset-0 bg-[#1b4965]/50"></div>

@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useEffect, useState, useCallback } from "react";
 import { fetchWithAuth } from "@/app/utils/auth";
 import {
   RiUploadLine,
@@ -13,6 +12,15 @@ import {
   RiEdit2Line,
 } from "react-icons/ri";
 
+interface Invoice {
+  id: string;
+  data?: {
+    amount: number;
+    description: string;
+  };
+  is_approved: boolean;
+}
+
 interface StepBill {
   id: string;
   amount: number;
@@ -21,12 +29,12 @@ interface StepBill {
   stepName?: string;
   projectId: string;
   projectName?: string;
-  invoice_file: string;
+  invoice_file: string | undefined;
   file_size?: number;
   uploaded_by_name?: string;
   uploaded_at?: string;
   is_submitted_to_admin?: boolean;
-  stepInvoice?: any; // <-- Add this line
+  stepInvoice?: Invoice | null;
 }
 
 interface Project {
@@ -46,10 +54,7 @@ export default function BillsPage() {
   const [loading, setLoading] = useState<boolean>(true);
   const [projectSteps, setProjectSteps] = useState<Record<string, Step[]>>({});
   const [steps, setSteps] = useState<Record<string, Step[]>>({});
-  const [selectedProjectId, setSelectedProjectId] = useState<string>("");
-  const [selectedStepId, setSelectedStepId] = useState<string>("");
   const [showForm, setShowForm] = useState<boolean>(false);
-  const [stepMap, setStepMap] = useState<Record<string, string>>({});
   const [form, setForm] = useState<{ step: string; files: File[] }>({
     step: "",
     files: [],
@@ -60,26 +65,25 @@ export default function BillsPage() {
   const [backgroundRefresh, setBackgroundRefresh] = useState<boolean>(false);
   const [searchTerm, setSearchTerm] = useState("");
 
-  const params = useParams();
-
-  useEffect(() => {
-    const fetchProjects = async () => {
-      try {
-        const response = await fetchWithAuth(
-          `${process.env.NEXT_PUBLIC_API_BASE_URL}/projects/supervisor_projects/`
-        );
-        const data = await response.json();
-        setProjects(data);
-        setLoading(false);
-      } catch (error) {
-        console.error("Error fetching projects:", error);
-        setLoading(false);
-      }
-    };
-    fetchProjects();
+  const fetchProjects = useCallback(async () => {
+    try {
+      const response = await fetchWithAuth(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/projects/supervisor_projects/`
+      );
+      const data = await response.json();
+      setProjects(data);
+      setLoading(false);
+    } catch (error) {
+      console.error("Error fetching projects:", error);
+      setLoading(false);
+    }
   }, []);
 
-  const fetchProjectSteps = async (projectId: string) => {
+  useEffect(() => {
+    fetchProjects();
+  }, [fetchProjects]);
+
+  const fetchProjectSteps = useCallback(async (projectId: string) => {
     try {
       const res = await fetchWithAuth(
         `${process.env.NEXT_PUBLIC_API_BASE_URL}/projects/${projectId}/steps/`
@@ -89,93 +93,105 @@ export default function BillsPage() {
     } catch (error) {
       console.error("Failed to fetch steps:", error);
     }
-  };
+  }, []);
 
   useEffect(() => {
     if (projectId && !projectSteps[projectId]) {
       fetchProjectSteps(projectId);
     }
-  }, [projectId]);
+  }, [projectId, projectSteps, fetchProjectSteps]);
+
+  const fetchBills = useCallback(async () => {
+    if (!backgroundRefresh) setLoading(true);
+    try {
+      const allBills: StepBill[] = [];
+
+      const targetProjects = projectId
+        ? projects.filter((p) => p.id === projectId)
+        : projects;
+
+      for (const project of targetProjects) {
+        const projectRes = await fetchWithAuth(
+          `${process.env.NEXT_PUBLIC_API_BASE_URL}/projects/${project.id}/`
+        );
+        if (!projectRes.ok) continue;
+
+        const projectData = await projectRes.json();
+        const stepsData: Step[] = projectData.steps || [];
+
+        // Map step IDs to their invoice
+        const stepInvoiceMap: Record<string, Invoice | null> = {};
+        stepsData.forEach((step: Step & { invoice?: Invoice }) => {
+          if (step.invoice) {
+            stepInvoiceMap[step.id] = step.invoice;
+          }
+        });
+
+        setSteps((prev) => ({
+          ...prev,
+          [project.id]: stepsData,
+        }));
+
+        for (const step of stepsData) {
+          const billsRes = await fetchWithAuth(
+            `${process.env.NEXT_PUBLIC_API_BASE_URL}/projects/bills/?step=${step.id}`
+          );
+          if (!billsRes.ok) continue;
+
+          interface BillResponse {
+            id: string;
+            step: string;
+            ocr_data?: { total: number };
+            pdf?: string;
+            file_size?: number;
+            uploaded_by_name?: string;
+            uploaded_at?: string;
+            is_submitted_to_admin?: boolean;
+            project_name?: string;
+          }
+          
+          const billsData: BillResponse[] = await billsRes.json();
+
+          allBills.push(
+            ...billsData
+              .filter((b) => b.step === step.id)
+              .map((b) => ({
+                id: b.id,
+                amount: b.ocr_data?.total || 0,
+                description: b.pdf?.split("/").pop() || "No description",
+                invoice_file: b.pdf,
+                stepId: step.id,
+                stepName: step.title,
+                projectId: project.id,
+                projectName: projectData.name,
+                file_size: b.file_size,
+                uploaded_by_name: b.uploaded_by_name,
+                uploaded_at: b.uploaded_at,
+                is_submitted_to_admin: b.is_submitted_to_admin,
+                stepInvoice: stepInvoiceMap[step.id] || null,
+              }))
+          );
+        }
+      }
+
+      const uniqueBills = Array.from(
+        new Map(allBills.map((bill) => [bill.id, bill])).values()
+      );
+      setStepBills(uniqueBills);
+    } catch (error) {
+      console.error("Error fetching bills:", error);
+      setStepBills([]);
+    } finally {
+      setLoading(false);
+      setBackgroundRefresh(false);
+    }
+  }, [projectId, projects, backgroundRefresh]);
 
   useEffect(() => {
-    const fetchBills = async () => {
-      if (!backgroundRefresh) setLoading(true);
-      try {
-        let allBills: StepBill[] = [];
-
-        const targetProjects = projectId
-          ? projects.filter((p) => p.id === projectId)
-          : projects;
-
-        for (const project of targetProjects) {
-          const projectRes = await fetchWithAuth(
-            `${process.env.NEXT_PUBLIC_API_BASE_URL}/projects/${project.id}/`
-          );
-          if (!projectRes.ok) continue;
-
-          const projectData = await projectRes.json();
-          const stepsData: Step[] = projectData.steps || [];
-
-          // Map step IDs to their invoice
-          const stepInvoiceMap: Record<string, any> = {};
-          stepsData.forEach((step: any) => {
-            if (step.invoice) {
-              stepInvoiceMap[step.id] = step.invoice;
-            }
-          });
-
-          setSteps((prev) => ({
-            ...prev,
-            [project.id]: stepsData,
-          }));
-
-          for (const step of stepsData) {
-            const billsRes = await fetchWithAuth(
-              `${process.env.NEXT_PUBLIC_API_BASE_URL}/projects/bills/?step=${step.id}`
-            );
-            if (!billsRes.ok) continue;
-
-            const billsData = await billsRes.json();
-
-            allBills.push(
-              ...billsData
-                .filter((b: any) => b.step === step.id)
-                .map((b: any) => ({
-                  id: b.id,
-                  amount: b.ocr_data?.total || 0,
-                  description: b.pdf?.split("/").pop() || "No description",
-                  invoice_file: b.pdf,
-                  stepId: step.id,
-                  stepName: step.title,
-                  projectId: project.id,
-                  projectName: projectData.name,
-                  file_size: b.file_size,
-                  uploaded_by_name: b.uploaded_by_name,
-                  uploaded_at: b.uploaded_at,
-                  is_submitted_to_admin: b.is_submitted_to_admin,
-                  stepInvoice: stepInvoiceMap[step.id] || null,
-                }))
-            );
-          }
-        }
-
-        const uniqueBills = Array.from(
-          new Map(allBills.map((bill) => [bill.id, bill])).values()
-        );
-        setStepBills(uniqueBills);
-      } catch (error) {
-        console.error("Error fetching bills:", error);
-        setStepBills([]);
-      } finally {
-        setLoading(false);
-        setBackgroundRefresh(false);
-      }
-    };
-
     if (projects.length > 0) {
       fetchBills();
     }
-  }, [projectId, projects, refresh]);
+  }, [projects, refresh, fetchBills]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files ? Array.from(e.target.files) : [];
@@ -279,6 +295,8 @@ export default function BillsPage() {
           value={projectId}
           onChange={(e) => setProjectId(e.target.value)}
           className="p-2 border rounded-md w-full md:w-64"
+          title="Filter by project"
+          aria-label="Filter by project"
         >
           <option value="">All Projects</option>
           {projects.map((project) => (
@@ -407,7 +425,7 @@ export default function BillsPage() {
                             if (!res.ok) throw new Error('Delete failed');
                             setToast('Bill deleted successfully!');
                             setTimeout(() => setToast(''), 3000);
-                          } catch (error) {
+                          } catch {
                             setStepBills(originalBills);
                             alert('Delete failed.');
                           }
@@ -448,7 +466,7 @@ export default function BillsPage() {
                         );
                         setToast("Bill submitted to admin!");
                         setTimeout(() => setToast(""), 3000);
-                      } catch (error) {
+                      } catch {
                         alert("Failed to submit bill to admin.");
                       }
                     }}
@@ -490,6 +508,8 @@ export default function BillsPage() {
               <button
                 onClick={handleCancel}
                 className="p-1 rounded-full text-gray-400 hover:bg-gray-200 hover:text-gray-600 transition-all"
+                title="Close form"
+                aria-label="Close form"
               >
                 <RiCloseLine size={24} />
               </button>
@@ -503,13 +523,15 @@ export default function BillsPage() {
                   Select Step
                 </label>
                 <select
+                  id="step-select"
                   value={form.step}
                   onChange={(e) => {
                     setForm((f) => ({ ...f, step: e.target.value }));
-                    setStepMap((prev) => ({ ...prev, [projectId]: e.target.value }));
                   }}
                   required
                   className="w-full px-4 py-2 border rounded-md"
+                  title="Select project step"
+                  aria-label="Select project step"
                 >
                   <option value="">-- Choose a step --</option>
                   {projectId && projectSteps[projectId]
@@ -578,18 +600,7 @@ export default function BillsPage() {
         </div>
       )}
       {toast && (
-        <div
-          style={{
-            position: "fixed",
-            top: 20,
-            right: 20,
-            zIndex: 9999,
-            background: "#22c55e",
-            color: "white",
-            padding: "12px 24px",
-            borderRadius: 8,
-            boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
-          }}
+        <div className="fixed top-20 right-20 z-50 bg-green-500 text-white p-4 rounded-lg shadow-lg"
         >
           {toast}
         </div>

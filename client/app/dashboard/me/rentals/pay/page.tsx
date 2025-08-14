@@ -14,10 +14,21 @@ import {
 } from "react-icons/ri";
 import Image from "next/image";
 
+interface Booking {
+  id: string;
+  equipment_name: string;
+  equipment_image?: string;
+  start_date: string;
+  end_date: string;
+  duration: number;
+  total_cost: number;
+  status?: string;
+}
+
 export default function PaymentTermsPage() {
   const token = useAuthStore((s) => s.token);
   const [accepted, setAccepted] = useState(false);
-  const [booking, setBooking] = useState<any>(null);
+  const [booking, setBooking] = useState<Booking | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
   const searchParams = useSearchParams();

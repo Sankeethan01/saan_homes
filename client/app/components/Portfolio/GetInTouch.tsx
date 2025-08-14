@@ -2,12 +2,6 @@ import { motion } from 'framer-motion';
 import { FaFacebookF, FaLandmark, FaMailBulk, FaPhone} from 'react-icons/fa';
 import { useState, useRef, useEffect } from 'react';
 
-const fadeInUp = {
-  initial: { opacity: 0, y: 40 },
-  whileInView: { opacity: 1, y: 0 },
-  transition: { duration: 0.6, ease: 'easeOut' }
-};
-
 // Optimized Video Component with Intersection Observer
 const LazyVideo = ({ src, poster, className }: { src: string; poster: string; className: string }) => {
   const [shouldLoad, setShouldLoad] = useState(false);
@@ -29,9 +23,10 @@ const LazyVideo = ({ src, poster, className }: { src: string; poster: string; cl
       observer.observe(containerRef.current);
     }
 
+    const currentRef = containerRef.current;
     return () => {
-      if (containerRef.current) {
-        observer.unobserve(containerRef.current);
+      if (currentRef) {
+        observer.unobserve(currentRef);
       }
     };
   }, []);
@@ -111,9 +106,9 @@ const GetInTouchPortfolio = () => {
               viewport={{ once: true }}
             >
               <h2 className="text-2xl md:text-3xl font-bold mb-2 bg-clip-text text-transparent bg-[#1b4965]">Get In Touch</h2>
-              <p className="text-gray-600 text-xl md:text-2xl mb-4">Let's Build Something Great Together!</p>
+              <p className="text-gray-600 text-xl md:text-2xl mb-4">Let&apos;s Build Something Great Together!</p>
               <p className="text-gray-700 text-justify mb-6">
-                In our Contact section, you can easily reach out to us with any inquiries, feedback, or support needs. Whether you have questions about using QuickMatch, need assistance with your account, or want to provide feedback to help us improve, we're here to help. Fill out the contact form with your details and message, and our dedicated support team will respond promptly. Your satisfaction is our priority, and we strive to provide excellent customer service. Thank you for choosing QuickMatch! We look forward to assisting you.
+                In our Contact section, you can easily reach out to us with any inquiries, feedback, or support needs. Whether you have questions about using QuickMatch, need assistance with your account, or want to provide feedback to help us improve, we&apos;re here to help. Fill out the contact form with your details and message, and our dedicated support team will respond promptly. Your satisfaction is our priority, and we strive to provide excellent customer service. Thank you for choosing QuickMatch! We look forward to assisting you.
               </p>
 <div className="space-y-4 text-gray-700">
                 <div className="flex items-center gap-3">

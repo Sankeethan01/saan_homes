@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { RiCloseLine, RiCustomerService2Fill, RiMoneyDollarCircleLine, RiCalendarLine } from 'react-icons/ri';
 import { useRouter } from 'next/navigation';
@@ -124,40 +124,7 @@ export default function ChatBotRentalsPortfolio() {
   const [allEquipment, setAllEquipment] = useState<Equipment[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // Initialize chatbot
-  useEffect(() => {
-    if (isOpen && messages.length === 0) {
-      initializeChatbot();
-    }
-  }, [isOpen, messages.length]);
-
-  // Periodic pop-up animation
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (!isOpen) {
-        setShowPopUp(true);
-        setTimeout(() => setShowPopUp(false), 3000);
-      }
-    }, 10000);
-
-    return () => clearInterval(interval);
-  }, [isOpen]);
-
-  const initializeChatbot = () => {
-    addBotMessage(
-      "Hello! I'm your equipment rental assistant. I'll help you find the perfect equipment for your project in just a few questions. How can I help you today?",
-      [
-        { id: 'rent', text: '🔧 I want to rent equipment', value: 'rent' },
-        { id: 'info', text: 'ℹ️ Just browsing for information', value: 'info' }
-      ]
-    );
-  };
-
-  const generateUniqueId = () => {
-    return Date.now() + Math.random() * 1000;
-  };
-
-  const addBotMessage = (text: string, options?: Option[], equipmentGrid?: Equipment[], showCalendar?: boolean, showPricing?: boolean, pricingData?: PricingData, showDurationInput?: boolean) => {
+  const addBotMessage = useCallback((text: string, options?: Option[], equipmentGrid?: Equipment[], showCalendar?: boolean, showPricing?: boolean, pricingData?: PricingData, showDurationInput?: boolean) => {
     const message: Message = {
       id: generateUniqueId(),
       text,
@@ -171,9 +138,44 @@ export default function ChatBotRentalsPortfolio() {
       showDurationInput
     };
     setMessages(prev => [...prev, message]);
+  }, []);
+
+  const initializeChatbot = useCallback(() => {
+    addBotMessage(
+      "Hello! I'm your equipment rental assistant. I'll help you find the perfect equipment for your project in just a few questions. How can I help you today?",
+      [
+        { id: 'rent', text: '🔧 I want to rent equipment', value: 'rent' },
+        { id: 'info', text: 'ℹ️ Just browsing for information', value: 'info' }
+      ]
+    );
+  }, [addBotMessage]);
+
+  // Initialize chatbot
+  useEffect(() => {
+    if (isOpen && messages.length === 0) {
+      initializeChatbot();
+    }
+  }, [isOpen, messages.length, initializeChatbot]);
+
+  // Periodic pop-up animation
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (!isOpen) {
+        setShowPopUp(true);
+        setTimeout(() => setShowPopUp(false), 3000);
+      }
+    }, 10000);
+
+    return () => clearInterval(interval);
+  }, [isOpen]);
+
+  const generateUniqueId = () => {
+    return Date.now() + Math.random() * 1000;
   };
 
-  const addUserMessage = (text: string) => {
+
+
+  const addUserMessage = useCallback((text: string) => {
     const message: Message = {
       id: generateUniqueId(),
       text,
@@ -181,7 +183,7 @@ export default function ChatBotRentalsPortfolio() {
       timestamp: new Date()
     };
     setMessages(prev => [...prev, message]);
-  };
+  }, []);
 
   const fetchCategories = async () => {
     try {
