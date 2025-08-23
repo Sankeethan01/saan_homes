@@ -947,51 +947,17 @@ class StepViewSet(viewsets.ModelViewSet):
     
     @action(detail=True, methods=['post'])
     def approve(self, request, pk=None):
-        """
-        Mark a step as approved by admin
-        """
-        step = self.get_object()
-        
-        # Set approval status
-        step.is_approved = True
-        
-        # Set actual completion date if not already set
-        if not step.actual_completed and 'actual_completed' in request.data:
-            step.actual_completed = request.data['actual_completed']
-        elif not step.actual_completed:
-            step.actual_completed = timezone.now().date()
-            
-        step.save()
-        
-        # Update project progress
-        project = step.project
-        total_steps = project.steps.count()
-        completed_steps = project.steps.filter(is_approved=True).count()
-        
-        if total_steps > 0:
-            project.progress = int((completed_steps / total_steps) * 100)
-            
-            # If all steps are completed, mark project as completed
-            if completed_steps == total_steps:
-                project.is_completed = True
-                
-            project.save()
-        
-        # --- Auto-generate invoice if not exists ---
-        from .models import Invoice
-        if not hasattr(step, 'invoice'):
-            Invoice.objects.create(
-                step=step,
-                data={
-                    'amount': float(step.expected_budget) if step.expected_budget else 0,
-                    'description': f'Invoice for {step.title}'
-                },
-                is_approved=False
-            )
-        # --- End auto-generate invoice ---
-        
-        serializer = self.get_serializer(step)
-        return Response(serializer.data)
+     step = self.get_object()
+     step.is_approved = True
+     step.actual_completed = timezone.now().date()  # Set actual completion date
+     step.save()
+    # Update project progress
+     project = step.project
+     total_steps = project.steps.count()
+     completed_steps = project.steps.filter(is_approved=True).count()
+     project.progress = int((completed_steps / total_steps) * 100)
+     project.save()
+     return Response({"status": "Step approved"})
 
 
 class ProgressLogViewSet(viewsets.ModelViewSet):
@@ -1188,15 +1154,46 @@ class BillViewSet(viewsets.ModelViewSet):
         # Auto-generate invoice if not already exists for this step
         if not hasattr(bill.step, 'invoice'):
             from .models import Invoice
+            # Extract line items from OCR data if available
+            line_items = []
+            if bill.ocr_data and 'items' in bill.ocr_data:
+                for item in bill.ocr_data['items']:
+                    line_items.append({
+                        'description': item.get('description', 'Item'),
+                        'quantity': item.get('quantity', 1),
+                        'rate': item.get('rate', 0),
+                        'amount': item.get('amount', 0)
+                    })
+            else:
+                # Create a default line item from the bill
+                line_items.append({
+                    'description': f'Bill for {bill.step.title}',
+                    'quantity': 1,
+                    'rate': bill.ocr_data.get('total', 0) if bill.ocr_data else 0,
+                    'amount': bill.ocr_data.get('total', 0) if bill.ocr_data else 0
+                })
+            
             Invoice.objects.create(
                 step=bill.step,
                 data={
                     'amount': bill.ocr_data.get('total', 0) if bill.ocr_data else 0,
                     'description': f'Invoice for {bill.step.title}',
                     'bill_id': str(bill.id),
+                    'line_items': line_items,
+                    'invoice_number': f"INV-{bill.step.project.name[:3].upper()}-{bill.step.order:03d}-{timezone.now().strftime('%Y%m%d')}",
+                    'invoice_date': timezone.now().date(),
+                    'due_date': (timezone.now() + timezone.timedelta(days=30)).date(),
+                    'status': 'DRAFT'
                 },
                 is_approved=False
             )
+        else:
+            # Update existing invoice with new bill data
+            invoice = bill.step.invoice
+            if bill.ocr_data and 'total' in bill.ocr_data:
+                invoice.data['amount'] = bill.ocr_data['total']
+                invoice.data['bill_id'] = str(bill.id)
+                invoice.save()
 
     @action(detail=True, methods=['post'])
     def submit_to_admin(self, request, pk=None):
@@ -1204,8 +1201,28 @@ class BillViewSet(viewsets.ModelViewSet):
         bill.is_submitted_to_admin = True
         bill.save()
 
+        # Update invoice status if it exists
+        if hasattr(bill.step, 'invoice'):
+            invoice = bill.step.invoice
+            invoice.data['status'] = 'SUBMITTED'
+            invoice.save()
+
         # (Optional: notification code here)
         return Response({'status': 'submitted'})
+
+    @action(detail=False, methods=['get'])
+    def by_step(self, request):
+        """Get all bills for a specific step"""
+        step_id = request.query_params.get('step')
+        if not step_id:
+            return Response(
+                {"error": "Step ID is required"}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        bills = Bill.objects.filter(step_id=step_id).order_by('-uploaded_at')
+        serializer = self.get_serializer(bills, many=True)
+        return Response(serializer.data)
 
 
 class InvoiceViewSet(viewsets.ModelViewSet):
@@ -1214,6 +1231,95 @@ class InvoiceViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAdminOrSupervisorOrReadOnly]
     filter_backends = [OrderingFilter]
     ordering = ["-created"]
+
+    def get_queryset(self):
+        """Filter invoices based on user role"""
+        queryset = super().get_queryset()
+        user = self.request.user
+        
+        if user.role == 'SUPERVISOR':
+            # Supervisors can only see invoices for their projects
+            queryset = queryset.filter(step__project__supervisor=user)
+        elif user.role == 'ADMIN':
+            # Admins can see all invoices
+            pass
+        else:
+            # Other users see no invoices
+            queryset = queryset.none()
+            
+        return queryset
+
+    @action(detail=True, methods=['post'])
+    def submit_to_admin(self, request, pk=None):
+        """Submit invoice to admin for approval"""
+        invoice = self.get_object()
+        invoice.data['status'] = 'SUBMITTED'
+        invoice.save()
+        return Response({'status': 'submitted'})
+
+    @action(detail=True, methods=['post'])
+    def approve(self, request, pk=None):
+        """Approve invoice (admin only)"""
+        if request.user.role != 'ADMIN':
+            return Response(
+                {"error": "Only admins can approve invoices"}, 
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        invoice = self.get_object()
+        invoice.data['status'] = 'APPROVED'
+        invoice.is_approved = True
+        invoice.save()
+        return Response({'status': 'approved'})
+
+    @action(detail=True, methods=['post'])
+    def reject(self, request, pk=None):
+        """Reject invoice (admin only)"""
+        if request.user.role != 'ADMIN':
+            return Response(
+                {"error": "Only admins can reject invoices"}, 
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        invoice = self.get_object()
+        invoice.data['status'] = 'REJECTED'
+        invoice.is_approved = False
+        invoice.save()
+        return Response({'status': 'rejected'})
+
+    @action(detail=False, methods=['get'])
+    def by_step(self, request):
+        """Get invoice for a specific step"""
+        step_id = request.query_params.get('step')
+        if not step_id:
+            return Response(
+                {"error": "Step ID is required"}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            invoice = Invoice.objects.get(step_id=step_id)
+            serializer = self.get_serializer(invoice)
+            return Response(serializer.data)
+        except Invoice.DoesNotExist:
+            return Response(
+                {"error": "Invoice not found"}, 
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+    @action(detail=False, methods=['get'])
+    def by_project(self, request):
+        """Get all invoices for a specific project"""
+        project_id = request.query_params.get('project')
+        if not project_id:
+            return Response(
+                {"error": "Project ID is required"}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        invoices = Invoice.objects.filter(step__project_id=project_id).order_by('-created')
+        serializer = self.get_serializer(invoices, many=True)
+        return Response(serializer.data)
 
 
 class VRVideoViewSet(viewsets.ModelViewSet):

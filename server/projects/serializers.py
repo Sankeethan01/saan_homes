@@ -313,11 +313,63 @@ class ProjectSerializer(serializers.ModelSerializer):
 class InvoiceSerializer(serializers.ModelSerializer):
     # expose step title for convenience
     step_title = serializers.CharField(source="step.title", read_only=True)
+    project_name = serializers.CharField(source="step.project.name", read_only=True)
+    project_id = serializers.UUIDField(source="step.project.id", read_only=True)
+    step_order = serializers.IntegerField(source="step.order", read_only=True)
+    
+    # Bill information
+    related_bills = serializers.SerializerMethodField()
+    
+    # Computed fields
+    total_amount = serializers.SerializerMethodField()
+    line_items_count = serializers.SerializerMethodField()
+    status_display = serializers.SerializerMethodField()
 
     class Meta:
         model = Invoice
         fields = "__all__"
         read_only_fields = ("id", "created", "is_approved")
+
+    def get_related_bills(self, obj):
+        """Get related bills for this invoice"""
+        bills = Bill.objects.filter(step=obj.step)
+        return [
+            {
+                'id': str(bill.id),
+                'pdf': bill.pdf.url if bill.pdf else None,
+                'uploaded_at': bill.uploaded_at,
+                'uploaded_by': bill.uploaded_by.get_full_name() if bill.uploaded_by else "Unknown",
+                'is_submitted_to_admin': bill.is_submitted_to_admin,
+                'ocr_total': bill.ocr_data.get('total', 0) if bill.ocr_data else 0
+            }
+            for bill in bills
+        ]
+
+    def get_total_amount(self, obj):
+        """Get total amount from data or calculate from line items"""
+        if obj.data.get('amount'):
+            return obj.data['amount']
+        
+        # Calculate from line items
+        line_items = obj.data.get('line_items', [])
+        return sum(item.get('amount', 0) for item in line_items)
+
+    def get_line_items_count(self, obj):
+        """Get count of line items"""
+        line_items = obj.data.get('line_items', [])
+        return len(line_items)
+
+    def get_status_display(self, obj):
+        """Get human-readable status"""
+        status = obj.data.get('status', 'DRAFT')
+        status_map = {
+            'DRAFT': 'Draft',
+            'SUBMITTED': 'Submitted to Admin',
+            'APPROVED': 'Approved by Admin',
+            'REJECTED': 'Rejected by Admin',
+            'PAID': 'Paid'
+        }
+        return status_map.get(status, status)
 
 
 class VRVideoSerializer(serializers.ModelSerializer):

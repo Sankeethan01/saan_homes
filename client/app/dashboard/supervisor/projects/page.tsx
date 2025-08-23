@@ -252,19 +252,20 @@ export default function SupervisorProjectsPage() {
                 <div className="w-full h-40 bg-gray-100 flex items-center justify-center overflow-hidden border-b border-gray-200">
                   {project.thumbnail ? (
                     <img
-                      src={`${process.env.NEXT_PUBLIC_API_BASE_URL}/media/${project.thumbnail}`}
+                      src={`${project.thumbnail}`}
                       alt={project.name}
                       className="object-cover w-full h-full"
                       onError={(e) => {
                         const target = e.target as HTMLImageElement;
-                        target.style.display = 'none';
-                        target.nextElementSibling?.classList.remove('hidden');
+                        // target.style.display = 'none';
+                        const fallback = target.parentElement?.querySelector(".fallback");
+                        if (fallback) fallback.classList.remove("hidden");
                       }}
                     />
                   ) : null}
                   <div className={`absolute inset-0 flex items-center justify-center ${project.thumbnail ? 'hidden' : ''}`}>
                     <Image
-                      src="/assets/images/project_saan.png"
+                      src={`${project.thumbnail}`}
                       alt={project.name}
                       width={400}
                       height={160}

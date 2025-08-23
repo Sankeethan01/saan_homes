@@ -107,6 +107,8 @@ class Step(models.Model):
     order = models.PositiveIntegerField()
     title = models.CharField(max_length=200)
     description = models.TextField(blank=True)
+    progress = models.PositiveIntegerField(default=0)  # 0-100%
+    is_completed = models.BooleanField(default=False)
     expected_materials = models.JSONField(blank=True, default=list)  # List of material descriptions
     expected_quantity = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
     expected_budget = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
