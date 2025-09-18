@@ -39,6 +39,7 @@ class ProjectMediaSerializer(serializers.ModelSerializer):
             'uploaded_by_name', 'uploaded_at',
             'url', 'type',
             'step_id', 'step_title',
+            'is_deleted', 'deleted_at',
         ]
         read_only_fields = [
             'id', 'uploaded_at', 'filename', 'file_size', 'uploaded_by_name'
@@ -176,11 +177,26 @@ class StepSerializer(serializers.ModelSerializer):
     progress = serializers.SerializerMethodField()
     status = serializers.SerializerMethodField()
     bills = BillSerializer(many=True, read_only=True)
+    invoice = serializers.SerializerMethodField()
     
     class Meta:
         model = Step
         fields = "__all__"
         read_only_fields = ("id",)
+    
+    def get_invoice(self, obj):
+        """Get invoice data for this step if it exists"""
+        try:
+            if hasattr(obj, 'invoice') and obj.invoice:
+                return {
+                    'id': obj.invoice.id,
+                    'data': obj.invoice.data,
+                    'is_approved': obj.invoice.is_approved,
+                    'created': obj.invoice.created
+                }
+        except Exception:
+            pass
+        return None
     
     def get_progress(self, obj):
         """Calculate step progress based on completion"""
@@ -331,8 +347,18 @@ class InvoiceSerializer(serializers.ModelSerializer):
         read_only_fields = ("id", "created", "is_approved")
 
     def get_related_bills(self, obj):
-        """Get related bills for this invoice"""
-        bills = Bill.objects.filter(step=obj.step)
+        """Get related bills for this invoice using prefetched relation when available"""
+        try:
+            bills_qs = getattr(obj.step, 'bills', None)
+            if bills_qs is not None:
+                bills = bills_qs.all()
+            else:
+                from .models import Bill
+                bills = Bill.objects.filter(step=obj.step)
+        except Exception:
+            from .models import Bill
+            bills = Bill.objects.filter(step=obj.step)
+        
         return [
             {
                 'id': str(bill.id),
@@ -347,12 +373,35 @@ class InvoiceSerializer(serializers.ModelSerializer):
 
     def get_total_amount(self, obj):
         """Get total amount from data or calculate from line items"""
-        if obj.data.get('amount'):
-            return obj.data['amount']
-        
-        # Calculate from line items
-        line_items = obj.data.get('line_items', [])
-        return sum(item.get('amount', 0) for item in line_items)
+        # Prefer explicit amount if it is a positive number or a numeric string
+        amount_value = obj.data.get('amount')
+        try:
+            if amount_value is not None:
+                numeric_amount = float(amount_value)
+                if numeric_amount > 0:
+                    return numeric_amount
+        except (TypeError, ValueError):
+            pass
+
+        # Calculate from line items, coercing strings to numbers and using qty * rate when needed
+        total = 0.0
+        for item in obj.data.get('line_items', []) or []:
+            item_amount = item.get('amount', 0)
+            try:
+                total += float(item_amount)
+                continue
+            except (TypeError, ValueError):
+                pass
+
+            # Fallback: amount = quantity * rate
+            try:
+                quantity = float(item.get('quantity', 1) or 1)
+                rate = float(item.get('rate', 0) or 0)
+                total += quantity * rate
+            except (TypeError, ValueError):
+                continue
+
+        return total
 
     def get_line_items_count(self, obj):
         """Get count of line items"""

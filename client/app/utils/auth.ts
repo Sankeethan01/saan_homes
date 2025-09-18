@@ -142,6 +142,15 @@ export function clearAllAuthData() {
 // Helper function to make authenticated API calls
 export async function fetchWithAuth(url: string, options: RequestInit = {}) {
   const token = getAccessToken();
+  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
+  
+  // Construct the full URL
+  const fullUrl = url.startsWith('http') 
+    ? url 
+    : `${baseUrl}${url.startsWith('/') ? '' : '/'}${url}`;
+
+  // Log the request URL for debugging
+  console.log('Making request to:', fullUrl);
 
   // Build headers, but do NOT set Content-Type for FormData
   let headers: Record<string, string> = {
@@ -168,7 +177,14 @@ export async function fetchWithAuth(url: string, options: RequestInit = {}) {
   };
 
   try {
-    const response = await fetch(url, config);
+    const response = await fetch(fullUrl, config);
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`Request failed with status ${response.status}:`, errorText);
+      throw new Error(`HTTP ${response.status}: ${errorText}`);
+    }
+    
     return response;
   } catch (error) {
     console.error('API request failed:', error);

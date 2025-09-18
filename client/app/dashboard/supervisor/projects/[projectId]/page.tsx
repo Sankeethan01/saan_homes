@@ -22,6 +22,7 @@ import {
 import { FiSearch } from "react-icons/fi";
 import { fetchWithAuth } from "@/app/utils/auth";
 import ProgressLogs from "../components/ProgressLogs";
+import InvoiceGenerationModal from "../components/InvoiceGenerationModal";
 import axios from "axios";
 
 interface Project {
@@ -330,6 +331,15 @@ export default function ProjectDetailPage() {
           throw new Error('Failed to fetch project data');
         }
         const projectData = await projectResponse.json();
+        console.log('✅ Project data fetched:', projectData);
+        
+        // Debug: Check if steps have invoice data
+        if (projectData.steps) {
+          projectData.steps.forEach((step: any, index: number) => {
+            console.log(`🔍 Step ${index + 1}: ${step.title} - Invoice:`, step.invoice);
+          });
+        }
+        
         setProject(projectData);
 
         // Fetch invoices separately to ensure we have the latest data
@@ -434,11 +444,19 @@ export default function ProjectDetailPage() {
   useEffect(() => {
     if (!project) return;
     const fetchInvoices = async () => {
-      const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api';
-      const res = await fetchWithAuth(`${apiBaseUrl}/projects/invoices/?project=${project.id}`);
-      if (res.ok) {
-        const data = await res.json();
-        setInvoices(data); // setInvoices should be a useState hook
+      try {
+        const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api';
+        console.log('🔍 Fetching invoices for project:', project.id);
+        const res = await fetchWithAuth(`${apiBaseUrl}/projects/invoices/by_project/?project=${project.id}`);
+        if (res.ok) {
+          const data = await res.json();
+          console.log('🔍 Fetched invoices:', data);
+          setInvoices(data);
+        } else {
+          console.error('🔍 Failed to fetch invoices:', res.status, res.statusText);
+        }
+      } catch (error) {
+        console.error('🔍 Error fetching invoices:', error);
       }
     };
     fetchInvoices();
@@ -490,7 +508,6 @@ export default function ProjectDetailPage() {
 
       setGeneratedInvoice(invoiceData);
       setInvoiceGenerated(true);
-      setShowInvoiceModal(true);
       
       displayToast("Invoice generated successfully!");
     } catch (error) {
@@ -553,8 +570,8 @@ export default function ProjectDetailPage() {
                   <tr>
                     <th>Description</th>
                     <th>Quantity</th>
-                    <th>Rate (₹)</th>
-                    <th>Amount (₹)</th>
+                    <th>Rate (Rs.)</th>
+                    <th>Amount (Rs.)</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -562,8 +579,8 @@ export default function ProjectDetailPage() {
                     <tr>
                       <td>${item.description}</td>
                       <td>${item.quantity}</td>
-                      <td>₹${item.rate.toLocaleString()}</td>
-                      <td>₹${item.amount.toLocaleString()}</td>
+                      <td>Rs. ${item.rate.toLocaleString('en-LK')}</td>
+                      <td>Rs. ${item.amount.toLocaleString('en-LK')}</td>
                     </tr>
                   `).join('')}
                 </tbody>
@@ -571,7 +588,7 @@ export default function ProjectDetailPage() {
             </div>
             
             <div class="total">
-              <strong>Total Amount: ₹${generatedInvoice.amount.toLocaleString()}</strong>
+              <strong>Total Amount: Rs. ${generatedInvoice.amount.toLocaleString('en-LK')}</strong>
             </div>
             
             <div class="footer">
@@ -638,8 +655,8 @@ export default function ProjectDetailPage() {
       generatedInvoice.line_items.forEach((item: any) => {
         doc.text(item.description.substring(0, 30), 20, y);
         doc.text(item.quantity.toString(), 100, y);
-        doc.text(`₹${item.rate.toLocaleString()}`, 130, y);
-        doc.text(`₹${item.amount.toLocaleString()}`, 170, y);
+        doc.text(`Rs. ${item.rate.toLocaleString('en-LK')}`, 130, y);
+        doc.text(`Rs. ${item.amount.toLocaleString('en-LK')}`, 170, y);
         y += 6;
       });
       
@@ -650,7 +667,7 @@ export default function ProjectDetailPage() {
       // Total
       doc.setFontSize(14);
       doc.setFont('helvetica', 'bold');
-      doc.text(`Total Amount: ₹${generatedInvoice.amount.toLocaleString()}`, 170, y, { align: 'right' });
+      doc.text(`Total Amount: Rs. ${generatedInvoice.amount.toLocaleString('en-LK')}`, 170, y, { align: 'right' });
       
       // Footer
       y += 20;
@@ -666,353 +683,97 @@ export default function ProjectDetailPage() {
   };
 
   const handleSubmitInvoiceToAdmin = async () => {
-    if (!generatedInvoice) {
-      displayToast("No invoice to submit.", "error");
+    if (!selectedStepForInvoice) {
+      displayToast("Select a step to submit its invoice.", "error");
       return;
     }
     
     setSubmittingInvoice(true);
     try {
-      console.log('🚀 Starting invoice submission...');
-      console.log('Generated Invoice:', generatedInvoice);
-      console.log('Selected Step:', selectedStepForInvoice);
-      
-      // Update invoice status with submission date
-      const updatedInvoice = {
-        ...generatedInvoice,
-        status: 'SUBMITTED',
-        submitted_date: new Date().toISOString(),
-        submitted_at: new Date().toISOString()
-      };
-      
-      setGeneratedInvoice(updatedInvoice);
-      displayToast("Invoice submitted to admin successfully!");
-      
-      // Update the project step invoice status
-      if (project && selectedStepForInvoice) {
-        try {
-          console.log('📝 Creating invoice record in database...');
-          
-          // First, check if an invoice already exists for this step
-          console.log('🔍 Checking for existing invoices...');
-          console.log('Current invoices state:', invoices);
-          console.log('Looking for step:', selectedStepForInvoice.title);
-          
-          const existingInvoice = invoices.find(inv => {
-            console.log('Checking invoice:', inv);
-            console.log('Invoice step:', inv.step);
-            console.log('Step title match:', inv.step?.title === selectedStepForInvoice.title);
-            return inv.step && inv.step.title === selectedStepForInvoice.title;
-          });
-          
-          console.log('🔍 Found existing invoice:', existingInvoice);
-          
-          let invoiceResponse;
-          
-          if (existingInvoice && existingInvoice.id) {
-            console.log('📝 Updating existing invoice:', existingInvoice.id);
-            // Update existing invoice
-            invoiceResponse = await fetchWithAuth(
-              `${process.env.NEXT_PUBLIC_API_BASE_URL}/projects/invoices/${existingInvoice.id}/`,
-              {
-                method: 'PATCH',
-                headers: {
-                  'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                  data: {
-                    status: 'SUBMITTED',
-                    submitted_at: new Date().toISOString(),
-                    invoice_number: generatedInvoice.invoice_number,
-                    amount: generatedInvoice.amount,
-                    description: generatedInvoice.description
-                  }
-                })
-              }
-            );
+      const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api';
+
+      // 1) Resolve invoice for this step
+      let invoiceId: string | null = null;
+      const localInvoice = invoices.find(inv => inv.step && (inv.step as any).id === selectedStepForInvoice.id);
+      if (localInvoice?.id) {
+        invoiceId = localInvoice.id as string;
           } else {
-            // Try to fetch existing invoices from backend to double-check
-            console.log('🔍 No local invoice found, checking backend...');
-            try {
-              const backendInvoicesResponse = await fetchWithAuth(
-                `${process.env.NEXT_PUBLIC_API_BASE_URL}/projects/invoices/?step=${selectedStepForInvoice.id}`
-              );
-              
-              if (backendInvoicesResponse.ok) {
-                const backendInvoices = await backendInvoicesResponse.json();
-                console.log('🔍 Backend invoices for this step:', backendInvoices);
-                
-                if (backendInvoices && backendInvoices.length > 0) {
-                  const backendInvoice = backendInvoices[0];
-                  console.log('📝 Found backend invoice, updating:', backendInvoice.id);
-                  
-                  invoiceResponse = await fetchWithAuth(
-                    `${process.env.NEXT_PUBLIC_API_BASE_URL}/projects/invoices/${backendInvoice.id}/`,
-                    {
-                      method: 'PATCH',
-                      headers: {
-                        'Content-Type': 'application/json',
-                      },
-                      body: JSON.stringify({
-                        data: {
-                          status: 'SUBMITTED',
-                          submitted_at: new Date().toISOString(),
-                          invoice_number: generatedInvoice.invoice_number,
-                          amount: generatedInvoice.amount,
-                          description: generatedInvoice.description
-                        }
-                      })
-                    }
-                  );
-                } else {
-                  console.log('📝 No backend invoice found, creating new one...');
-                  // Create new invoice
-                  const invoiceData = {
-                    step: selectedStepForInvoice.id,
-                    data: {
-                      status: 'SUBMITTED',
-                      submitted_at: new Date().toISOString(),
-                      invoice_number: generatedInvoice.invoice_number,
-                      amount: generatedInvoice.amount,
-                      description: generatedInvoice.description
-                    }
-                  };
-                  
-                  console.log('Invoice data to send:', invoiceData);
-                  
-                  invoiceResponse = await fetchWithAuth(
-                    `${process.env.NEXT_PUBLIC_API_BASE_URL}/projects/invoices/`,
-                    {
-                      method: 'POST',
-                      headers: {
-                        'Content-Type': 'application/json',
-                      },
-                      body: JSON.stringify(invoiceData)
-                    }
-                  );
-                }
-              } else {
-                console.log('📝 Backend check failed, creating new invoice...');
-                // Create new invoice as fallback
-                const invoiceData = {
-                  step: selectedStepForInvoice.id,
-                  data: {
-                    status: 'SUBMITTED',
-                    submitted_at: new Date().toISOString(),
-                    invoice_number: generatedInvoice.invoice_number,
-                    amount: generatedInvoice.amount,
-                    description: generatedInvoice.description
-                  }
-                };
-                
-                console.log('Invoice data to send:', invoiceData);
-                
-                invoiceResponse = await fetchWithAuth(
-                  `${process.env.NEXT_PUBLIC_API_BASE_URL}/projects/invoices/`,
-                  {
-                    method: 'POST',
-                    headers: {
-                      'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(invoiceData)
-                  }
-                );
-              }
-            } catch (backendError) {
-              console.error('❌ Error checking backend invoices:', backendError);
-              console.log('📝 Creating new invoice as fallback...');
-              
-              // Create new invoice as fallback
-              const invoiceData = {
-                step: selectedStepForInvoice.id,
-                data: {
-                  status: 'SUBMITTED',
-                  submitted_at: new Date().toISOString(),
-                  invoice_number: generatedInvoice.invoice_number,
-                  amount: generatedInvoice.amount,
-                  description: generatedInvoice.description
-                }
-              };
-              
-              console.log('Invoice data to send:', invoiceData);
-              
-              invoiceResponse = await fetchWithAuth(
-                `${process.env.NEXT_PUBLIC_API_BASE_URL}/projects/invoices/`,
-                {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json',
-                  },
-                  body: JSON.stringify(invoiceData)
-                }
-              );
-            }
-          }
-          
-          console.log('Invoice API response status:', invoiceResponse.status);
-          
-          if (invoiceResponse.ok) {
-            const invoiceData = await invoiceResponse.json();
-            console.log('✅ Invoice saved successfully:', invoiceData);
-          } else {
-            const errorText = await invoiceResponse.text();
-            console.error('❌ Invoice operation failed:', errorText);
-            displayToast("Failed to save invoice data", "error");
-            return; // Stop here if invoice operation failed
-          }
-          
-          console.log('🔧 Updating project step...');
-          
-          // Update the step's invoice status with proper created date
-          const stepUpdateResponse = await fetchWithAuth(
-            `${process.env.NEXT_PUBLIC_API_BASE_URL}/projects/steps/${selectedStepForInvoice.id}/`,
-            {
-              method: 'PATCH',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                invoice: {
-                  id: generatedInvoice.invoice_number,
-                  is_approved: false,
-                  amount: generatedInvoice.amount,
-                  description: generatedInvoice.description,
-                  created: new Date().toISOString(),
-                  data: {
-                    status: 'SUBMITTED',
-                    submitted_at: new Date().toISOString(),
-                    invoice_number: generatedInvoice.invoice_number
-                  }
-                }
-              })
-            }
-          );
-          
-          console.log('Step update response status:', stepUpdateResponse.status);
-          
-          if (stepUpdateResponse.ok) {
-            const stepUpdateData = await stepUpdateResponse.json();
-            console.log('✅ Step updated successfully:', stepUpdateData);
-            
-            // Add this step to recently submitted invoices to prevent status from reverting
-            setRecentlySubmittedInvoices(prev => new Set([...prev, selectedStepForInvoice.id]));
-            
-            displayToast("Invoice status updated in project successfully!");
-            
-            // Create a proper invoice object for the UI with all required fields
-            const newInvoice = {
-              id: generatedInvoice.invoice_number,
-              step: { title: selectedStepForInvoice.title },
-              data: {
-                status: 'SUBMITTED',
-                submitted_at: new Date().toISOString(),
-                invoice_number: generatedInvoice.invoice_number,
-                amount: generatedInvoice.amount
-              },
-              is_approved: false,
-              created: new Date().toISOString()
-            };
-            
-            console.log('🔄 Updating local state with new invoice:', newInvoice);
-            
-            // Update the local project state to reflect the change immediately
-            setProject(prevProject => {
-              if (!prevProject) return prevProject;
-              
-              const updatedSteps = prevProject.steps.map(step => {
-                if (step.id === selectedStepForInvoice.id) {
-                  console.log('🔄 Updating step:', step.title);
-                  return {
-                    ...step,
-                    invoice: {
-                      id: generatedInvoice.invoice_number,
-                      is_approved: false,
-                      amount: generatedInvoice.amount,
-                      description: generatedInvoice.description,
-                      created: new Date().toISOString(),
-                      data: {
-                        status: 'SUBMITTED',
-                        submitted_at: new Date().toISOString(),
-                        invoice_number: generatedInvoice.invoice_number
-                      }
-                    }
-                  };
-                }
-                return step;
-              });
-              
-              console.log('🔄 Updated project state with new invoice data');
-              return {
-                ...prevProject,
-                steps: updatedSteps
-              };
-            });
-            
-            // Also update the invoices state to ensure persistence
-            setInvoices(prevInvoices => {
-              console.log('🔄 Updating invoices state. Previous:', prevInvoices);
-              
-              const existingInvoiceIndex = prevInvoices.findIndex(inv => 
-                inv.step && inv.step.title === selectedStepForInvoice.title
-              );
-              
-              if (existingInvoiceIndex >= 0) {
-                const updatedInvoices = [...prevInvoices];
-                updatedInvoices[existingInvoiceIndex] = newInvoice;
-                console.log('🔄 Updated existing invoice at index:', existingInvoiceIndex);
-                return updatedInvoices;
-              } else {
-                console.log('🔄 Adding new invoice to invoices state');
-                return [...prevInvoices, newInvoice];
-              }
-            });
-            
-            // Force a refresh of the project data to ensure consistency
-            setTimeout(async () => {
-              try {
-                console.log('🔄 Refreshing project data to ensure consistency...');
-                await refetchProject();
-                
-                // Also refresh invoices
-                const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api';
-                const invoicesResponse = await fetchWithAuth(`${apiBaseUrl}/projects/invoices/`);
-                if (invoicesResponse.ok) {
-                  const invoicesData = await invoicesResponse.json();
-                  setInvoices(invoicesData);
-                  console.log('✅ Invoices refreshed successfully');
-                }
-              } catch (refreshError) {
-                console.error('❌ Error refreshing data:', refreshError);
-              }
-            }, 1000);
-            
-            // Close the modal after successful submission
-            setTimeout(() => {
-              setShowInvoiceModal(false);
-              setInvoiceGenerated(false);
-              setGeneratedInvoice(null);
-              setSelectedStepForInvoice(null);
-              
-              // Show success message in the table
-              displayToast("✅ Invoice successfully submitted to admin! Status updated.");
-              
-              console.log('🎉 Invoice submission completed successfully!');
-              console.log('🎯 Status should now show "Invoice Submitted to Admin" immediately!');
-            }, 1500);
-          } else {
-            const errorText = await stepUpdateResponse.text();
-            console.error('❌ Step update failed:', errorText);
-            displayToast("Error updating invoice status", "error");
-          }
-        } catch (error) {
-          console.error("❌ Error updating project step:", error);
-          displayToast("Error updating invoice status", "error");
+        const byStepRes = await fetchWithAuth(`${apiBaseUrl}/projects/invoices/by_step/?step=${selectedStepForInvoice.id}`);
+        if (byStepRes.ok) {
+          const byStep = await byStepRes.json();
+          invoiceId = byStep.id;
         }
       }
-      
-    } catch (error) {
-      console.error("❌ Error submitting invoice:", error);
-      displayToast("Failed to submit invoice to admin.", "error");
+
+      if (!invoiceId) {
+        displayToast("No invoice found for this step. Generate or save invoice first.", "error");
+        return;
+      }
+
+      // 2) Submit to admin via backend action
+      const submitRes = await fetchWithAuth(`${apiBaseUrl}/projects/invoices/${invoiceId}/submit_to_admin/`, {
+        method: 'POST'
+      });
+
+      if (!submitRes.ok) {
+        const t = await submitRes.text();
+        console.error('submit_to_admin failed:', t);
+        displayToast("Failed to submit invoice", "error");
+        return;
+      }
+
+      // 3) Optimistically update UI immediately
+            setRecentlySubmittedInvoices(prev => new Set([...prev, selectedStepForInvoice.id]));
+            
+      setProject(prev => {
+        if (!prev) return prev;
+        const updatedSteps = prev.steps.map(s => {
+          if (s.id !== selectedStepForInvoice.id) return s;
+          const prevInvoice = s.invoice || {};
+                  return {
+            ...s,
+                    invoice: {
+              ...(prevInvoice as any),
+              id: (prevInvoice as any)?.id ?? invoiceId,
+                      is_approved: false,
+              created: (prevInvoice as any)?.created || new Date().toISOString(),
+                      data: {
+                ...(prevInvoice as any)?.data,
+                        status: 'SUBMITTED',
+                submitted_at: new Date().toISOString()
+              }
+            }
+          };
+        });
+        return { ...prev, steps: updatedSteps } as any;
+      });
+
+      setInvoices(prev => {
+        const idx = prev.findIndex(inv => String(inv.id) === String(invoiceId));
+        const updated = [...prev];
+        if (idx >= 0) {
+          updated[idx] = {
+            ...updated[idx],
+            data: { ...updated[idx].data, status: 'SUBMITTED', submitted_at: new Date().toISOString() },
+            is_approved: false
+          };
+        }
+        return updated;
+      });
+
+      // 4) Soft refresh data in background
+            setTimeout(async () => {
+              try {
+                await refetchProject();
+          const invRes = await fetchWithAuth(`${apiBaseUrl}/projects/invoices/by_project/?project=${project?.id}`);
+          if (invRes.ok) setInvoices(await invRes.json());
+        } catch (_) {}
+      }, 500);
+
+      displayToast("Invoice submitted to admin.");
+        } catch (error) {
+      console.error('Error submitting invoice:', error);
+      displayToast("Failed to submit invoice", "error");
     } finally {
       setSubmittingInvoice(false);
     }
@@ -1484,8 +1245,8 @@ export default function ProjectDetailPage() {
                   <div className="flex flex-col md:flex-row gap-3">
                     <button
                       onClick={() => {
-                        // This will open a comprehensive invoice generation modal
-                        alert('Invoice generation modal will open here. This feature allows you to create detailed invoices for each project step.');
+                        // Open invoice generation modal with step selection
+                        setShowInvoiceModal(true);
                       }}
                       className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition flex items-center gap-2 font-semibold"
                     >
@@ -1520,7 +1281,7 @@ export default function ProjectDetailPage() {
                           
                           // Also refresh invoices
                           const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api';
-                          const invoicesResponse = await fetchWithAuth(`${apiBaseUrl}/projects/invoices/`);
+                          const invoicesResponse = await fetchWithAuth(`${apiBaseUrl}/projects/invoices/by_project/?project=${project.id}`);
                           if (invoicesResponse.ok) {
                             const invoicesData = await invoicesResponse.json();
                             setInvoices(invoicesData);
@@ -1544,7 +1305,7 @@ export default function ProjectDetailPage() {
                   <thead>
                     <tr>
                       <th className="px-4 py-2 text-left">Step</th>
-                      <th className="px-4 py-2 text-left">Amount</th>
+                      <th className="px-4 py-2 text-left">Bill Total</th>
                       <th className="px-4 py-2 text-left">Status</th>
                       <th className="px-4 py-2 text-left">Date</th>
                       <th className="px-4 py-2 text-left">Action</th>
@@ -1556,14 +1317,18 @@ export default function ProjectDetailPage() {
                         // Debug log to see step data
                         console.log(`Step ${step.title}:`, step);
                         
-                        const invoice = invoices.find(inv => inv.step && inv.step.title === step.title);
+                        const invoice = invoices.find(inv => inv.step && (inv.step as any).id === step.id);
                         // Also check if the step has its own invoice
                         const stepInvoice = step.invoice || invoice;
                         
                         // Check if this step was recently submitted to prevent status from reverting
                         const wasRecentlySubmitted = recentlySubmittedInvoices.has(step.id);
                         
-                        console.log(`Found invoice for ${step.title}:`, stepInvoice);
+                        console.log(`🔍 Step ${step.title} (ID: ${step.id}):`);
+                        console.log(`🔍   - step.invoice:`, step.invoice);
+                        console.log(`🔍   - found invoice:`, invoice);
+                        console.log(`🔍   - final stepInvoice:`, stepInvoice);
+                        console.log(`🔍   - invoices array:`, invoices);
                         
                         let status = '';
                         let badgeClass = '';
@@ -1574,46 +1339,61 @@ export default function ProjectDetailPage() {
                           const invoiceAmount = stepInvoice.data?.amount || stepInvoice.amount || step.expected_budget || 0;
                           amount = invoiceAmount.toLocaleString();
                           
-                          // Prioritize submitted_at date over created date for better accuracy
+                          // Get dates from invoice - prioritize created date for saved invoices
                           const submittedDate = stepInvoice.data?.submitted_at;
                           const createdDate = stepInvoice.created;
+                          const invoiceDate = (stepInvoice.data as any)?.invoice_date;
                           
-                          // Set initial date from created date if no submitted date
-                          if (createdDate && !submittedDate) {
+                          // Set date based on priority: created > submitted > invoice_date
+                          if (createdDate) {
                             const createdTime = new Date(createdDate);
                             date = createdTime.toLocaleDateString();
+                          } else if (submittedDate) {
+                            const submittedTime = new Date(submittedDate);
+                            const now = new Date();
+                            const timeDiff = now.getTime() - submittedTime.getTime();
+                            const minutesAgo = Math.floor(timeDiff / (1000 * 60));
+                            
+                            if (minutesAgo < 5) {
+                              date = 'Just Submitted';
+                            } else if (minutesAgo < 60) {
+                              date = `${minutesAgo} minutes ago`;
+                            } else {
+                              date = submittedTime.toLocaleDateString();
+                            }
+                          } else if (invoiceDate) {
+                            date = new Date(invoiceDate).toLocaleDateString();
                           }
                           
                           // Debug log to see what's in the invoice
                           console.log(`Invoice for ${step.title}:`, stepInvoice);
                           
+                          // Determine status based on invoice data
                           if (stepInvoice.is_approved) {
                             status = 'Invoice Approved';
                             badgeClass = 'bg-green-100 text-green-800';
                           } else if (stepInvoice.data?.status === 'SUBMITTED' || wasRecentlySubmitted) {
                             status = 'Invoice Submitted to Admin';
                             badgeClass = 'bg-blue-100 text-blue-800 animate-bounce';
-                            // Always show the submitted date if available
-                            if (submittedDate) {
-                              const submittedTime = new Date(submittedDate);
-                              const now = new Date();
-                              const timeDiff = now.getTime() - submittedTime.getTime();
-                              const minutesAgo = Math.floor(timeDiff / (1000 * 60));
-                              
-                              if (minutesAgo < 5) {
-                                date = 'Just Submitted';
-                              } else if (minutesAgo < 60) {
-                                date = `${minutesAgo} minutes ago`;
-                              } else {
-                                date = submittedTime.toLocaleDateString();
-                              }
-                            } else if (wasRecentlySubmitted) {
-                              // If recently submitted but no submitted date, show "Just Submitted"
-                              date = 'Just Submitted';
-                            }
+                          } else if (stepInvoice.data?.status === 'REJECTED') {
+                            status = 'Invoice Rejected';
+                            badgeClass = 'bg-red-100 text-red-800';
                           } else {
-                            status = 'Invoice Draft';
-                            badgeClass = 'bg-yellow-100 text-yellow-800';
+                            // For DRAFT, undefined, or any other status, check if invoice has actual data
+                            const hasInvoiceData = stepInvoice.data && (
+                              stepInvoice.data.amount || 
+                              stepInvoice.data.invoice_number || 
+                              (stepInvoice.data as any).line_items ||
+                              Object.keys(stepInvoice.data).length > 0
+                            );
+                            
+                            if (hasInvoiceData) {
+                              status = 'Invoice Saved';
+                              badgeClass = 'bg-green-100 text-green-800';
+                            } else {
+                              status = 'Invoice Draft';
+                              badgeClass = 'bg-yellow-100 text-yellow-800';
+                            }
                           }
                         } else {
                           amount = step.expected_budget?.toLocaleString() || '0';
@@ -1622,8 +1402,8 @@ export default function ProjectDetailPage() {
                             status = 'Processing...';
                             badgeClass = 'bg-purple-100 text-purple-800 animate-pulse';
                           } else {
-                          status = 'Auto-generated (not submitted)';
-                          badgeClass = 'bg-yellow-100 text-yellow-800';
+                            status = 'No Invoice';
+                            badgeClass = 'bg-gray-100 text-gray-800';
                           }
                         }
                         return (
@@ -1666,6 +1446,79 @@ export default function ProjectDetailPage() {
                                     <span className="text-green-600 font-semibold text-xs">✓ Approved</span>
                                   ) : status === 'Invoice Submitted to Admin' ? (
                                     <span className="text-blue-600 font-semibold text-xs">⏳ Pending Approval</span>
+                                  ) : status === 'Invoice Saved' ? (
+                                    <>
+                                      <button
+                                        className="px-2 py-1 bg-indigo-600 text-white rounded hover:bg-indigo-700 text-xs"
+                                        onClick={() => {
+                                          // For existing invoices, we need to load the invoice data first
+                                          if (stepInvoice) {
+                                            setGeneratedInvoice({
+                                              amount: (stepInvoice.data?.amount || stepInvoice.amount || step.expected_budget || 0),
+                                              description: `Invoice for ${step.title}`,
+                                              line_items: [],
+                                              invoice_number: stepInvoice.data?.invoice_number || `INV-${step.title}`,
+                                              invoice_date: (stepInvoice.created ? new Date(stepInvoice.created) : new Date()).toISOString().slice(0, 10),
+                                              due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
+                                              status: stepInvoice.data?.status || 'DRAFT',
+                                              step_id: step.id,
+                                              project_id: project?.id
+                                            });
+                                            setInvoiceGenerated(true);
+                                            handleViewInvoice();
+                                          }
+                                        }}
+                                      >
+                                        View
+                                      </button>
+                                      <button
+                                        className="px-2 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-xs"
+                                        onClick={() => {
+                                          // For existing invoices, we need to load the invoice data first
+                                          if (stepInvoice) {
+                                            setGeneratedInvoice({
+                                              amount: (stepInvoice.data?.amount || stepInvoice.amount || step.expected_budget || 0),
+                                              description: `Invoice for ${step.title}`,
+                                              line_items: [],
+                                              invoice_number: stepInvoice.data?.invoice_number || `INV-${step.title}`,
+                                              invoice_date: (stepInvoice.created ? new Date(stepInvoice.created) : new Date()).toISOString().slice(0, 10),
+                                              due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
+                                              status: stepInvoice.data?.status || 'DRAFT',
+                                              step_id: step.id,
+                                              project_id: project?.id
+                                            });
+                                            setInvoiceGenerated(true);
+                                            handleDownloadInvoice();
+                                          }
+                                        }}
+                                      >
+                                        Download
+                                      </button>
+                                      <button
+                                        className="px-2 py-1 bg-purple-600 text-white rounded hover:bg-purple-700 text-xs disabled:opacity-50"
+                                        onClick={() => {
+                                          // For existing invoices, we need to load the invoice data first
+                                          if (stepInvoice) {
+                                            setGeneratedInvoice({
+                                              amount: (stepInvoice.data?.amount || stepInvoice.amount || step.expected_budget || 0),
+                                              description: `Invoice for ${step.title}`,
+                                              line_items: [],
+                                              invoice_number: stepInvoice.data?.invoice_number || `INV-${step.title}`,
+                                              invoice_date: (stepInvoice.created ? new Date(stepInvoice.created) : new Date()).toISOString().slice(0, 10),
+                                              due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
+                                              status: stepInvoice.data?.status || 'DRAFT',
+                                              step_id: step.id,
+                                              project_id: project?.id
+                                            });
+                                            setInvoiceGenerated(true);
+                                            handleSubmitInvoiceToAdmin();
+                                          }
+                                        }}
+                                        disabled={submittingInvoice}
+                                      >
+                                        {submittingInvoice ? 'Submitting...' : 'Submit to Admin'}
+                                      </button>
+                                    </>
                                   ) : (
                                     <>
                                       <button
@@ -2089,7 +1942,7 @@ export default function ProjectDetailPage() {
                   </div>
                   <div>
                     <h3 className="font-semibold text-purple-800">Total Amount</h3>
-                    <p className="text-lg font-bold text-purple-600">₹{generatedInvoice.amount.toLocaleString()}</p>
+                    <p className="text-lg font-bold text-purple-600">Rs. {generatedInvoice.amount.toLocaleString('en-LK')}</p>
                   </div>
                 </div>
               </div>
@@ -2103,10 +1956,10 @@ export default function ProjectDetailPage() {
                       <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded">
                         <div className="flex-1">
                           <p className="font-medium">{item.description}</p>
-                          <p className="text-sm text-gray-600">Qty: {item.quantity} × ₹{item.rate}</p>
+                          <p className="text-sm text-gray-600">Qty: {item.quantity} × Rs. {item.rate.toLocaleString('en-LK')}</p>
                         </div>
                         <div className="text-right">
-                          <p className="font-semibold">₹{item.amount}</p>
+                          <p className="font-semibold">Rs. {item.amount.toLocaleString('en-LK')}</p>
                         </div>
                       </div>
                     ))
@@ -2149,6 +2002,133 @@ export default function ProjectDetailPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Invoice Generation Modal */}
+      {showInvoiceModal && (
+        <div className="fixed inset-0 backdrop-blur-sm flex items-center justify-center z-50 transition-opacity duration-300">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl m-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <h2 className="text-2xl font-bold text-gray-800">Select Step for Invoice Generation</h2>
+              <button
+                onClick={() => setShowInvoiceModal(false)}
+                className="p-1 rounded-full text-gray-400 hover:bg-gray-200 hover:text-gray-600 transition-all"
+              >
+                <RiCloseLine size={24} />
+              </button>
+            </div>
+            
+            <div className="p-6">
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold mb-4">Choose a completed step to generate invoice:</h3>
+                <div className="space-y-3">
+                  {project?.steps
+                    .filter(step => step.status === 'COMPLETED')
+                    .sort((a, b) => a.order - b.order)
+                    .map((step) => (
+                      <div
+                        key={step.id}
+                        className="p-4 border border-gray-200 rounded-lg hover:border-blue-300 cursor-pointer transition-all"
+                        onClick={() => {
+                          setSelectedStepForInvoice(step);
+                          setShowInvoiceModal(false);
+                        }}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h4 className="font-semibold text-gray-800">{step.title}</h4>
+                            <p className="text-sm text-gray-600">{step.description}</p>
+                            <p className="text-sm text-gray-500">Order: {step.order}</p>
+                          </div>
+                          <div className="text-right">
+                            <span className="inline-block px-2 py-1 text-xs font-semibold bg-green-100 text-green-800 rounded-full">
+                              Completed
+                            </span>
+                            {step.invoice && (
+                              <p className="text-xs text-blue-600 mt-1">Invoice exists</p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                </div>
+                {project?.steps.filter(step => step.status === 'COMPLETED').length === 0 && (
+                  <div className="text-center py-8 bg-gray-50 rounded-lg">
+                    <RiFileTextLine className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                    <p className="text-gray-600">No completed steps available for invoice generation</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Invoice Generation Modal for Selected Step */}
+      {selectedStepForInvoice && (
+        <InvoiceGenerationModal
+          open={!!selectedStepForInvoice}
+          step={selectedStepForInvoice}
+          project={project}
+          onClose={async () => {
+            setSelectedStepForInvoice(null);
+            
+            // Refresh both project and invoices data
+            try {
+              await refetchProject();
+              
+              // Also refresh invoices data with a slight delay to ensure backend has processed the changes
+              setTimeout(async () => {
+                try {
+              const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api';
+              const invoicesResponse = await fetchWithAuth(`${apiBaseUrl}/projects/invoices/by_project/?project=${project.id}`);
+              if (invoicesResponse.ok) {
+                const invoicesData = await invoicesResponse.json();
+                    console.log('✅ Refreshed invoices after generation:', invoicesData);
+                setInvoices(invoicesData);
+              }
+                } catch (error) {
+                  console.error("Error refreshing invoices:", error);
+                }
+              }, 1000); // 1 second delay to ensure backend processing
+            } catch (error) {
+              console.error("Error refreshing data:", error);
+            }
+          }}
+          onInvoiceGenerated={async (savedInvoice) => {
+            console.log('✅ Invoice generated successfully:', savedInvoice);
+            
+            // Add to recently submitted invoices to prevent status from reverting
+            if (savedInvoice.data?.status === 'SUBMITTED') {
+              setRecentlySubmittedInvoices(prev => new Set([...prev, savedInvoice.step]));
+            }
+            
+            // Update the invoices state immediately with the new invoice
+            setInvoices(prevInvoices => {
+              const existingIndex = prevInvoices.findIndex(inv => inv.id === savedInvoice.id);
+              if (existingIndex >= 0) {
+                // Update existing invoice
+                const updated = [...prevInvoices];
+                updated[existingIndex] = savedInvoice;
+                return updated;
+              } else {
+                // Add new invoice
+                return [...prevInvoices, savedInvoice];
+              }
+            });
+            
+            // Also refresh the project data to ensure step.invoice is updated
+            setTimeout(async () => {
+              try {
+                await refetchProject();
+            } catch (error) {
+                console.error("Error refreshing project after invoice generation:", error);
+            }
+            }, 500);
+            
+            displayToast("Invoice generated successfully!", "success");
+          }}
+        />
       )}
 
       {/* Persistent Toast Notifications */}

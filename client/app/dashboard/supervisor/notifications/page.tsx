@@ -1,247 +1,242 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { motion } from 'framer-motion';
-import {
-  RiNotification3Line,
-  RiCheckLine,
-  RiErrorWarningLine,
-  RiInformationLine,
-  RiDeleteBin6Line,
-  RiCheckDoubleLine,
-} from 'react-icons/ri';
-import { useRouter } from 'next/navigation';
-
-interface Notification {
-  id: number;
-  title: string;
-  message: string;
-  type: 'info' | 'warning' | 'error' | 'success';
-  project: string;
-  timestamp: string;
-  isRead: boolean;
-}
-
-const sampleNotifications: Notification[] = [
-  {
-    id: 1,
-    title: "Project Milestone Completed",
-    message: "Phase 1 of Modern Residential Complex has been completed successfully.",
-    type: "success",
-    project: "Modern Residential Complex",
-    timestamp: "2024-03-15T10:30:00",
-    isRead: false
-  },
-  {
-    id: 2,
-    title: "Budget Warning",
-    message: "Tech Innovation Hub project is approaching budget limit.",
-    type: "warning",
-    project: "Tech Innovation Hub",
-    timestamp: "2024-03-15T09:15:00",
-    isRead: false
-  },
-  {
-    id: 3,
-    title: "New Team Member Added",
-    message: "John Doe has been assigned to City Center Mall project.",
-    type: "info",
-    project: "City Center Mall",
-    timestamp: "2024-03-14T16:45:00",
-    isRead: true
-  },
-  {
-    id: 4,
-    title: "Material Shortage Alert",
-    message: "Critical shortage of construction materials detected.",
-    type: "error",
-    project: "Modern Residential Complex",
-    timestamp: "2024-03-14T14:20:00",
-    isRead: true
-  },
-  // Add more notifications as needed
-];
-
-const notificationTypes = ["All", "Info", "Warning", "Error", "Success"];
+import { useNotifications } from "@/app/hooks/useNotifications";
+import { RiCheckLine, RiDeleteBinLine, RiCheckDoubleLine } from "react-icons/ri";
 
 export default function NotificationsPage() {
-  const [notifications, setNotifications] = useState<Notification[]>(sampleNotifications);
-  const [selectedType, setSelectedType] = useState("All");
-  const [showUnreadOnly, setShowUnreadOnly] = useState(false);
-  const router = useRouter();
+  const { 
+    notifications,
+    loading, 
+    error, 
+    markAsRead, 
+    markAllAsRead,
+    deleteNotification,
+    approveAlert,
+    rejectAlert,
+    filters,
+    toggleUnreadFilter,
+    setStatusFilter,
+    
+  } = useNotifications();
+  
+  const unreadCount = notifications.filter((n) => !n.is_read).length;
 
-  const getNotificationIcon = (type: string) => {
-    switch (type) {
-      case 'info':
-        return <RiInformationLine className="text-blue-500" />;
-      case 'warning':
-        return <RiErrorWarningLine className="text-yellow-500" />;
-      case 'error':
-        return <RiErrorWarningLine className="text-red-500" />;
-      case 'success':
-        return <RiCheckLine className="text-green-500" />;
-      default:
-        return <RiNotification3Line className="text-gray-500" />;
-    }
-  };
+  const FilterControls = () => (
+    <div className="flex items-center gap-4 mb-4 p-4 bg-white rounded shadow">
+      <select 
+        value={filters.status}
+        onChange={(e) => setStatusFilter(e.target.value as any)}
+        className="border p-2 rounded"
+      >
+        <option value="all">All Status</option>
+        <option value="pending">Pending</option>
+        <option value="approved">Approved</option>
+        <option value="rejected">Rejected</option>
+      </select>
+      
+      <label className="flex items-center gap-2">
+        <input 
+          type="checkbox" 
+          checked={filters.showUnreadOnly}
+          onChange={toggleUnreadFilter}
+        />
+        Show Unread Only
+      </label>
+    </div>
+  );
 
-  const filteredNotifications = notifications.filter(notification => {
-    if (selectedType !== "All" && notification.type !== selectedType.toLowerCase()) return false;
-    if (showUnreadOnly && notification.isRead) return false;
+  if (loading) {
+    return (
+      <div className="p-6">
+        <div className="flex justify-center items-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-6">
+        <div className="bg-red-50 border-l-4 border-red-500 p-4">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <svg className="h-5 w-5 text-red-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div className="ml-3">
+              <p className="text-sm text-red-700">
+                {error}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const filteredNotifications = notifications.filter((n) => {
+    if (filters.showUnreadOnly && n.is_read) return false;
+    if (filters.status !== 'all' && n.status !== filters.status) return false;
     return true;
   });
 
-  const markAsRead = (id: number) => {
-    setNotifications(notifications.map(notification =>
-      notification.id === id ? { ...notification, isRead: true } : notification
-    ));
-  };
-
-  const markAllAsRead = () => {
-    setNotifications(notifications.map(notification => ({ ...notification, isRead: true })));
-  };
-
-  const deleteNotification = (id: number) => {
-    setNotifications(notifications.filter(notification => notification.id !== id));
-  };
-
   return (
-    <div className="space-y-8">
-      {/* Breadcrumbs */}
-      <nav className="flex items-center space-x-2 text-sm py-6 px-2">
-        <button onClick={() => router.push('/dashboard/supervisor')} className="text-[#1b4965] hover:underline">Dashboard</button>
-        <span className="mx-2 text-[#1b4965]">/</span>
-        <span className="text-[#1b4965] font-semibold">Notifications</span>
-      </nav>
+    <div className="p-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-bold" style={{ color: '#1b4965' }}>Notifications</h1>
-          <p className="text-gray-600">
-            {notifications.filter(n => !n.isRead).length} unread notifications
-          </p>
+      <div className="flex justify-between items-center mb-4">
+        <h1 className="text-2xl font-bold">Notifications</h1>
+        <div className="flex gap-2">
+          <button
+            onClick={async () => {
+              try {
+                await markAllAsRead();
+              } catch (error) {
+                console.error('Error marking all as read:', error);
+              }
+            }}
+            disabled={unreadCount === 0 || loading}
+            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <RiCheckDoubleLine size={20} />
+            Mark All as Read
+          </button>
+          <select
+            value={filters.status}
+            onChange={(e) => setStatusFilter(e.target.value as any)}
+            className="border rounded px-3 py-2"
+          >
+            <option value="all">All Status</option>
+            <option value="pending">Pending</option>
+            <option value="approved">Approved</option>
+            <option value="rejected">Rejected</option>
+          </select>
         </div>
-        <button
-          onClick={markAllAsRead}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg transition-colors"
-          style={{ backgroundColor: '#1b4965', color: 'white' }}
-        >
-          <RiCheckDoubleLine />
-          Mark All as Read
-        </button>
       </div>
 
-      {/* Filters */}
-      <div className="bg-white rounded-xl shadow-sm p-6">
-        <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
-          <div className="flex gap-4">
-            <select
-              value={selectedType}
-              onChange={(e) => setSelectedType(e.target.value)}
-              className="px-4 py-2 border border-gray-200 rounded-lg bg-white"
-            >
-              {notificationTypes.map(type => (
-                <option key={type} value={type}>{type}</option>
-              ))}
-            </select>
-            <label className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                checked={showUnreadOnly}
-                onChange={(e) => setShowUnreadOnly(e.target.checked)}
-                className="rounded text-blue-600 focus:ring-blue-500"
-              />
-              Show Unread Only
-            </label>
-          </div>
-        </div>
-      </div>
+      {/* Add the filter controls */}
+      <FilterControls />
 
       {/* Notifications Table */}
-      <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Type
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Details
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Project
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Time
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {filteredNotifications.map((notification) => (
-                <motion.tr
-                  key={notification.id}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className={notification.isRead ? 'bg-white' : 'bg-blue-50'}
-                >
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-2xl">
-                      {getNotificationIcon(notification.type)}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="text-sm font-medium text-gray-900">
-                      {notification.title}
-                    </div>
-                    <div className="text-sm text-gray-500">
-                      {notification.message}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">{notification.project}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-500">
-                      {new Date(notification.timestamp).toLocaleString()}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <div className="flex gap-3">
-                      {!notification.isRead && (
-                        <button
-                          onClick={() => markAsRead(notification.id)}
-                          className="text-blue-600 hover:text-blue-900"
-                        >
-                          <RiCheckLine className="text-xl" />
-                        </button>
-                      )}
+      <div className="bg-white rounded shadow overflow-hidden">
+        <table className="w-full text-left">
+          <thead className="bg-gray-100">
+            <tr>
+              <th className="p-3">Type</th>
+              <th className="p-3">Details</th>
+              <th className="p-3">Project</th>
+              <th className="p-3">Status</th>
+              <th className="p-3">Time</th>
+              <th className="p-3">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredNotifications.map((n) => (
+              <tr
+                key={n.id}
+                className={`border-b ${
+                  !n.is_read ? "bg-blue-50" : "bg-white"
+                }`}
+              >
+                <td className="p-3">
+                  {n.type === "success" && "✅"}
+                  {n.type === "warning" && "⚠️"}
+                  {n.type === "info" && "ℹ️"}
+                  {n.type === "error" && "❌"}
+                </td>
+                <td className="p-3">
+                  <p className="font-semibold">{n.text}</p>
+                </td>
+                <td className="p-3">{n.project_name}</td>
+                <td className="p-3">
+                  <span className={`px-2 py-1 text-xs rounded-full ${
+                    n.status === 'approved' ? 'bg-green-100 text-green-800' :
+                    n.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                    'bg-yellow-100 text-yellow-800'
+                  }`}>
+                    {n.status}
+                  </span>
+                </td>
+                <td className="p-3">
+                  {new Date(n.created).toLocaleString()}
+                </td>
+                <td className="p-3 flex gap-2 items-center">
+                  <button
+                    onClick={async (e) => {
+                      e.stopPropagation();
+                      // Show confirmation dialog
+                      const isConfirmed = window.confirm('Are you sure you want to delete this notification?');
+                      if (isConfirmed) {
+                        try {
+                          await deleteNotification(n.id);
+                        } catch (error) {
+                          console.error('Error deleting notification:', error);
+                        }
+                      }
+                    }}
+                    className="text-gray-500 hover:text-red-600 p-1"
+                    title="Delete"
+                  >
+                    <RiDeleteBinLine size={18} />
+                  </button>
+                  {!n.is_read && (
+                    <button
+                      onClick={async (e) => {
+                        e.stopPropagation();
+                        await markAsRead(n.id);
+                      }}
+                      className="text-green-600 hover:text-green-800 p-1"
+                      title="Mark as read"
+                    >
+                      <RiCheckLine size={20} />
+                    </button>
+                  )}
+                  {n.status === 'pending' && (
+                    <>
                       <button
-                        onClick={() => deleteNotification(notification.id)}
-                        className="text-red-600 hover:text-red-900"
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          try {
+                            await approveAlert(n.id);
+                            // Mark as read after approval
+                            if (!n.is_read) {
+                              await markAsRead(n.id);
+                            }
+                          } catch (error) {
+                            console.error('Error approving:', error);
+                          }
+                        }}
+                        className="text-green-600 hover:text-green-800 p-1"
+                        title="Approve"
                       >
-                        <RiDeleteBin6Line className="text-xl" />
+                        ✓
                       </button>
-                    </div>
-                  </td>
-                </motion.tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Empty State */}
-        {filteredNotifications.length === 0 && (
-          <div className="text-center py-12">
-            <RiNotification3Line className="text-6xl text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-800 mb-2">No Notifications</h3>
-            <p className="text-gray-600">You&apos;re all caught up!</p>
-          </div>
-        )}
+                      <button
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          try {
+                            await rejectAlert(n.id);
+                            // Mark as read after rejection
+                            if (!n.is_read) {
+                              await markAsRead(n.id);
+                            }
+                          } catch (error) {
+                            console.error('Error rejecting:', error);
+                          }
+                        }}
+                        className="text-red-600 hover:text-red-800 p-1"
+                        title="Reject"
+                      >
+                        ✕
+                      </button>
+                    </>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </div>
   );

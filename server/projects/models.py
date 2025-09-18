@@ -187,9 +187,25 @@ class ProjectMedia(models.Model):
     file_size = models.PositiveIntegerField()  # Size in bytes
     uploaded_by = models.ForeignKey(User, on_delete=models.CASCADE, limit_choices_to={"role": "SUPERVISOR"})
     uploaded_at = models.DateTimeField(auto_now_add=True)
-    
+    # Soft delete
+    is_deleted = models.BooleanField(default=False)
+    deleted_at = models.DateTimeField(null=True, blank=True)
+     
     def __str__(self):
         return f"{self.title or self.filename} ({self.media_type})"
+    
+    # Soft delete by default
+    def delete(self, using=None, keep_parents=False):
+        if not self.is_deleted:
+            from django.utils import timezone
+            self.is_deleted = True
+            self.deleted_at = timezone.now()
+            self.save(update_fields=["is_deleted", "deleted_at"])
+        else:
+            super().delete(using=using, keep_parents=keep_parents)
+    
+    def hard_delete(self):
+        return super().delete()
 
 
 class Bill(models.Model):
@@ -210,6 +226,22 @@ class Bill(models.Model):
         related_name="bills_uploaded"
     )
     is_submitted_to_admin = models.BooleanField(default=False)
+    # Soft delete
+    is_deleted = models.BooleanField(default=False)
+    deleted_at = models.DateTimeField(null=True, blank=True)
+    
+    # Soft delete by default
+    def delete(self, using=None, keep_parents=False):
+        if not self.is_deleted:
+            from django.utils import timezone
+            self.is_deleted = True
+            self.deleted_at = timezone.now()
+            self.save(update_fields=["is_deleted", "deleted_at"])
+        else:
+            super().delete(using=using, keep_parents=keep_parents)
+    
+    def hard_delete(self):
+        return super().delete()
 
 
 class Invoice(models.Model):

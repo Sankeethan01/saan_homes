@@ -13,7 +13,8 @@ import {
   RiMenuFoldLine,
   RiMenuUnfoldLine,
   RiLogoutBoxRLine,
-  RiFileTextLine
+  RiFileTextLine,
+  RiDeleteBin6Line
 } from 'react-icons/ri';
 import { useAuthStore } from '@/app/stores/useAuthStore';
 import { getUserRole, getAccessToken, setAuthCookies, fetchWithAuth } from '@/app/utils/auth';
@@ -48,6 +49,11 @@ const navItems: NavItem[] = [
     title: 'Notifications',
     path: '/dashboard/supervisor/notifications',
     icon: <RiNotification3Line className="text-xl" />
+  },
+  {
+    title: 'Recycle Bin',
+    path: '/dashboard/supervisor/recycle-bin',
+    icon: <RiDeleteBin6Line className="text-xl" />
   },
   {
     title: 'Update Profile',

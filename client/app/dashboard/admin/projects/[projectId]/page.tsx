@@ -450,14 +450,14 @@ export default function ProjectDetailsPage({ params }: { params: Promise<{ proje
               </div>
               <div className="text-right">
                 <div className="text-2xl font-bold text-gray-900">
-                  LKR {project.budget ? (project.budget / 1000).toFixed(0) : '0'}K
+                  Rs. {(project.budget ? (project.budget / 1000) : 0).toLocaleString('en-IN')}K
                 </div>
                 <div className="text-xs text-amber-600 font-medium">Budget</div>
               </div>
             </div>
             <div className="text-sm font-medium text-gray-600">Total Budget</div>
             <div className="text-xs text-gray-500 mt-1">
-              LKR {project.budget ? project.budget.toLocaleString() : '0'}
+              Rs. {project.budget ? project.budget.toLocaleString('en-IN') : '0'}
             </div>
           </div>
         </div>
@@ -682,7 +682,7 @@ export default function ProjectDetailsPage({ params }: { params: Promise<{ proje
                             <div className="flex items-center">
                               <FiDollarSign className="w-4 h-4 text-amber-600 mr-2" />
                               <span className="text-sm text-gray-700">
-                                Budget: <span className="font-semibold">LKR {currentStep.expected_budget.toLocaleString()}</span>
+                                Budget: <span className="font-semibold">Rs. {currentStep.expected_budget.toLocaleString('en-IN')}</span>
                               </span>
                             </div>
                           )}
@@ -713,7 +713,7 @@ export default function ProjectDetailsPage({ params }: { params: Promise<{ proje
                                 <div className="flex-1">
                                   <p className="text-sm font-medium text-gray-900">{step.title}</p>
                                   {step.expected_budget && (
-                                    <p className="text-xs text-gray-500">Budget: LKR {step.expected_budget.toLocaleString()}</p>
+                                    <p className="text-xs text-gray-500">Budget: Rs. {step.expected_budget.toLocaleString('en-IN')}</p>
                                   )}
                                 </div>
                                 <FiClock className="w-4 h-4 text-gray-400" />
@@ -935,7 +935,7 @@ export default function ProjectDetailsPage({ params }: { params: Promise<{ proje
                             {step.expected_budget && (
                               <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-700 border border-gray-200">
                                 <FiDollarSign className="w-4 h-4 mr-1" />
-                                LKR {step.expected_budget.toLocaleString()}
+                                Rs. {step.expected_budget.toLocaleString('en-IN')}
                               </span>
                             )}
                             {step.actual_completed && (

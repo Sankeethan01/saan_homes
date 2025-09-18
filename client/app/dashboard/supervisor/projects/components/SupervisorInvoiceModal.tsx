@@ -186,25 +186,58 @@ export default function SupervisorInvoiceModal({
 
     setSaving(true);
     try {
-      // Calculate total amount from bills
-      const totalAmount = existingBills.reduce((sum, bill) => {
-        return sum + (bill.ocr_data?.total || 0);
-      }, 0);
+      // Build detailed line items from each bill's OCR data
+      const lineItems: any[] = [];
+      existingBills.forEach((bill: any, index: number) => {
+        const items = bill?.ocr_data?.items || [];
+        if (Array.isArray(items) && items.length > 0) {
+          items.forEach((it: any, idx: number) => {
+            const qty = Number(it.quantity ?? it.qty ?? 1) || 1;
+            const rate = Number(it.unitPrice ?? it.rate ?? 0) || 0;
+            const amount = Number(it.amount ?? qty * rate) || (qty * rate);
+            const desc = (it.description || it.itemName || `Item ${idx + 1}`).toString();
+            lineItems.push({
+              description: desc,
+              quantity: qty,
+              rate: rate,
+              amount: amount,
+              bill_id: bill.id,
+            });
+          });
+        } else {
+          const billTotal = Number(bill?.ocr_data?.total || 0) || 0;
+          const name = bill.pdf ? bill.pdf.split("/").pop() : `Bill ${index + 1}`;
+          lineItems.push({
+            description: `${name} - Construction Materials`,
+            quantity: 1,
+            rate: billTotal,
+            amount: billTotal,
+            bill_id: bill.id,
+          });
+        }
+      });
 
-      // Create line items from bills
-      const lineItems = existingBills.map((bill, index) => ({
-        description: bill.pdf ? bill.pdf.split("/").pop() : `Bill ${index + 1}`,
-        quantity: 1,
-        rate: bill.ocr_data?.total || 0,
-        amount: bill.ocr_data?.total || 0,
-        bill_id: bill.id
-      }));
+      // Consolidate duplicate descriptions
+      const consolidated = new Map<string, any>();
+      lineItems.forEach((li) => {
+        const key = String(li.description).trim().toLowerCase();
+        if (consolidated.has(key)) {
+          const ex = consolidated.get(key)!;
+          ex.quantity += li.quantity;
+          ex.amount += li.amount;
+          ex.rate = ex.amount / Math.max(1, ex.quantity);
+          ex.bill_id += `,${li.bill_id}`;
+        } else {
+          consolidated.set(key, { ...li });
+        }
+      });
+      const finalItems = Array.from(consolidated.values());
+      const totalAmount = finalItems.reduce((s, it) => s + (Number(it.amount) || 0), 0);
 
-      // Generate invoice data
       const invoiceData = {
         amount: totalAmount,
         description: `Invoice for ${step.title}`,
-        line_items: lineItems,
+        line_items: finalItems,
         invoice_number: `INV-${step.project?.name?.slice(0, 3)?.toUpperCase() || 'PROJ'}-${step.order || 1}-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}`,
         invoice_date: new Date().toISOString().slice(0, 10),
         due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
@@ -279,8 +312,8 @@ export default function SupervisorInvoiceModal({
                   <tr>
                     <td>${item.description}</td>
                     <td>${item.quantity}</td>
-                    <td>${item.rate.toLocaleString()}</td>
-                    <td>${item.amount.toLocaleString()}</td>
+                    <td>${item.rate.toLocaleString('en-LK')}</td>
+                    <td>${item.amount.toLocaleString('en-LK')}</td>
                   </tr>
                 `).join('')}
               </tbody>
@@ -361,8 +394,8 @@ export default function SupervisorInvoiceModal({
       generatedInvoice.line_items.forEach((item: any) => {
         doc.text(item.description.substring(0, 30), 10, y);
         doc.text(item.quantity.toString(), 100, y);
-        doc.text(`₹${item.rate.toLocaleString()}`, 130, y);
-        doc.text(`₹${item.amount.toLocaleString()}`, 170, y);
+        doc.text(`Rs. ${item.rate.toLocaleString('en-LK')}`, 130, y);
+        doc.text(`Rs. ${item.amount.toLocaleString('en-LK')}`, 170, y);
         y += 6;
       });
       
@@ -373,7 +406,7 @@ export default function SupervisorInvoiceModal({
       // Total
       doc.setFontSize(14);
       doc.setFont('helvetica', 'bold');
-      doc.text(`Total Amount: ₹${generatedInvoice.amount.toLocaleString()}`, 120, y);
+      doc.text(`Total Amount: Rs. ${generatedInvoice.amount.toLocaleString('en-LK')}`, 120, y);
       
       // Footer
       y += 20;
@@ -389,20 +422,43 @@ export default function SupervisorInvoiceModal({
   };
 
   const handleSubmitInvoiceToAdmin = async () => {
-    if (!generatedInvoice) {
+    if (!generatedInvoice || !step?.id) {
       alert("No invoice to submit.");
       return;
     }
-    
     setSaving(true);
     try {
-      // Submit invoice to admin (you can implement this API call)
-      // For now, we'll just update the status
-      setGeneratedInvoice({
-        ...generatedInvoice,
-        status: 'SUBMITTED'
-      });
-      
+      const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api';
+      // find invoice for this step
+      let invoiceId: string | null = null;
+      try {
+        const res = await fetchWithAuth(`${apiBaseUrl}/projects/invoices/by_step/?step=${step.id}`);
+        if (res.ok) {
+          const inv = await res.json();
+          invoiceId = inv.id;
+        }
+      } catch (_) {}
+
+      if (!invoiceId) {
+        // create a draft first
+        const createRes = await fetchWithAuth(`${apiBaseUrl}/projects/invoices/`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ step: step.id, data: { ...generatedInvoice, status: 'DRAFT' } })
+        });
+        if (createRes.ok) {
+          const created = await createRes.json();
+          invoiceId = created.id;
+        }
+      }
+
+      if (!invoiceId) throw new Error('Unable to resolve invoice id');
+
+      // submit action
+      const submitRes = await fetchWithAuth(`${apiBaseUrl}/projects/invoices/${invoiceId}/submit_to_admin/`, { method: 'POST' });
+      if (!submitRes.ok) throw new Error('Submit failed');
+
+      setGeneratedInvoice({ ...generatedInvoice, status: 'SUBMITTED' });
       setToast("Invoice submitted to admin successfully!");
       onSaved && onSaved();
     } catch (error) {
@@ -410,6 +466,176 @@ export default function SupervisorInvoiceModal({
       alert("Failed to submit invoice to admin.");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleGenerateFromLatestBill = async () => {
+    if (!step?.id) return;
+    setSaving(true);
+    try {
+      const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api';
+      // fetch bills for this step (most recent first)
+      const res = await fetchWithAuth(`${apiBaseUrl}/projects/bills/by_step/?step=${step.id}`);
+      if (!res.ok) throw new Error('Failed to fetch bills');
+      const bills = await res.json();
+      if (!Array.isArray(bills) || bills.length === 0) {
+        alert('No bills uploaded for this step');
+        return;
+      }
+      const latest = bills[0];
+      const items: any[] = (latest?.ocr_data?.items || []).map((it: any) => {
+        const qty = Number(it.quantity || it.qty || 1) || 1;
+        const rate = Number(it.rate || it.unitPrice || 0) || 0;
+        const amount = Number(it.amount || qty * rate) || (qty * rate);
+        return {
+          description: it.description || it.itemName || 'Item',
+          quantity: qty,
+          rate: rate,
+          amount: amount,
+        };
+      });
+      // if OCR didn't list items, fall back to a single total item
+      if (items.length === 0) {
+        const totalVal = Number(latest?.ocr_data?.total || 0) || 0;
+        items.push({ description: `Bill ${latest.id}`, quantity: 1, rate: totalVal, amount: totalVal });
+      }
+      const subtotal = items.reduce((s, it) => s + (Number(it.amount) || 0), 0);
+      const taxRate = 0.10; // 10%
+      const tax = Math.round(subtotal * taxRate * 100) / 100;
+      const grandTotal = Math.round((subtotal + tax) * 100) / 100;
+      const invNoPrefix = (step.project?.name || 'INV').slice(0, 3).toUpperCase();
+      const invoice_number = `INV-${invNoPrefix}-${new Date().toISOString().slice(0,10).replace(/-/g,'')}`;
+      const inv = {
+        invoice_number,
+        date: new Date().toISOString().slice(0,10),
+        line_items: items,
+        subtotal,
+        tax_rate: 10,
+        tax_amount: tax,
+        amount: grandTotal,
+        status: 'DRAFT',
+        client: step.project?.client_name || 'Client',
+        project: step.project?.name || '',
+      } as any;
+      setGeneratedInvoice(inv);
+      setToast('Invoice generated from latest bill');
+    } catch (e) {
+      console.error(e);
+      alert('Failed to generate invoice from bill');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const renderStyledInvoicePDF = async () => {
+    if (!generatedInvoice) {
+      alert('No invoice generated');
+      return;
+    }
+    try {
+      let logo = await fetchImageFromPublicAsBase64('logo-01.png');
+      const imageTypeMatch = logo.match(/^data:image\/(png|jpeg|jpg);base64,/i);
+      const imageType = imageTypeMatch?.[1]?.toUpperCase() || 'PNG';
+
+      const doc = new jsPDF('p','mm','a4');
+      // Header
+      doc.setFont('helvetica','bold');
+      doc.setFontSize(22);
+      doc.setTextColor(20,20,200);
+      doc.text('INVOICE', 105, 18, { align: 'center' });
+
+      doc.addImage(logo, imageType, 15, 12, 18, 12);
+      doc.setTextColor(0,0,0);
+      doc.setFontSize(10);
+      doc.setFont('helvetica','normal');
+      const invNo = generatedInvoice.invoice_number || 'INV-XXXX';
+      const dateStr = generatedInvoice.date || new Date().toISOString().slice(0,10);
+      doc.text(`Invoice No: ${invNo}`, 15, 32);
+      doc.text(`Date: ${dateStr}`, 15, 37);
+
+      // Bill To / From
+      doc.setFont('helvetica','bold');
+      doc.text('BILL TO:', 15, 50);
+      doc.text('FROM:', 120, 50);
+      doc.setFont('helvetica','normal');
+      doc.text(`Client: ${generatedInvoice.client || 'Customer'}`, 15, 58);
+      doc.text(`Project: ${generatedInvoice.project || step.project?.name || ''}`, 15, 63);
+      doc.text('SAAN HOMES', 120, 58);
+      doc.text('Construction & Development', 120, 63);
+      doc.text('Sri Lanka', 120, 68);
+      doc.text('Email: info@saanhomes.com', 120, 73);
+
+      // Items table header
+      let y = 90;
+      doc.setFillColor(18,51,87);
+      doc.setTextColor(255,255,255);
+      doc.rect(15, y-7, 180, 8, 'F');
+      doc.setFont('helvetica','bold');
+      doc.text('DESCRIPTION', 20, y-1);
+      doc.text('QTY', 115, y-1);
+      doc.text('PRICE (Rs.)', 135, y-1);
+      doc.text('TOTAL (Rs.)', 165, y-1);
+
+      // Rows
+      doc.setFont('helvetica','normal');
+      doc.setTextColor(0,0,0);
+      let rowY = y + 3;
+      const items: any[] = generatedInvoice.line_items || generatedInvoice.items || [];
+      items.forEach((it, idx) => {
+        const desc = String(it.description || 'Item');
+        const qty = Number(it.quantity || 0);
+        const rate = Number(it.rate || 0);
+        const amt = Number(it.amount != null ? it.amount : qty * rate);
+        // grid lines
+        doc.setDrawColor(200,200,200);
+        doc.line(15, rowY - 6, 195, rowY - 6);
+        // text
+        doc.text(desc, 20, rowY);
+        doc.text(String(qty), 118, rowY, { align: 'right' });
+        doc.text(rate.toLocaleString('en-LK'), 150, rowY, { align: 'right' });
+        doc.text(amt.toLocaleString('en-LK'), 190, rowY, { align: 'right' });
+        rowY += 8;
+      });
+      doc.line(15, rowY - 6, 195, rowY - 6);
+
+      // Totals box
+      const subtotal = Number(generatedInvoice.subtotal ?? items.reduce((s,it)=>s + (Number(it.amount || (Number(it.quantity||0)*Number(it.rate||0)))||0),0));
+      const tax = Number(generatedInvoice.tax_amount ?? Math.round(subtotal * 0.10 * 100)/100);
+      const grand = Number(generatedInvoice.amount ?? subtotal + tax);
+      const boxTop = rowY + 6;
+      doc.setDrawColor(150,150,150);
+      doc.rect(115, boxTop, 80, 30);
+      doc.setFont('helvetica','bold');
+      doc.text('Subtotal', 120, boxTop + 8);
+      doc.text('Tax (10%)', 120, boxTop + 16);
+      doc.setFillColor(18,51,87);
+      doc.setTextColor(255,255,255);
+      doc.rect(120, boxTop + 20, 70, 8, 'F');
+      doc.text('Grand Total', 122, boxTop + 26);
+      doc.setTextColor(0,0,0);
+      doc.setFont('helvetica','normal');
+      doc.text(subtotal.toLocaleString('en-LK'), 190, boxTop + 8, { align: 'right' });
+      doc.text(tax.toLocaleString('en-LK'), 190, boxTop + 16, { align: 'right' });
+      doc.setTextColor(255,255,255);
+      doc.setFont('helvetica','bold');
+      doc.text(grand.toLocaleString('en-LK'), 188, boxTop + 26, { align: 'right' });
+
+      // Notes / Payment info
+      doc.setTextColor(0,0,0);
+      doc.setFont('helvetica','bold');
+      doc.text('Note:', 15, boxTop + 45);
+      doc.setFont('helvetica','normal');
+      doc.text('Payment due within 30 days of invoice date.\nThank you for choosing Saan Homes for your construction needs.', 15, boxTop + 51);
+      doc.setFont('helvetica','bold');
+      doc.text('Payment Information:', 120, boxTop + 45);
+      doc.setFont('helvetica','normal');
+      doc.text('Bank: Commercial Bank of Ceylon\nAccount No: 123-456-7890\nEmail: accounts@saanhomes.com\nDue Date: ' + (new Date(Date.now()+30*86400000).toLocaleDateString()), 120, boxTop + 51);
+
+      const fileName = `Invoice_${(step.project?.name||'Project').replace(/\s+/g,'_')}_${invNo}.pdf`;
+      doc.save(fileName);
+    } catch (e) {
+      console.error('PDF render failed', e);
+      alert('Failed to render invoice PDF');
     }
   };
 
@@ -643,6 +869,24 @@ export default function SupervisorInvoiceModal({
                 className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
               >
                 Submit Invoice to Admin
+              </button>
+            )}
+            {invoiceGenerated && (
+              <button
+                type="button"
+                onClick={handleGenerateFromLatestBill}
+                className="flex-1 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700"
+              >
+                Generate from Latest Bill
+              </button>
+            )}
+            {invoiceGenerated && (
+              <button
+                type="button"
+                onClick={renderStyledInvoicePDF}
+                className="flex-1 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700"
+              >
+                Download Styled Invoice
               </button>
             )}
           </div>
