@@ -117,6 +117,7 @@ export default function SupervisorDashboard() {
     project_types: {},
     recent_activities: [],
   });
+  const [projects, setProjects] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -134,17 +135,47 @@ export default function SupervisorDashboard() {
       }
 
       try {
-        const response = await axios.get(
+        // Fetch stats as before
+        const statsResponse = await axios.get(
           `${API_BASE}/projects/supervisor_stats/`,
           {
             headers: { Authorization: `Bearer ${token}` },
           }
         );
-        setProjectStats(response.data);
+        setProjectStats(statsResponse.data);
         setError(null);
+
+        // Fetch all supervisor projects for frontend calculation
+        const projectsResponse = await axios.get(
+          `${API_BASE}/projects/supervisor_projects/`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+        setProjects(projectsResponse.data);
+
+        const projectsArr = Array.isArray(projectsResponse.data) ? projectsResponse.data : [];
+        const totalCount = projectsArr.length;
+        const ongoingCount = projectsArr.filter(
+          (p) => p.status === "ACTIVE" && p.completed !== true
+        ).length;
+        const completedCount = projectsArr.filter(
+          (p) => p.status === "COMPLETED" || p.completed === true
+        ).length;
+        const upcomingCount = projectsArr.filter(
+          (p) => p.status === "PLANNING" && p.completed !== true
+        ).length;
+
+        setProjectStats((prev) => ({
+          ...prev,
+          total: totalCount,
+          ongoing: ongoingCount,
+          completed: completedCount,
+          upcoming: upcomingCount,
+        }));
       } catch (err: unknown) {
         const error = err as AxiosError<{ error?: string }>;
-        console.error("Failed to fetch project stats:", error);
+        console.error("Failed to fetch project stats or projects:", error);
         setError(
           error.response?.data?.error || "Failed to fetch project statistics"
         );
