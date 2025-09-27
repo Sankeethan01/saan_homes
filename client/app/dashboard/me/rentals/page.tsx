@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { motion } from 'framer-motion';
 import { useAuthStore } from "@/app/stores/useAuthStore";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -53,19 +53,7 @@ export default function RentalHistoryPage() {
   const newBookingId = searchParams.get('booking');
   const paymentSuccess = searchParams.get('payment');
 
-  useEffect(() => {
-    if (!token) {
-      router.push('/dashboard/login');
-      return;
-    }
-    
-    // Only fetch bookings if we have a user with an ID
-    if (user && user.id) {
-      fetchBookings();
-    }
-  }, [token, user, router]);
-
-  const fetchBookings = async () => {
+  const fetchBookings = useCallback(async () => {
     try {
       setLoading(true);
       
@@ -112,7 +100,21 @@ export default function RentalHistoryPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [token, user]);
+
+  useEffect(() => {
+    if (!token) {
+      router.push('/dashboard/login');
+      return;
+    }
+    
+    // Only fetch bookings if we have a user with an ID
+    if (user && user.id) {
+      fetchBookings();
+    }
+  }, [token, user, router, fetchBookings]);
+
+
 
   const handleCancelBooking = async (bookingId: string) => {
     try {

@@ -1,12 +1,25 @@
 import { useState } from "react";
-import { RiCloseLine, RiUploadLine } from "react-icons/ri";
+import { RiCloseLine } from "react-icons/ri";
 import { fetchWithAuth } from "@/app/utils/auth";
 import { jsPDF } from "jspdf";
 
+interface Step {
+  id: string;
+  title: string;
+  thumbnail?: string;
+}
+
+interface Invoice {
+  id: string;
+  amount: number;
+  date: string;
+  status: string;
+}
+
 interface SupervisorInvoiceModalProps {
   open: boolean;
-  step: any;
-  invoice: any;
+  step: Step;
+  invoice?: Invoice;
   onClose: () => void;
   onSaved?: () => void;
 }
@@ -55,11 +68,10 @@ const fetchImageFromPublicAsBase64 = async (filename: string) => {
 export default function SupervisorInvoiceModal({
   open,
   step,
-  invoice,
   onClose,
   onSaved,
 }: SupervisorInvoiceModalProps) {
-  const [form, setForm] = useState({
+  const [form] = useState({
     files: [] as File[],
   });
   const [saving, setSaving] = useState(false);
@@ -81,9 +93,9 @@ export default function SupervisorInvoiceModal({
           body: fd,
         });
       }
-      onSaved && onSaved();
+      if (onSaved) onSaved();
       onClose();
-    } catch (err) {
+    } catch {
       alert("Failed to submit bills.");
     } finally {
       setSaving(false);
@@ -97,7 +109,7 @@ export default function SupervisorInvoiceModal({
       if (step?.thumbnail) {
         try {
           logo = await fetchImageAsBase64(getThumbnailUrl(step.thumbnail));
-        } catch (e) {
+        } catch {
           console.warn("Using fallback logo from public folder");
         }
       }
@@ -140,7 +152,12 @@ export default function SupervisorInvoiceModal({
       <div className="bg-white rounded-2xl p-6 w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold">Step Invoice</h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+          <button 
+            onClick={onClose} 
+            className="text-gray-400 hover:text-gray-600"
+            title="Close modal"
+            aria-label="Close modal"
+          >
             <RiCloseLine className="w-5 h-5" />
           </button>
         </div>

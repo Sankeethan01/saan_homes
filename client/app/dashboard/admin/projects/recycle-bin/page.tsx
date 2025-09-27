@@ -3,9 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useAuthStore } from '@/app/stores/useAuthStore';
 import { useRouter } from 'next/navigation';
-import { FiChevronLeft, FiRefreshCw, FiTrash2, FiCalendar, FiClock, FiUsers, FiMapPin } from 'react-icons/fi';
+import { FiChevronLeft, FiRefreshCw, FiTrash2, FiCalendar, FiClock, FiUsers,} from 'react-icons/fi';
 import Image from 'next/image';
-import Link from 'next/link';
 
 interface Project {
   id: string;

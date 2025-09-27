@@ -4,28 +4,11 @@ import { useState } from 'react';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  RiUserLine,
-  RiLockLine,
-  RiBellLine,
-  RiPaletteLine,
-  RiMailLine,
-  RiPhoneLine,
-  RiGlobalLine,
-  RiMoonLine,
-  RiSunLine,
-  RiSaveLine,
-  RiImageAddLine,
-  RiCalendarLine,
-  RiShieldLine,
-  RiNotificationLine,
-  RiEyeLine,
-  RiEyeOffLine,
-  RiCheckLine,
-  RiCloseLine,
   RiEditLine,
   RiCameraLine,
+  RiSaveLine,
 } from 'react-icons/ri';
-import { FiUser, FiShield, FiBell, FiMonitor, FiSettings } from 'react-icons/fi';
+import { FiSettings } from 'react-icons/fi';
 
 interface AdminProfile {
   name: string;
@@ -56,15 +39,8 @@ interface NotificationPreferences {
   emailDigest: boolean;
 }
 
-interface ThemeSettings {
-  darkMode: boolean;
-  colorScheme: 'blue' | 'green' | 'purple' | 'red';
-  compactMode: boolean;
-  sidebarCollapsed: boolean;
-}
-
 export default function SettingsPage() {
-  const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'notifications' | 'appearance'>('profile');
+  const [activeTab] = useState<'profile' | 'security' | 'notifications' | 'appearance'>('profile');
   const [actionLoading, setActionLoading] = useState(false);
   
   const [profile, setProfile] = useState<AdminProfile>({
@@ -79,7 +55,7 @@ export default function SettingsPage() {
     department: 'Management',
   });
 
-  const [security, setSecurity] = useState<SecuritySettings>({
+  const [security] = useState<SecuritySettings>({
     emailNotifications: true,
     twoFactorAuth: false,
     loginAlerts: true,
@@ -87,20 +63,13 @@ export default function SettingsPage() {
     passwordExpiry: true,
   });
 
-  const [notifications, setNotifications] = useState<NotificationPreferences>({
+  const [notifications] = useState<NotificationPreferences>({
     projectUpdates: true,
     newMessages: true,
     rentalRequests: true,
     supervisorReports: true,
     systemAlerts: false,
     emailDigest: true,
-  });
-
-  const [theme, setTheme] = useState<ThemeSettings>({
-    darkMode: false,
-    colorScheme: 'blue',
-    compactMode: false,
-    sidebarCollapsed: false,
   });
 
   const [isEditing, setIsEditing] = useState(false);
@@ -113,18 +82,6 @@ export default function SettingsPage() {
     setProfile(editedProfile);
     setIsEditing(false);
     setActionLoading(false);
-  };
-
-  const handleUpdateSecurity = (key: keyof SecuritySettings, value?: any) => {
-    setSecurity({ ...security, [key]: value !== undefined ? value : !security[key] });
-  };
-
-  const handleUpdateNotifications = (key: keyof NotificationPreferences) => {
-    setNotifications({ ...notifications, [key]: !notifications[key] });
-  };
-
-  const handleUpdateTheme = (key: keyof ThemeSettings, value: any) => {
-    setTheme({ ...theme, [key]: value });
   };
 
   const getStats = () => {
@@ -141,13 +98,6 @@ export default function SettingsPage() {
   };
 
   const stats = getStats();
-
-  const colorSchemes = [
-    { name: 'Blue', value: 'blue', color: 'bg-blue-500' },
-    { name: 'Green', value: 'green', color: 'bg-green-500' },
-    { name: 'Purple', value: 'purple', color: 'bg-purple-500' },
-    { name: 'Red', value: 'red', color: 'bg-red-500' },
-  ];
 
   const languages = [
     { name: 'English', value: 'en' },
@@ -189,6 +139,7 @@ export default function SettingsPage() {
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-semibold text-slate-900">Profile Information</h2>
                 <button
+                  type="button"
                   onClick={() => setIsEditing(!isEditing)}
                   className="flex items-center gap-2 px-3 py-2 bg-[#1b4965] text-white rounded-lg transition-colors"
                 >
@@ -217,7 +168,7 @@ export default function SettingsPage() {
                       </div>
                     )}
                     {isEditing && (
-                      <button className="absolute -bottom-2 -right-2 bg-blue-500 text-white p-2 rounded-full hover:bg-blue-600 transition-colors">
+                      <button type="button" title="Change profile picture" aria-label="Change profile picture" className="absolute -bottom-2 -right-2 bg-blue-500 text-white p-2 rounded-full hover:bg-blue-600 transition-colors">
                         <RiCameraLine className="w-4 h-4" />
                       </button>
                     )}
@@ -235,6 +186,8 @@ export default function SettingsPage() {
                     <label className="block text-sm font-medium text-slate-700 mb-2">Full Name</label>
                     <input
                       type="text"
+                      title="Full Name"
+                      aria-label="Full Name"
                       value={isEditing ? editedProfile.name : profile.name}
                       onChange={(e) => setEditedProfile({ ...editedProfile, name: e.target.value })}
                       disabled={!isEditing}
@@ -246,6 +199,8 @@ export default function SettingsPage() {
                     <label className="block text-sm font-medium text-slate-700 mb-2">Username</label>
                     <input
                       type="text"
+                      title="Username"
+                      aria-label="Username"
                       value={isEditing ? editedProfile.username : profile.username}
                       onChange={(e) => setEditedProfile({ ...editedProfile, username: e.target.value })}
                       disabled={!isEditing}
@@ -257,6 +212,8 @@ export default function SettingsPage() {
                     <label className="block text-sm font-medium text-slate-700 mb-2">Email Address</label>
                     <input
                       type="email"
+                      title="Email Address"
+                      aria-label="Email Address"
                       value={isEditing ? editedProfile.email : profile.email}
                       onChange={(e) => setEditedProfile({ ...editedProfile, email: e.target.value })}
                       disabled={!isEditing}
@@ -268,6 +225,8 @@ export default function SettingsPage() {
                     <label className="block text-sm font-medium text-slate-700 mb-2">Phone Number</label>
                     <input
                       type="tel"
+                      title="Phone Number"
+                      aria-label="Phone Number"
                       value={isEditing ? editedProfile.phone : profile.phone}
                       onChange={(e) => setEditedProfile({ ...editedProfile, phone: e.target.value })}
                       disabled={!isEditing}
@@ -279,6 +238,8 @@ export default function SettingsPage() {
                     <label className="block text-sm font-medium text-slate-700 mb-2">Date of Birth</label>
                     <input
                       type="date"
+                      title="Date of Birth"
+                      aria-label="Date of Birth"
                       value={isEditing ? editedProfile.dateOfBirth : profile.dateOfBirth}
                       onChange={(e) => setEditedProfile({ ...editedProfile, dateOfBirth: e.target.value })}
                       disabled={!isEditing}
@@ -289,6 +250,8 @@ export default function SettingsPage() {
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-2">Language</label>
                     <select
+                      title="Language"
+                      aria-label="Language"
                       value={isEditing ? editedProfile.language : profile.language}
                       onChange={(e) => setEditedProfile({ ...editedProfile, language: e.target.value })}
                       disabled={!isEditing}
@@ -304,12 +267,14 @@ export default function SettingsPage() {
                 {isEditing && (
                   <div className="flex gap-3 pt-4 border-t border-slate-200">
                     <button
+                      type="button"
                       onClick={() => setIsEditing(false)}
                       className="flex-1 px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
                     >
                       Cancel
                     </button>
                     <button
+                      type="button"
                       onClick={handleSaveProfile}
                       disabled={actionLoading}
                       className="flex-1 px-4 py-2 bg-[#1b4965] text-white rounded-lg hover:to-[#1b4965] transition-colors disabled:opacity-50 flex items-center justify-center gap-2"

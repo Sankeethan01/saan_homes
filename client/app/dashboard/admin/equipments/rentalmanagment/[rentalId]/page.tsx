@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   RiArrowLeftLine,
   RiCheckLine,
@@ -89,16 +89,7 @@ export default function RentalDetailPage() {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
 
-  useEffect(() => {
-    if (!token) {
-      router.replace('/dashboard/login');
-      return;
-    }
-
-    fetchBookingDetails();
-  }, [params.rentalId, token, router]);
-
-  const fetchBookingDetails = async () => {
+  const fetchBookingDetails = useCallback(async () => {
     try {
       setLoading(true);
       const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api';
@@ -111,7 +102,16 @@ export default function RentalDetailPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [params.rentalId]);
+
+  useEffect(() => {
+    if (!token) {
+      router.replace('/dashboard/login');
+      return;
+    }
+
+    fetchBookingDetails();
+  }, [params.rentalId, token, router, fetchBookingDetails]);
 
   const formatCurrency = (amount: number | string) => {
     if (amount === undefined || amount === null || isNaN(Number(amount))) {

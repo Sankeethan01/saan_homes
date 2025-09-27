@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter, useParams } from "next/navigation";
+import Image from "next/image";
 import { useState, useEffect } from "react";
 import {
   RiBuildingLine,
@@ -8,7 +9,6 @@ import {
   RiTimeLine,
   RiFileTextLine,
   RiEyeLine,
-  RiArrowRightLine,
   RiCameraLine,
   RiVideoLine,
   RiUploadLine,
@@ -58,6 +58,14 @@ interface Step {
   status: string;
   logs: ProgressLog[];
   bills: Bill[];
+  invoice?: Invoice;
+}
+
+interface ProgressLogMedia {
+  id: string;
+  url: string;
+  type: 'image' | 'video' | 'pdf';
+  filename: string;
 }
 
 interface ProgressLog {
@@ -65,7 +73,7 @@ interface ProgressLog {
   stepId: string;
   title: string;
   description: string;
-  media: MediaFile[];
+  media: ProgressLogMedia[];
   timestamp: string;
   type: string;
 }
@@ -73,14 +81,19 @@ interface ProgressLog {
 interface MediaFile {
   id: string;
   url: string;
-  type: string;
+  type: 'image' | 'video' | 'pdf';
   filename: string;
+  file_size?: number;
+  uploaded_by_name?: string;
+  uploaded_at?: string;
+  title?: string;
+  description?: string;
 }
 
 interface ProjectMedia {
   id: string;
   url: string;
-  type: string;
+  type: 'image' | 'video' | 'pdf';
   title: string;
   description: string;
   filename: string;
@@ -103,9 +116,13 @@ interface Invoice {
   step: {
     title: string;
   };
-  data: any;
+  data: {
+    amount?: number;
+  };
   created: string;
   is_approved: boolean;
+  amount: number;
+  description: string;
 }
 
 export default function ProjectDetailPage() {
@@ -115,7 +132,7 @@ export default function ProjectDetailPage() {
   const [project, setProject] = useState<Project | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [progressLogs, setProgressLogs] = useState<ProgressLog[]>([]);
+
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   
   // Media upload states
@@ -142,10 +159,10 @@ export default function ProjectDetailPage() {
     try {
       const token = localStorage.getItem("access_token");
       // Find the media object to get filename/url before deletion
-      let deletedMedia: any = null;
+      let deletedMedia: ProjectMedia | null = null;
       setProject((prev) => {
         if (!prev) return prev;
-        deletedMedia = prev.media_files.find((media: any) => String(media.id) === String(mediaId));
+        deletedMedia = prev.media_files.find((media) => String(media.id) === String(mediaId)) || null;
         return prev;
       });
       await axios.delete(`${process.env.NEXT_PUBLIC_API_BASE_URL}/projects/project-media/${mediaId}/`, {
@@ -158,7 +175,7 @@ export default function ProjectDetailPage() {
         // Loop through all logs and their media
         for (const step of project.steps) {
           for (const log of step.logs) {
-            for (const media of log.media as any[]) {
+            for (const media of log.media as { id: string; url: string; type: 'image' | 'video' | 'pdf'; filename: string; }[]) {
               // Match by filename or url
               if (
                 (media.filename && media.filename === deletedMedia.filename) ||
@@ -184,14 +201,14 @@ export default function ProjectDetailPage() {
         if (!prev) return prev;
         // Remove from top-level media_files
         const updatedMediaFiles = prev.media_files.filter(
-          (media: any) => String(media.id) !== String(mediaId)
+          (media: ProjectMedia) => String(media.id) !== String(mediaId)
         );
         // Remove from nested logs under each step
         const updatedSteps = prev.steps.map((step) => ({
           ...step,
           logs: step.logs.map((log) => ({
             ...log,
-            media: (log.media as any[]).filter(
+            media: (log.media as MediaFile[]).filter(
               (media) => String(media.id) !== String(mediaId) && (!deletedMedia || media.filename !== deletedMedia.filename)
             ),
           })),
@@ -256,7 +273,7 @@ export default function ProjectDetailPage() {
       setEditingMedia(null);
       setToast("Media updated successfully");
       setTimeout(() => setToast(null), 3000);
-    } catch (err) {
+    } catch {
       setToast("Failed to update media");
       setTimeout(() => setToast(null), 3000);
     } finally {
@@ -294,13 +311,11 @@ export default function ProjectDetailPage() {
         const projectData = await projectResponse.json();
         setProject(projectData);
 
-        // Progress logs and invoices are already included in the project data through steps
-        // Extract them from the project data
         if (projectData.steps) {
           const allLogs: ProgressLog[] = [];
           const allInvoices: Invoice[] = [];
           
-          projectData.steps.forEach((step: any) => {
+          projectData.steps.forEach((step: Step) => {
             if (step.logs) {
               allLogs.push(...step.logs);
             }
@@ -309,7 +324,6 @@ export default function ProjectDetailPage() {
             }
           });
           
-          setProgressLogs(allLogs);
           setInvoices(allInvoices);
         }
 
@@ -457,6 +471,8 @@ export default function ProjectDetailPage() {
               <button 
                 onClick={() => window.location.reload()} 
                 className="px-4 py-2 bg-[#1b4965] text-white rounded-lg hover:bg-[#1b4965]/90 transition-colors"
+                title="Retry loading the project"
+                aria-label="Retry loading the project"
               >
                 Retry
               </button>
@@ -494,7 +510,7 @@ export default function ProjectDetailPage() {
             <span key={item.path} className="flex items-center">
               {idx > 0 && <span className="mx-2 text-[#1b4965]">/</span>}
               {idx < breadcrumbs.length - 1 ? (
-                <button onClick={() => router.push(item.path)} className="text-[#1b4965] hover:underline">{item.name}</button>
+                <button onClick={() => router.push(item.path)} className="text-[#1b4965] hover:underline" title={`Navigate to ${item.name}`} aria-label={`Navigate to ${item.name}`}>{item.name}</button>
               ) : (
                 <span className="text-[#1b4965] font-semibold">{item.name}</span>
               )}
@@ -585,6 +601,8 @@ export default function ProjectDetailPage() {
                   ? "bg-[#1b4965] text-white shadow"
                   : "text-slate-600 hover:text-[#1b4965]-700 hover:bg-white/80 hover:shadow"
               }`}
+              title={`Switch to ${tab.label} tab`}
+              aria-label={`Switch to ${tab.label} tab`}
             >
               <tab.icon className="text-lg" />
               <span>{tab.label}</span>
@@ -600,9 +618,11 @@ export default function ProjectDetailPage() {
               <div className="flex flex-col md:flex-row gap-6">
                 <div className="flex-1">
                   {project.thumbnail ? (
-                    <img 
+                    <Image 
                       src={`${process.env.NEXT_PUBLIC_API_BASE_URL}/media/${project.thumbnail}`} 
                       alt={project.name} 
+                      width={800}
+                      height={192}
                       className="rounded-xl w-full h-48 object-cover mb-4"
                       onError={(e) => {
                         const target = e.target as HTMLImageElement;
@@ -651,12 +671,14 @@ export default function ProjectDetailPage() {
                           <div key={media.id} className="flex items-center gap-3 border-b border-gray-200 pb-2 mb-2 last:border-b-0 last:mb-0 last:pb-0">
                             {/* Thumbnail or icon */}
                             {media.type === 'image' ? (
-                              <img
+                              <Image
                                 src={`${process.env.NEXT_PUBLIC_API_BASE_URL}${media.url}`}
                                 alt={media.title || media.filename}
+                                width={64}
+                                height={64}
                                 className="w-16 h-16 object-cover rounded-lg border"
                               />
-                            ) : media.type === 'video' || media.type === 'vr' ? (
+                            ) : media.type === 'video' ? (
                               <button
                                 onClick={() => window.open(`${process.env.NEXT_PUBLIC_API_BASE_URL}${media.url}`, '_blank')}
                                 className="w-16 h-16 flex items-center justify-center bg-gradient-to-br from-blue-100 to-purple-100 rounded-lg border hover:from-blue-200 hover:to-purple-200"
@@ -806,20 +828,22 @@ export default function ProjectDetailPage() {
                             <td className="px-4 py-2">{date}</td>
                             <td className="px-4 py-2">
                               {!invoice && step.status === 'COMPLETED' && (
-                                <button
-                                  className="px-3 py-1 bg-green-700 text-white rounded hover:bg-green-800 text-xs"
-                                  onClick={() => {
-                                    // Open invoice modal for this step (reuse ProgressLogs logic)
-                                    // You may need to lift invoice modal state up or trigger a custom event
-                                    const logsSection = document.getElementById('progress-logs-section');
-                                    if (logsSection) {
-                                      logsSection.scrollIntoView({ behavior: 'smooth' });
-                                    }
-                                    alert('To submit invoice, please use the Progress Logs section for this step.');
-                                  }}
-                                >
-                                  Submit Invoice
-                                </button>
+                                                              <button
+                                className="px-3 py-1 bg-green-700 text-white rounded hover:bg-green-800 text-xs"
+                                onClick={() => {
+                                  // Open invoice modal for this step (reuse ProgressLogs logic)
+                                  // You may need to lift invoice modal state up or trigger a custom event
+                                  const logsSection = document.getElementById('progress-logs-section');
+                                  if (logsSection) {
+                                    logsSection.scrollIntoView({ behavior: 'smooth' });
+                                  }
+                                  alert('To submit invoice, please use the Progress Logs section for this step.');
+                                }}
+                                title="Submit invoice for this step"
+                                aria-label="Submit invoice for this step"
+                              >
+                                Submit Invoice
+                              </button>
                               )}
                               {invoice && (
                                 <span className="text-gray-400 text-xs">{status === 'Approved' ? 'Locked' : 'Submitted'}</span>
@@ -845,6 +869,8 @@ export default function ProjectDetailPage() {
                 <button
                   onClick={() => setShowMediaUpload(true)}
                   className="flex items-center gap-2 px-4 py-2 bg-[#1b4965] text-white rounded-lg hover:bg-[#1b4965]/90 transition-colors"
+                  title="Upload new media files to the project"
+                  aria-label="Upload new media files to the project"
                 >
                   <RiAddLine className="w-4 h-4" />
                   Upload Media
@@ -859,7 +885,7 @@ export default function ProjectDetailPage() {
                         <div className="flex items-center gap-2">
                           {media.type === 'image' && <RiCameraLine className="w-5 h-5 text-blue-500" />}
                           {media.type === 'video' && <RiVideoLine className="w-5 h-5 text-red-500" />}
-                          {media.type === 'vr' && <RiPlayLine className="w-5 h-5 text-purple-500" />}
+
                           <span className="text-sm text-gray-500">{media.type.toUpperCase()}</span>
                         </div>
                         <div className="flex items-center gap-2">
@@ -874,14 +900,16 @@ export default function ProjectDetailPage() {
                           </a>
                           <button
                             className="text-green-600 hover:text-green-800"
-                            title="Edit"
+                            title="Edit media"
+                            aria-label="Edit media"
                             onClick={() => handleEditMedia(media)}
                           >
                             <RiFileTextLine className="w-5 h-5" />
                           </button>
                           <button
                             className="text-red-600 hover:text-red-800"
-                            title="Delete"
+                            title="Delete media"
+                            aria-label="Delete media"
                             onClick={() => handleDeleteMedia(media.id)}
                           >
                             <RiCloseLine className="w-5 h-5" />
@@ -908,7 +936,7 @@ export default function ProjectDetailPage() {
                 <div className="text-center text-gray-500 py-8">
                   <RiCameraLine className="w-12 h-12 mx-auto mb-2 text-gray-300" />
                   <p>No media files uploaded yet</p>
-                  <p className="text-sm">Click "Upload Media" to add images, videos, or VR content</p>
+                  <p className="text-sm">Click &quot;Upload Media&quot; to add images, videos, or VR content</p>
                 </div>
               )}
             </div>
@@ -925,6 +953,8 @@ export default function ProjectDetailPage() {
               <button
                 onClick={() => setShowMediaUpload(false)}
                 className="text-gray-400 hover:text-gray-600"
+                title="Close media upload modal"
+                aria-label="Close media upload modal"
               >
                 <RiCloseLine className="w-5 h-5" />
               </button>
@@ -939,6 +969,8 @@ export default function ProjectDetailPage() {
                   onChange={e => setMediaUploadData(prev => ({ ...prev, step: e.target.value }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                   required
+                  title="Select project step for media upload"
+                  aria-label="Select project step for media upload"
                 >
                   <option value="">Select Step</option>
                   {project.steps.map(step => (
@@ -1090,6 +1122,8 @@ export default function ProjectDetailPage() {
                   value={editMediaForm.step}
                   onChange={e => setEditMediaForm(f => ({ ...f, step: e.target.value }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                  title="Select project step for media"
+                  aria-label="Select project step for media"
                 >
                   <option value="">Select Step</option>
                   {project.steps.map(step => (
@@ -1104,6 +1138,8 @@ export default function ProjectDetailPage() {
                   accept="image/*,video/*"
                   onChange={e => setEditMediaForm(f => ({ ...f, file: e.target.files ? e.target.files[0] : null }))}
                   className="w-full"
+                  title="Choose a new file to replace the current media"
+                  aria-label="Choose a new file to replace the current media"
                 />
                 {editingMedia.url && (
                   <div className="mt-2 text-xs text-gray-500">Current file: {editingMedia.filename}</div>

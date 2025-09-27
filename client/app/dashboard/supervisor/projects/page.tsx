@@ -19,13 +19,11 @@ import {
   RiEditLine,
   RiDownloadLine,
   RiArrowRightLine,
-  RiPlayLine,
-  RiPauseLine,
   RiDeleteBinLine,
   RiCloseLine,
 } from 'react-icons/ri';
 import Image from 'next/image';
-import { FiSearch, FiFilter, FiCalendar, FiCheckCircle, FiClock, FiUsers } from 'react-icons/fi';
+import { FiSearch, FiFilter, FiCalendar, FiCheckCircle, FiClock } from 'react-icons/fi';
 import { useRouter } from 'next/navigation';
 
 interface Project {
@@ -92,7 +90,6 @@ export default function SupervisorProjectsPage() {
   const [loading, setLoading] = useState(true);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [activeTab, setActiveTab] = useState<'overview' | 'progress' | 'timeline' | 'invoices'>('overview');
-  const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const router = useRouter();
@@ -177,6 +174,8 @@ export default function SupervisorProjectsPage() {
                 value={statusFilter}
                 onChange={e => setStatusFilter(e.target.value)}
                 className="pl-10 pr-8 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#1b4965] focus:border-transparent transition-all duration-200 appearance-none w-full"
+                title="Filter projects by status"
+                aria-label="Filter projects by status"
               >
                 <option value="All">All Statuses</option>
                 <option value="Active">Active</option>
@@ -251,9 +250,11 @@ export default function SupervisorProjectsPage() {
                 {/* Thumbnail */}
                 <div className="w-full h-40 bg-gray-100 flex items-center justify-center overflow-hidden border-b border-gray-200">
                   {project.thumbnail ? (
-                    <img
+                    <Image
                       src={`${process.env.NEXT_PUBLIC_API_BASE_URL}/media/${project.thumbnail}`}
                       alt={project.name}
+                      width={400}
+                      height={160}
                       className="object-cover w-full h-full"
                       onError={(e) => {
                         const target = e.target as HTMLImageElement;
@@ -353,7 +354,7 @@ export default function SupervisorProjectsPage() {
                   ].map((tab) => (
                     <button
                       key={tab.id}
-                      onClick={() => setActiveTab(tab.id as any)}
+                      onClick={() => setActiveTab(tab.id as 'overview' | 'progress' | 'timeline' | 'invoices')}
                       className={`flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all duration-200 ${
                         activeTab === tab.id
                           ? 'bg-[#1b4965] text-white shadow'
@@ -383,93 +384,23 @@ export default function SupervisorProjectsPage() {
 // Project Overview Component
 function ProjectOverview({ project }: { project: Project }) {
   const token = useAuthStore((s) => s.token);
-  // Supervisor Notes State
-  const [note, setNote] = useState<string>('');
-  const [noteId, setNoteId] = useState<string | null>(null);
-  const [noteLoading, setNoteLoading] = useState(false);
-  const [noteEditing, setNoteEditing] = useState(false);
-  const [noteError, setNoteError] = useState<string | null>(null);
   const userRole = typeof window !== 'undefined' ? localStorage.getItem('role') : null;
-  const supervisorId = typeof window !== 'undefined' ? localStorage.getItem('user_id') : null;
 
   // Fetch supervisor note for this project
   useEffect(() => {
     if (userRole !== 'SUPERVISOR' || !token || !project.id) return;
-    setNoteLoading(true);
     fetch(`${API_BASE}/projects/supervisor-notes/?project=${project.id}`, {
       headers: { 'Authorization': `Bearer ${token}` }
     })
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data) && data.length > 0) {
-          setNote(data[0].note);
-          setNoteId(data[0].id);
         } else {
-          setNote('');
-          setNoteId(null);
         }
-        setNoteLoading(false);
       })
       .catch(() => {
-        setNote('');
-        setNoteId(null);
-        setNoteLoading(false);
       });
   }, [project.id, token, userRole]);
-
-  // Add or update note
-  const handleNoteSave = async () => {
-    setNoteLoading(true);
-    setNoteError(null);
-    try {
-      const url = noteId
-        ? `${API_BASE}/projects/supervisor-notes/${noteId}/`
-        : `${API_BASE}/projects/supervisor-notes/`;
-      const method = noteId ? 'PATCH' : 'POST';
-      const body = noteId
-        ? JSON.stringify({ note })
-        : JSON.stringify({ note, project: project.id });
-      const res = await fetch(url, {
-        method,
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body,
-      });
-      if (!res.ok) throw new Error('Failed to save note');
-      const data = await res.json();
-      setNote(data.note);
-      setNoteId(data.id);
-      setNoteEditing(false);
-    } catch (err) {
-      setNoteError('Could not save note.');
-    } finally {
-      setNoteLoading(false);
-    }
-  };
-
-  // Delete note
-  const handleNoteDelete = async () => {
-    if (!noteId) return;
-    if (!window.confirm('Delete your note for this project?')) return;
-    setNoteLoading(true);
-    setNoteError(null);
-    try {
-      const res = await fetch(`${API_BASE}/projects/supervisor-notes/${noteId}/`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` },
-      });
-      if (!res.ok) throw new Error('Failed to delete note');
-      setNote('');
-      setNoteId(null);
-      setNoteEditing(false);
-    } catch (err) {
-      setNoteError('Could not delete note.');
-    } finally {
-      setNoteLoading(false);
-    }
-  };
 
   return (
     <div className="space-y-8">
@@ -634,7 +565,7 @@ function SiteSupervisorNotes({ projectId }: { projectId: string }) {
       setNote(data.note);
       setNoteId(data.id);
       setNoteEditing(false);
-    } catch (err) {
+    } catch {
       setNoteError('Could not save note.');
     } finally {
       setNoteLoading(false);
@@ -655,7 +586,7 @@ function SiteSupervisorNotes({ projectId }: { projectId: string }) {
       setNote('');
       setNoteId(null);
       setNoteEditing(false);
-    } catch (err) {
+    } catch{
       setNoteError('Could not delete note.');
     } finally {
       setNoteLoading(false);
@@ -691,6 +622,9 @@ function SiteSupervisorNotes({ projectId }: { projectId: string }) {
               value={note}
               onChange={e => setNote(e.target.value)}
               disabled={noteLoading}
+              title="Supervisor note"
+              aria-label="Supervisor note"
+              placeholder="Enter your note here..."
             />
             <div className="flex gap-2">
               <button onClick={handleNoteSave} disabled={noteLoading} className="flex items-center gap-1 bg-blue-600 text-white px-4 py-2 rounded-xl hover:bg-blue-700 disabled:opacity-50"><RiCheckLine />Save</button>
@@ -912,7 +846,10 @@ function ProgressLogs({ project }: { project: Project }) {
             <form className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Step</label>
-                <select className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                <select 
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  title="Select project step"
+                  aria-label="Select project step">
                   {project.steps.map((step) => (
                     <option key={step.id} value={step.id}>{step.name}</option>
                   ))}
@@ -939,7 +876,13 @@ function ProgressLogs({ project }: { project: Project }) {
                 <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center">
                   <RiUploadLine className="text-4xl text-gray-400 mx-auto mb-2" />
                   <p className="text-gray-600">Drag and drop files here or click to browse</p>
-                  <input type="file" multiple className="hidden" />
+                  <input 
+                    type="file" 
+                    multiple 
+                    className="hidden"
+                    title="Upload project media files"
+                    aria-label="Upload project media files"
+                  />
                 </div>
               </div>
               <div className="flex gap-4">
@@ -980,7 +923,7 @@ function ProjectTimeline({ project }: { project: Project }) {
         <div className="absolute left-8 top-0 bottom-0 w-1 bg-gradient-to-b from-blue-500 via-indigo-500 to-purple-500 rounded-full"></div>
         
         <div className="space-y-10">
-          {project.steps.map((step, index) => (
+          {project.steps.map((step) => (
             <div key={step.id} className="relative flex items-start">
               {/* Timeline Dot */}
               <div className={`absolute left-6 w-5 h-5 rounded-full border-4 shadow-lg ${
@@ -1087,8 +1030,8 @@ function ProjectTimeline({ project }: { project: Project }) {
 }
 
 // Project Invoices Component
-function ProjectInvoices({ project }: { project: Project }) {
-  const [invoices, setInvoices] = useState<Invoice[]>([
+function ProjectInvoices({ }: { project: Project }) {
+  const [invoices] = useState<Invoice[]>([
     {
       id: '1',
       phase: 'Foundation',
@@ -1154,7 +1097,11 @@ function ProjectInvoices({ project }: { project: Project }) {
               {invoice.bills.map((bill, index) => (
                 <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
                   <span className="text-sm text-gray-600">{bill}</span>
-                  <button className="text-blue-600 hover:text-blue-700">
+                  <button 
+                    className="text-blue-600 hover:text-blue-700"
+                    title="Download bill"
+                    aria-label="Download bill"
+                  >
                     <RiDownloadLine className="text-lg" />
                   </button>
                 </div>

@@ -2,7 +2,7 @@
 
 import { useAuthStore } from "@/app/stores/useAuthStore";
 import { useRouter } from "next/navigation";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { motion } from 'framer-motion';
 import Image from "next/image";
 import { 
@@ -46,16 +46,7 @@ export default function ProfilePage() {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
-  useEffect(() => {
-    if (!token) {
-      router.replace("/dashboard/login");
-      return;
-    }
-    
-    fetchUserProfile();
-  }, [router, token]);
-
-  const fetchUserProfile = async () => {
+  const fetchUserProfile = useCallback(async () => {
     try {
       setLoading(true);
       const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api';
@@ -91,7 +82,18 @@ export default function ProfilePage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [router, token]);
+
+  useEffect(() => {
+    if (!token) {
+      router.replace("/dashboard/login");
+      return;
+    }
+    
+    fetchUserProfile();
+  }, [router, token, fetchUserProfile]);
+
+
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;

@@ -144,7 +144,7 @@ export async function fetchWithAuth(url: string, options: RequestInit = {}) {
   const token = getAccessToken();
 
   // Build headers, but do NOT set Content-Type for FormData
-  let headers: Record<string, string> = {
+  const headers: Record<string, string> = {
     'Accept': 'application/json',
     ...(token ? { 'Authorization': `Bearer ${token}` } : {})
   };

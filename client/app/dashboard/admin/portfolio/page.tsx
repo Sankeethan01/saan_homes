@@ -85,7 +85,7 @@ interface ItemMap {
 type Editing = { type: 'add' } | { type: 'edit'; id: string } | null;
 type ProjectEditing = { type: 'edit'; id: string } | null;
 
-const TABS: { key: Tab; label: string; icon: React.ComponentType<any> }[] = [
+const TABS: { key: Tab; label: string; icon: React.ComponentType<React.SVGProps<SVGSVGElement>> }[] = [
   { key: 'Services', label: 'Services', icon: RiServiceLine },
   { key: 'Projects', label: 'Projects', icon: RiFileListLine },
   { key: 'Testimonials', label: 'Testimonials', icon: RiTeamLine },
@@ -195,7 +195,7 @@ export default function AdminPortfolioPage() {
           case 'Services':
             setItems(prev => ({
               ...prev,
-              Services: data.map((s: any) => ({
+              Services: data.map((s: {id: string; title: string; description: string; icon?: string}) => ({
                 id: s.id,
                 name: s.title,
                 desc: s.description,
@@ -207,7 +207,7 @@ export default function AdminPortfolioPage() {
           case 'Equipment':
             setItems(prev => ({
               ...prev,
-              Equipment: data.map((e: any) => ({
+              Equipment: data.map((e: {id: string; name: string; description: string; category_name?: string; image?: string; daily_rate?: number}) => ({
                 id: e.id,
                 name: e.name,
                 desc: e.description,
@@ -221,7 +221,7 @@ export default function AdminPortfolioPage() {
           case 'Projects':
             setItems(prev => ({
               ...prev,
-              Projects: data.map((p: any) => ({
+              Projects: data.map((p: {id: string; name: string; description: string; start_date?: string; estimated_end_date?: string; is_completed: boolean; supervisor: Supervisor}) => ({
                 id: p.id,
                 name: p.name,
                 desc: p.description,
@@ -240,7 +240,7 @@ export default function AdminPortfolioPage() {
           case 'Testimonials':
             setItems(prev => ({
               ...prev,
-              Testimonials: data.map((t: any) => ({
+              Testimonials: data.map((t: {id: string; name: string; text: string; avatar?: string}) => ({
                 id: t.id,
                 name: t.name,
                 desc: t.text,
@@ -382,7 +382,7 @@ export default function AdminPortfolioPage() {
     
     setItems(prev => ({
       ...prev,
-      [tab]: prev[tab].map((item: any) =>
+      [tab]: prev[tab].map((item: Service | Project | Testimonial | Equipment) =>
         item.id === id ? { ...item, showOnLanding: !item.showOnLanding } : item
       ),
     }));

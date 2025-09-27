@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import {
   RiArrowLeftLine,
@@ -89,16 +89,7 @@ export default function EditSupervisorPage() {
 
   const [errors, setErrors] = useState<FormErrors>({});
 
-  useEffect(() => {
-    if (!token) {
-      router.replace('/dashboard/login');
-      return;
-    }
-
-    fetchSupervisor();
-  }, [params.supervisorId, token, router]);
-
-  const fetchSupervisor = async () => {
+  const fetchSupervisor = useCallback(async () => {
     try {
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_API_BASE_URL}/userAccounts/users/${params.supervisorId}/`,
@@ -138,7 +129,18 @@ export default function EditSupervisorPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [params.supervisorId, token, router]);
+
+  useEffect(() => {
+    if (!token) {
+      router.replace('/dashboard/login');
+      return;
+    }
+
+    fetchSupervisor();
+  }, [params.supervisorId, token, router, fetchSupervisor]);
+
+
 
   // Password strength validation
   const validatePasswordStrength = (password: string): PasswordStrength => {

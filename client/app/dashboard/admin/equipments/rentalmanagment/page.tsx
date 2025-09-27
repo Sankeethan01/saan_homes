@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import {
   RiEyeLine,
@@ -70,15 +70,7 @@ export default function RentalsPage() {
   const router = useRouter();
   const token = useAuthStore((s) => s.token);
 
-  useEffect(() => {
-    if (!token) {
-      router.replace('/dashboard/login');
-      return;
-    }
-    fetchBookings();
-  }, [token, router]);
-
-  const fetchBookings = async () => {
+  const fetchBookings = useCallback(async () => {
     try {
       setLoading(true);
       const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api';
@@ -146,7 +138,17 @@ export default function RentalsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [token, activeTab, searchTerm]);
+
+  useEffect(() => {
+    if (!token) {
+      router.replace('/dashboard/login');
+      return;
+    }
+    fetchBookings();
+  }, [token, router, fetchBookings]);
+
+
 
   // Update status tabs counts
   const updateStatusTabs = () => {

@@ -2,7 +2,7 @@
 
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuthStore } from "@/app/stores/useAuthStore";
 import { useRouter } from 'next/navigation';
 import { 
@@ -40,16 +40,7 @@ export default function NotificationsPage() {
   const [error, setError] = useState<string | null>(null);
   const [loadingAction, setLoadingAction] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!token) {
-      router.push('/dashboard/login');
-      return;
-    }
-    
-    fetchNotifications();
-  }, [token, router]);
-
-  const fetchNotifications = async () => {
+  const fetchNotifications = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -75,7 +66,18 @@ export default function NotificationsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [token]);
+
+  useEffect(() => {
+    if (!token) {
+      router.push('/dashboard/login');
+      return;
+    }
+    
+    fetchNotifications();
+  }, [token, router, fetchNotifications]);
+
+
 
   const handleMarkAsRead = async (notificationId: string) => {
     try {
