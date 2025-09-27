@@ -27,6 +27,7 @@ from .models import (
 )
 from .serializers import (
     ProjectSerializer,
+    ProjectListSerializer,
     StepSerializer,
     ProgressLogSerializer,
     BillSerializer,
@@ -545,7 +546,7 @@ class IsAdminOrSupervisorOrReadOnly(permissions.BasePermission):
 # ViewSets
 # ──────────────────────────────────────────────
 class ProjectViewSet(viewsets.ModelViewSet):
-    queryset = Project.objects.select_related('supervisor').prefetch_related('steps').all()  # Optimize with prefetch_related
+    queryset = Project.objects.select_related('supervisor').prefetch_related('steps').all()
     serializer_class = ProjectSerializer
     permission_classes = [IsAdminOrSupervisorOrReadOnly]
     filter_backends = [SearchFilter, OrderingFilter]
@@ -554,9 +555,56 @@ class ProjectViewSet(viewsets.ModelViewSet):
     ordering = ["-created"]
     parser_classes = (MultiPartParser, FormParser, JSONParser)
     
+    def get_serializer_class(self):
+        """Use a lightweight serializer for list views"""
+        if self.action == 'list':
+            return ProjectListSerializer
+        return ProjectSerializer
+    
     def get_queryset(self):
         # By default, exclude deleted projects with optimized queries
-        return Project.objects.select_related('supervisor').prefetch_related('steps', 'steps__logs').filter(is_deleted=False)
+        try:
+            # For list view, use a more efficient query
+            if self.action == 'list':
+                return Project.objects.select_related('supervisor').prefetch_related(
+                    'steps'
+                ).filter(is_deleted=False)
+            # For detail view, include more relationships
+            return Project.objects.select_related('supervisor').prefetch_related(
+                'steps', 
+                'steps__logs',
+                'media_files'
+            ).filter(is_deleted=False)
+        except Exception as e:
+            print(f"Error in ProjectViewSet.get_queryset: {str(e)}")
+            # Return a simple queryset if there's an error
+            return Project.objects.filter(is_deleted=False)
+            
+    def list(self, request, *args, **kwargs):
+        """Optimized list method with pagination and error handling"""
+        try:
+            # Use pagination for better performance
+            page_size = 10
+            paginator = self.paginator
+            
+            if paginator is None:
+                # If no paginator is set, use PageNumberPagination
+                from rest_framework.pagination import PageNumberPagination
+                paginator = PageNumberPagination()
+                paginator.page_size = page_size
+            
+            queryset = self.filter_queryset(self.get_queryset())
+            page = paginator.paginate_queryset(queryset, request)
+            
+            if page is not None:
+                serializer = self.get_serializer(page, many=True)
+                return paginator.get_paginated_response(serializer.data)
+            
+            serializer = self.get_serializer(queryset, many=True)
+            return Response(serializer.data)
+        except Exception as e:
+            print(f"Error in ProjectViewSet.list: {str(e)}")
+            return Response({"error": "An error occurred while fetching projects"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
     @action(detail=False, methods=['get'], url_path='recycle-bin')
     def recycle_bin(self, request):

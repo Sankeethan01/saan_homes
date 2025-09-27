@@ -233,13 +233,34 @@ export default function AdminLayout({
   // If we're checking authentication, show a loading state
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-screen bg-gradient-to-br from-slate-50 to-slate-100">
-        <div className="text-center">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-white rounded-2xl shadow-lg mb-4">
-            <div className="animate-spin rounded-full h-8 w-8 border-2 border-slate-300 border-t-primary"></div>
+      <div className="flex items-center justify-center h-screen bg-white">
+        <div className="relative flex flex-col items-center">
+          {/* Logo animation with pulse effect */}
+          <div className="mb-6 relative">
+            <img 
+              src="/assets/logo.jpg" 
+              alt="SAAN Homes Logo" 
+              className="h-10 w-auto relative z-10"
+            />
+            <div className="absolute inset-0 animate-pulse bg-primary-100 rounded-full opacity-30"></div>
           </div>
-          <p className="text-lg font-medium text-slate-700">Verifying authentication...</p>
-          <p className="text-sm text-slate-500 mt-1">Please wait a moment</p>
+          
+          {/* Loading bar with animated gradient */}
+          <div className="w-64 h-2 bg-gray-100 rounded-full overflow-hidden shadow-inner">
+            <div className="h-full bg-gradient-to-r from-blue-400 via-primary-600 to-blue-500 relative animate-loading-bar">
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-30 animate-shimmer"></div>
+            </div>
+          </div>
+          
+          {/* Animated text */}
+          <div className="flex items-center justify-center mt-4">
+            <p className="text-gray-700 font-medium">
+              Verifying authentication
+              <span className="text-primary-600 animate-pulse-fast">.</span>
+              <span className="text-primary-600 animate-pulse-fast animation-delay-300">.</span>
+              <span className="text-primary-600 animate-pulse-fast animation-delay-600">.</span>
+            </p>
+          </div>
         </div>
       </div>
     );

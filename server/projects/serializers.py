@@ -18,7 +18,13 @@ class ProgressLogMediaSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'uploaded_at']
     
     def get_url(self, obj):
-        return obj.file.url if obj.file else None
+        if obj.file:
+            try:
+                return obj.file.url
+            except Exception as e:
+                print(f"Error getting file URL for {obj.id}: {str(e)}")
+                return None
+        return None
     
     def get_type(self, obj):
         return obj.media_type.lower()
@@ -45,7 +51,13 @@ class ProjectMediaSerializer(serializers.ModelSerializer):
         ]
 
     def get_url(self, obj):
-        return obj.file.url if obj.file else None
+        if obj.file:
+            try:
+                return obj.file.url
+            except Exception as e:
+                print(f"Error getting file URL for {obj.id}: {str(e)}")
+                return None
+        return None
 
     def get_type(self, obj):
         return obj.media_type.lower()
@@ -155,7 +167,12 @@ class BillSerializer(serializers.ModelSerializer):
 
     def get_file_size(self, obj):
         if obj.pdf and hasattr(obj.pdf, 'size'):
-            return obj.pdf.size
+            try:
+                return obj.pdf.size
+            except Exception as e:
+                # Handle any errors when accessing file
+                print(f"Error getting file size for {obj.id}: {str(e)}")
+                return None
         return None
 
     def get_uploaded_by_name(self, obj):
@@ -206,6 +223,47 @@ class SupervisorSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['id', 'username', 'first_name', 'last_name', 'email']
+
+
+class ProjectListSerializer(serializers.ModelSerializer):
+    """Lightweight serializer for listing projects"""
+    progress = serializers.SerializerMethodField()
+    status = serializers.SerializerMethodField()
+    current_step = serializers.SerializerMethodField()
+    supervisor = SupervisorSerializer(read_only=True)
+    
+    class Meta:
+        model = Project
+        fields = ['id', 'name', 'description', 'start_date', 'estimated_end_date', 
+                  'is_completed', 'supervisor', 'created', 'updated', 
+                  'progress', 'status', 'current_step', 'project_type', 'priority']
+    
+    def get_progress(self, obj):
+        """Calculate overall project progress based on completed steps"""
+        # Use prefetched steps to avoid additional queries
+        steps = obj.steps.all()
+        total_steps = len(steps)
+        if total_steps == 0:
+            return 0
+        
+        completed_steps = sum(1 for step in steps if step.is_approved)
+        return int((completed_steps / total_steps) * 100)
+    
+    def get_current_step(self, obj):
+        """Get the current step in progress"""
+        # Use prefetched steps to avoid additional queries
+        steps = obj.steps.all()
+        current_step = next((step for step in sorted(steps, key=lambda s: s.order) if not step.is_approved), None)
+        return current_step.title if current_step else "Completed"
+    
+    def get_status(self, obj):
+        """Get project status"""
+        if obj.is_completed:
+            return "COMPLETED"
+        # Use prefetched steps to avoid additional queries
+        steps = obj.steps.all()
+        has_pending_steps = any(not step.is_approved for step in steps)
+        return "IN_PROGRESS" if has_pending_steps else "PLANNING"
 
 
 class ProjectSerializer(serializers.ModelSerializer):

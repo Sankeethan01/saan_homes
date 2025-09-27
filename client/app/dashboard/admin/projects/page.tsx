@@ -75,6 +75,9 @@ export default function ProjectsPage() {
   const [statusFilter, setStatusFilter] = useState<string>('All');
   const [retryCount, setRetryCount] = useState(0);
   const [isRetrying, setIsRetrying] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [hasMorePages, setHasMorePages] = useState(false);
   
   const token = useAuthStore((s) => s.token);
   const router = useRouter();
@@ -92,7 +95,7 @@ export default function ProjectsPage() {
     };
   }, []);
 
-  const fetchProjects = useCallback(async (isRetry = false) => {
+  const fetchProjects = useCallback(async (isRetry = false, page = 1) => {
     // Prevent multiple simultaneous calls
     if (fetchingRef.current) {
       console.log('🔍 Fetch already in progress, skipping...');
@@ -116,7 +119,8 @@ export default function ProjectsPage() {
     
     if (isRetry) {
       setIsRetrying(true);
-    } else {
+    } else if (page === 1) {
+      // Only show loading indicator for initial page load
       setLoading(true);
     }
     
@@ -124,12 +128,16 @@ export default function ProjectsPage() {
 
     try {
       const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api';
-      console.log('🔍 Fetching projects from:', `${apiBaseUrl}/projects/`);
+      const url = `${apiBaseUrl}/projects/?page=${page}&page_size=10`;
+      console.log('🔍 Fetching projects from:', url);
       
       // Use the fetchWithAuth helper for better error handling
-      const response = await fetchWithAuth(`${apiBaseUrl}/projects/`, {
+      const response = await fetchWithAuth(url, {
         method: 'GET',
-        signal: AbortSignal.timeout(10000), // 10 second timeout
+        signal: AbortSignal.timeout(30000), // 30 second timeout
+        headers: {
+          'Cache-Control': 'no-cache', // Prevent caching issues
+        },
       });
 
       // Check if component is still mounted before processing response
@@ -142,9 +150,20 @@ export default function ProjectsPage() {
         console.error('🔍 API Response not OK:', response.status, response.statusText);
         
         if (response.status === 401) {
-          console.log('🔍 Unauthorized, clearing token and redirecting...');
-          clearToken();
-          router.replace('/dashboard/login');
+          console.log('🔍 Unauthorized after token refresh attempt, clearing token and redirecting...');
+          
+          // To prevent infinite loops, check if we've been redirected recently
+          const lastRedirectTime = sessionStorage.getItem('last_auth_redirect');
+          const currentTime = Date.now();
+          
+          if (!lastRedirectTime || (currentTime - parseInt(lastRedirectTime)) > 10000) {
+            // Only redirect if we haven't redirected in the last 10 seconds
+            sessionStorage.setItem('last_auth_redirect', currentTime.toString());
+            clearToken();
+            router.replace('/dashboard/login');
+          } else {
+            console.log('🔍 Preventing redirect loop - already redirected recently');
+          }
           return;
         }
         
@@ -155,7 +174,7 @@ export default function ProjectsPage() {
         throw new Error(`Failed to fetch projects (${response.status})`);
       }
 
-      const data = await response.json();
+      const responseData = await response.json();
       
       // Final mounted check before updating state
       if (!mountedRef.current) {
@@ -163,15 +182,33 @@ export default function ProjectsPage() {
         return;
       }
       
-      console.log('🔍 Projects data received:', data?.length || 0, 'projects');
+      // Handle paginated response format
+      const results = responseData.results || responseData;
+      const count = responseData.count || results.length;
+      const next = responseData.next || null;
+      
+      console.log('🔍 Projects data received:', results.length, 'projects (page', page, 'of', Math.ceil(count/10), ')');
       
       // Validate data structure
-      if (!Array.isArray(data)) {
+      if (!Array.isArray(results)) {
         throw new Error('Invalid data format received from server');
       }
       
-      setProjects(data);
-      setFilteredProjects(data);
+      // If this is the first page, replace projects
+      // Otherwise append to existing projects
+      if (page === 1) {
+        setProjects(results);
+        setFilteredProjects(results);
+      } else {
+        setProjects(prev => [...prev, ...results]);
+        setFilteredProjects(prev => [...prev, ...results]);
+      }
+      
+      // Update pagination info
+      setCurrentPage(page);
+      setTotalPages(Math.ceil(count/10));
+      setHasMorePages(!!next);
+      
       setError(null);
       setRetryCount(0); // Reset retry count on success
       
@@ -224,8 +261,15 @@ export default function ProjectsPage() {
       return;
     }
 
-    fetchProjects();
+    fetchProjects(false, 1);
   }, [token, router, fetchProjects]);
+  
+  // Function to load more projects
+  const loadMoreProjects = useCallback(() => {
+    if (hasMorePages && !fetchingRef.current) {
+      fetchProjects(false, currentPage + 1);
+    }
+  }, [fetchProjects, currentPage, hasMorePages]);
 
   // Filter projects
   useEffect(() => {
@@ -507,96 +551,121 @@ export default function ProjectsPage() {
         className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6"
       >
         {filteredProjects.length > 0 ? (
-          filteredProjects.map((project, index) => {
-            const status = getStatusFromProject(project);
-            const statusStyleClass = getStatusStyle(status);
-            const statusIcon = getStatusIcon(status);
-            
-            return (
-              <motion.div
-                key={project.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1 * index }}
-                className="group relative bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 border border-white/20 hover:scale-[1.02] overflow-hidden"
-              >
-                {/* Gradient Background */}
-                <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-transparent to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                
-                {/* Status Indicator Strip */}
-                <div className={`absolute top-0 left-0 right-0 h-1 ${
-                  status === 'Completed' ? 'bg-green-500' :
-                  status === 'In Progress' ? 'bg-blue-500' :
-                  status === 'Planning' ? 'bg-purple-500' : 'bg-gray-400'
-                }`}></div>
-                
-                <div className="relative p-6">
-                  {/* Project Header */}
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex-1">
-                      <h3 className="text-lg font-bold text-gray-900 mb-1 group-hover:text-primary-600 transition-colors">
-                        {project.name}
-                      </h3>
-                      <p 
-                        className="text-gray-600 text-sm leading-relaxed"
-                        style={{
-                          display: '-webkit-box',
-                          WebkitLineClamp: 2,
-                          WebkitBoxOrient: 'vertical',
-                          overflow: 'hidden'
-                        }}
-                      >
-                        {project.description}
-                      </p>
-                    </div>
-                    <div className={`flex items-center px-3 py-1.5 rounded-full text-xs font-semibold ${statusStyleClass} border-0 shadow-sm`}>
-                      {statusIcon}
-                      {status}
-                    </div>
-                  </div>
+          <>
+            {filteredProjects.map((project, index) => {
+              const status = getStatusFromProject(project);
+              const statusStyleClass = getStatusStyle(status);
+              const statusIcon = getStatusIcon(status);
+              
+              return (
+                <motion.div
+                  key={project.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.05 * Math.min(index, 10) }} // Limit delay for better performance
+                  className="group relative bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 border border-white/20 hover:scale-[1.02] overflow-hidden"
+                >
+                  {/* Gradient Background */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-transparent to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                   
-                  {/* Project Details */}
-                  <div className="space-y-3 mb-6">
-                    <div className="flex items-center text-sm">
-                      <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center mr-3">
-                        <FiCalendar className="text-blue-600 w-4 h-4" />
+                  {/* Status Indicator Strip */}
+                  <div className={`absolute top-0 left-0 right-0 h-1 ${
+                    status === 'Completed' ? 'bg-green-500' :
+                    status === 'In Progress' ? 'bg-blue-500' :
+                    status === 'Planning' ? 'bg-purple-500' : 'bg-gray-400'
+                  }`}></div>
+                  
+                  <div className="relative p-6">
+                    {/* Project Header */}
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex-1">
+                        <h3 className="text-lg font-bold text-gray-900 mb-1 group-hover:text-primary-600 transition-colors">
+                          {project.name}
+                        </h3>
+                        <p 
+                          className="text-gray-600 text-sm leading-relaxed"
+                          style={{
+                            display: '-webkit-box',
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: 'vertical',
+                            overflow: 'hidden'
+                          }}
+                        >
+                          {project.description}
+                        </p>
                       </div>
-                      <div>
-                        <div className="text-gray-500 text-xs">Start Date</div>
-                        <div className="font-medium text-gray-900">
-                          {new Date(project.start_date).toLocaleDateString('en-US', {
-                            month: 'short',
-                            day: 'numeric',
-                            year: 'numeric',
-                          })}
+                      <div className={`flex items-center px-3 py-1.5 rounded-full text-xs font-semibold ${statusStyleClass} border-0 shadow-sm`}>
+                        {statusIcon}
+                        {status}
+                      </div>
+                    </div>
+                    
+                    {/* Project Details */}
+                    <div className="space-y-3 mb-6">
+                      <div className="flex items-center text-sm">
+                        <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center mr-3">
+                          <FiCalendar className="text-blue-600 w-4 h-4" />
+                        </div>
+                        <div>
+                          <div className="text-gray-500 text-xs">Start Date</div>
+                          <div className="font-medium text-gray-900">
+                            {new Date(project.start_date).toLocaleDateString('en-US', {
+                              month: 'short',
+                              day: 'numeric',
+                              year: 'numeric',
+                            })}
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center text-sm">
+                        <div className="w-8 h-8 bg-purple-50 rounded-lg flex items-center justify-center mr-3">
+                          <FiUsers className="text-purple-600 w-4 h-4" />
+                        </div>
+                        <div>
+                          <div className="text-gray-500 text-xs">Supervisor</div>
+                          <div className="font-medium text-gray-900 truncate max-w-[150px]">
+                            {getSupervisorDisplayName(project.supervisor)}
+                          </div>
                         </div>
                       </div>
                     </div>
                     
-                    <div className="flex items-center text-sm">
-                      <div className="w-8 h-8 bg-purple-50 rounded-lg flex items-center justify-center mr-3">
-                        <FiUsers className="text-purple-600 w-4 h-4" />
-                      </div>
-                      <div>
-                        <div className="text-gray-500 text-xs">Supervisor</div>
-                        <div className="font-medium text-gray-900 truncate max-w-[150px]">
-                          {getSupervisorDisplayName(project.supervisor)}
-                        </div>
-                      </div>
-                    </div>
+                    {/* Action Button */}
+                    <Link href={`/dashboard/admin/projects/${project.id}`}>
+                      <button className="w-full group/btn flex items-center justify-center px-4 py-3 bg-[#1b4965] text-white rounded-xl hover:from-primary-600 hover:to-primary-700 transition-all duration-300 shadow-lg hover:shadow-xl font-semibold">
+                        <span>View Project Details</span>
+                        <FiArrowRight className="ml-2 w-4 h-4 group-hover/btn:translate-x-1 transition-transform duration-300" />
+                      </button>
+                    </Link>
                   </div>
-                  
-                  {/* Action Button */}
-                  <Link href={`/dashboard/admin/projects/${project.id}`}>
-                    <button className="w-full group/btn flex items-center justify-center px-4 py-3 bg-[#1b4965] text-white rounded-xl hover:from-primary-600 hover:to-primary-700 transition-all duration-300 shadow-lg hover:shadow-xl font-semibold">
-                      <span>View Project Details</span>
-                      <FiArrowRight className="ml-2 w-4 h-4 group-hover/btn:translate-x-1 transition-transform duration-300" />
-                    </button>
-                  </Link>
-                </div>
-              </motion.div>
-            );
-          })
+                </motion.div>
+              );
+            })}
+            
+            {/* Load More Button */}
+            {hasMorePages && (
+              <div className="col-span-full flex justify-center mt-8">
+                <button
+                  onClick={loadMoreProjects}
+                  disabled={fetchingRef.current}
+                  className="px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-xl transition-colors duration-200 flex items-center gap-2 disabled:opacity-50"
+                >
+                  {fetchingRef.current ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-800"></div>
+                      Loading more...
+                    </>
+                  ) : (
+                    <>
+                      Load More Projects
+                      <FiArrowRight className="ml-1" />
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
+          </>
         ) : (
           <motion.div
             initial={{ opacity: 0 }}
