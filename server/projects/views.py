@@ -12,8 +12,11 @@ import numpy as np
 from django.conf import settings
 from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
+from django.http import FileResponse
 import uuid
 from django.utils import timezone
+from datetime import datetime, timedelta
+from .boq_template_generator import generate_boq_template
 
 from .models import (
     Project,
@@ -38,6 +41,62 @@ from .serializers import (
     ProgressLogMediaSerializer,
     ProjectMediaSerializer,
 )
+
+
+# ──────────────────────────────────────────────
+# File Cleanup Utilities
+# ──────────────────────────────────────────────
+def cleanup_old_temp_files(max_age_hours=24):
+    """
+    Clean up old temporary BOQ files from the temp_boq directory.
+    
+    Args:
+        max_age_hours (int): Maximum age of files to keep in hours
+    
+    Returns:
+        dict: Cleanup statistics
+    """
+    temp_boq_dir = os.path.join(settings.MEDIA_ROOT, 'temp_boq')
+    
+    if not os.path.exists(temp_boq_dir):
+        return {'deleted': 0, 'size_freed': 0, 'errors': []}
+    
+    cutoff_time = datetime.now() - timedelta(hours=max_age_hours)
+    deleted_count = 0
+    size_freed = 0
+    errors = []
+    
+    try:
+        files = os.listdir(temp_boq_dir)
+        for filename in files:
+            file_path = os.path.join(temp_boq_dir, filename)
+            
+            if os.path.isfile(file_path):
+                try:
+                    stat = os.stat(file_path)
+                    file_mtime = datetime.fromtimestamp(stat.st_mtime)
+                    
+                    if file_mtime < cutoff_time:
+                        size_freed += stat.st_size
+                        os.remove(file_path)
+                        deleted_count += 1
+                        print(f"Cleaned up old temp file: {filename}")
+                except OSError as e:
+                    errors.append(f"Error deleting {filename}: {e}")
+        
+        # Remove empty directory
+        if not os.listdir(temp_boq_dir):
+            os.rmdir(temp_boq_dir)
+            print(f"Removed empty temp_boq directory")
+            
+    except OSError as e:
+        errors.append(f"Error accessing temp_boq directory: {e}")
+    
+    return {
+        'deleted': deleted_count,
+        'size_freed': size_freed,
+        'errors': errors
+    }
 
 
 # ──────────────────────────────────────────────
@@ -357,14 +416,41 @@ def create_steps_from_boq(project, boq_data):
     Returns:
         list: Created step IDs
     """
-    from .models import Step
+    from .models import Step, Project
+    
+    # Ensure we have a valid project instance
+    if not isinstance(project, Project):
+        print(f"ERROR: Invalid project object passed to create_steps_from_boq: {type(project)}")
+        if isinstance(project, str) and project.startswith('http'):
+            print(f"ERROR: Received URL instead of project object: {project}")
+            return []
+        elif isinstance(project, dict):
+            print(f"ERROR: Received dict instead of project object: {project}")
+            # Try to get the project by ID
+            project_id = project.get('id')
+            if project_id:
+                try:
+                    project = Project.objects.get(id=project_id)
+                    print(f"Successfully retrieved project from ID: {project.name} (ID: {project.id})")
+                except Project.DoesNotExist:
+                    print(f"ERROR: Project with ID {project_id} does not exist")
+                    return []
+            else:
+                return []
+    
+    print(f"Creating steps from BOQ data for project: {project.name} (ID: {project.id})")
+    print(f"BOQ data keys: {list(boq_data.keys())}")
     
     created_steps = []
     
     # Check if we have explicit steps from the BOQ file
     if "steps" in boq_data and boq_data["steps"]:
+        print(f"Found {len(boq_data['steps'])} explicit steps in BOQ data")
+        
         # Create steps directly from the BOQ file structure
         for order, step_data in enumerate(boq_data["steps"], 1):
+            print(f"Processing step {order}: {step_data.get('title', 'Unnamed Step')}")
+            
             # Extract material details
             materials = []
             for material_item in step_data["materials"]:
@@ -377,24 +463,37 @@ def create_steps_from_boq(project, boq_data):
                     "rate": material_details.get("rate", 0)
                 })
             
-            # Create the step
-            step = Step.objects.create(
-                project=project,
-                title=step_data["title"],
-                description=f"Materials for {step_data['title']}",
-                order=order,
-                expected_materials=materials,
-                expected_budget=step_data["budget"]
-            )
+            print(f"Step {order} has {len(materials)} materials")
             
-            created_steps.append(step.id)
+            try:
+                # Create the step
+                step = Step.objects.create(
+                    project=project,
+                    title=step_data["title"],
+                    description=f"Materials for {step_data['title']}",
+                    order=order,
+                    expected_materials=materials,
+                    expected_budget=step_data["budget"],
+                    is_completed=False,
+                    progress=0
+                )
+                
+                print(f"Created step with ID: {step.id}")
+                created_steps.append(step.id)
+            except Exception as e:
+                print(f"Error creating step {order}: {str(e)}")
         
+        print(f"Created {len(created_steps)} steps from explicit BOQ steps")
         return created_steps
     
     # Fallback to construction phases if no explicit steps
     # Get construction phases from BOQ data
     construction_phases = boq_data.get('construction_phases', {})
     phase_budgets = boq_data.get('phase_budgets', {})
+    
+    print(f"Fallback to construction phases. Found {len(construction_phases)} phases")
+    for phase, items in construction_phases.items():
+        print(f"Phase '{phase}' has {len(items)} materials")
     
     # Define phase order and display names
     phase_order = {
@@ -482,7 +581,9 @@ def create_steps_from_boq(project, boq_data):
                     description=f"Finishing work for {room_name}",
                     order=room_order,
                     expected_materials=expected_materials,
-                    expected_budget=room_budget
+                    expected_budget=room_budget,
+                    is_completed=False,
+                    progress=0
                 )
                 
                 created_steps.append(step.id)
@@ -517,7 +618,9 @@ def create_steps_from_boq(project, boq_data):
             description=f"Materials for {title}",
             order=order,
             expected_materials=expected_materials,
-            expected_budget=expected_budget
+            expected_budget=expected_budget,
+            is_completed=False,
+            progress=0
         )
         
         created_steps.append(step.id)
@@ -559,6 +662,66 @@ class ProjectViewSet(viewsets.ModelViewSet):
     ordering_fields = ["start_date", "estimated_end_date", "created"]
     ordering = ["-created"]
     parser_classes = (MultiPartParser, FormParser, JSONParser)
+    
+    @action(detail=False, methods=['get'], url_path='boq-template', permission_classes=[permissions.AllowAny])
+    def boq_template(self, request):
+        """
+        Generate and serve a standardized BOQ template for download
+        Public endpoint - no authentication required
+        """
+        template_path = None
+        template_file = None
+        
+        try:
+            # Generate the template
+            template_path = generate_boq_template()
+            
+            # Open the file
+            template_file = open(template_path, 'rb')
+            
+            # Serve the file for download
+            response = FileResponse(
+                template_file,
+                content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+            )
+            response['Content-Disposition'] = f'attachment; filename="SAAN_HOMES_BOQ_TEMPLATE.xlsx"'
+            
+            # Use FileResponse's streaming to handle the file, then delete it after sending
+            response._resource_closers.append(lambda: self._cleanup_template(template_path, template_file))
+            
+            return response
+        except Exception as e:
+            # Clean up in case of error
+            if template_file:
+                try:
+                    template_file.close()
+                except:
+                    pass
+                    
+            if template_path and os.path.exists(template_path):
+                try:
+                    os.remove(template_path)
+                except:
+                    pass
+                    
+            return Response(
+                {"error": f"Failed to generate BOQ template: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
+    def _cleanup_template(self, file_path, file_obj):
+        """Helper method to clean up template files after they've been served"""
+        try:
+            # Close the file if it's still open
+            if file_obj and not file_obj.closed:
+                file_obj.close()
+                
+            # Delete the file from disk
+            if file_path and os.path.exists(file_path):
+                os.remove(file_path)
+                print(f"Template file deleted: {file_path}")
+        except Exception as e:
+            print(f"Error cleaning up template file: {str(e)}")
     
     def get_serializer_class(self):
         """Use a lightweight serializer for list views"""
@@ -675,7 +838,10 @@ class ProjectViewSet(viewsets.ModelViewSet):
         file_ext = os.path.splitext(boq_file.name)[1].lower()
         if file_ext not in ['.xlsx', '.xls']:
             return Response(
-                {"error": "Invalid file format. Only Excel files (.xlsx, .xls) are supported."}, 
+                {
+                    "error": "Invalid file format. Only Excel files (.xlsx, .xls) are supported.",
+                    "template_url": f"{request.build_absolute_uri('/')[:-1]}/api/projects/boq-template/"
+                }, 
                 status=status.HTTP_400_BAD_REQUEST
             )
         
@@ -685,15 +851,31 @@ class ProjectViewSet(viewsets.ModelViewSet):
         full_temp_path = os.path.join(settings.MEDIA_ROOT, temp_path)
         
         try:
+            # Check if this is our standardized template
+            is_standard_template = False
+            try:
+                xls = pd.ExcelFile(full_temp_path)
+                if "BOQ" in xls.sheet_names and "Units Reference" in xls.sheet_names:
+                    is_standard_template = True
+            except:
+                pass
+                
             # Parse the BOQ file
             boq_data = parse_boq_file(full_temp_path)
             
             # Check for parsing errors
             if "error" in boq_data:
                 return Response(
-                    {"error": boq_data["error"]}, 
+                    {
+                        "error": boq_data["error"],
+                        "template_url": f"{request.build_absolute_uri('/')[:-1]}/api/projects/boq-template/",
+                        "message": "Please use our standardized BOQ template for better results."
+                    }, 
                     status=status.HTTP_400_BAD_REQUEST
                 )
+                
+            # Add flag indicating if this was our standard template
+            boq_data["is_standard_template"] = is_standard_template
             
             # Prepare response with summary data
             response_data = {
@@ -759,6 +941,11 @@ class ProjectViewSet(viewsets.ModelViewSet):
         """
         Custom create method to handle multiple file uploads and BOQ parsing
         """
+        # Clean up old temporary files before processing new ones
+        cleanup_stats = cleanup_old_temp_files(max_age_hours=24)
+        if cleanup_stats['deleted'] > 0:
+            print(f"Cleaned up {cleanup_stats['deleted']} old temp files, freed {cleanup_stats['size_freed']} bytes")
+        
         # Validate required fields
         required_fields = ['name', 'start_date', 'estimated_end_date']
         for field in required_fields:
@@ -771,7 +958,10 @@ class ProjectViewSet(viewsets.ModelViewSet):
         # Validate BOQ file
         if 'boq_file' not in request.FILES:
             return Response(
-                {"error": "BOQ file is required"}, 
+                {
+                    "error": "BOQ file is required",
+                    "template_url": f"{request.build_absolute_uri('/')[:-1]}/api/projects/boq-template/"
+                }, 
                 status=status.HTTP_400_BAD_REQUEST
             )
             
@@ -779,7 +969,10 @@ class ProjectViewSet(viewsets.ModelViewSet):
         file_ext = os.path.splitext(boq_file.name)[1].lower()
         if file_ext not in ['.xlsx', '.xls']:
             return Response(
-                {"error": "Invalid BOQ file format. Only Excel files (.xlsx, .xls) are supported."}, 
+                {
+                    "error": "Invalid BOQ file format. Only Excel files (.xlsx, .xls) are supported.",
+                    "template_url": f"{request.build_absolute_uri('/')[:-1]}/api/projects/boq-template/"
+                }, 
                 status=status.HTTP_400_BAD_REQUEST
             )
         
@@ -824,29 +1017,99 @@ class ProjectViewSet(viewsets.ModelViewSet):
             full_temp_path = os.path.join(settings.MEDIA_ROOT, temp_path)
             
             try:
+                print(f"Processing BOQ file for project: {project.name} (ID: {project.id})")
+                
+                # Check if this is our standardized template for optimized parsing
+                is_standard_template = False
+                try:
+                    xls = pd.ExcelFile(full_temp_path)
+                    if "BOQ" in xls.sheet_names and "Units Reference" in xls.sheet_names:
+                        is_standard_template = True
+                        print(f"Using optimized parsing for standardized template: {boq_file.name}")
+                except Exception as e:
+                    print(f"Error checking if file is standard template: {str(e)}")
+                
                 # Parse the BOQ file
+                print(f"Parsing BOQ file: {full_temp_path}")
                 boq_data = parse_boq_file(full_temp_path)
                 
+                if "error" in boq_data:
+                    print(f"Error in BOQ parsing: {boq_data['error']}")
+                    raise Exception(boq_data["error"])
+                
+                print(f"BOQ parsing successful. Data keys: {list(boq_data.keys())}")
+                
+                # Ensure we have a valid project instance before creating steps
+                if not project or not hasattr(project, 'id'):
+                    print(f"ERROR: Invalid project object: {project}")
+                    raise Exception("Invalid project object, cannot create steps")
+                
                 # Create steps based on BOQ data
-                create_steps_from_boq(project, boq_data)
+                print(f"Creating steps from BOQ data for project ID: {project.id}")
+                try:
+                    step_ids = create_steps_from_boq(project, boq_data)
+                    print(f"Steps created: {len(step_ids)}")
+                    
+                    if not step_ids:
+                        print("WARNING: No steps were created from the BOQ data")
+                except Exception as step_error:
+                    print(f"ERROR creating steps: {step_error}")
+                    raise
+                
+                # No need to store the BOQ file after successful parsing
+                # The steps and materials are now in the database
                 
             except Exception as e:
                 print(f"Error processing BOQ: {e}")
+                print(f"Exception type: {type(e)}")
+                import traceback
+                traceback.print_exc()
             finally:
                 # Clean up the temp file - use try/except to handle potential file access issues
                 try:
                     if os.path.exists(full_temp_path):
-                        os.close(os.open(full_temp_path, os.O_RDONLY))  # Ensure file is closed
                         os.remove(full_temp_path)
-                except Exception as e:
+                        print(f"Temporary BOQ file deleted: {full_temp_path}")
+                except (OSError, PermissionError) as e:
                     print(f"Warning: Could not delete temporary file {full_temp_path}: {e}")
+                except Exception as e:
+                    print(f"Unexpected error deleting temporary file {full_temp_path}: {e}")
+                    
+                # Also clean up the stored BOQ file since we don't need it anymore
+                # (The data has been extracted and stored in the database)
+                try:
+                    if project.boq_file and hasattr(project.boq_file, 'path'):
+                        boq_file_path = project.boq_file.path
+                        # Clear the reference in the model first
+                        project.boq_file = None
+                        project.save(update_fields=['boq_file'])
+                        
+                        # Then delete the physical file
+                        if os.path.exists(boq_file_path):
+                            os.remove(boq_file_path)
+                            print(f"Stored BOQ file deleted after successful processing: {boq_file_path}")
+                        else:
+                            print(f"BOQ file not found at path: {boq_file_path}")
+                    else:
+                        print("No BOQ file reference found in project model")
+                except (OSError, PermissionError) as e:
+                    print(f"Warning: Could not delete stored BOQ file: {e}")
+                except Exception as e:
+                    print(f"Unexpected error deleting stored BOQ file: {e}")
         
         headers = self.get_success_headers(serializer.data)
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
     
     def perform_create(self, serializer):
-        """Override to return the created instance"""
-        return serializer.save()
+        """
+        Override to return the created instance
+        
+        This method is called by the create method to save the project instance.
+        We need to return the saved instance so that create_steps_from_boq can use it.
+        """
+        project = serializer.save()
+        print(f"Project saved successfully: {project.name} (ID: {project.id})")
+        return project
 
     @action(detail=False, methods=['get'])
     def supervisor_projects(self, request):

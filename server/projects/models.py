@@ -115,6 +115,8 @@ class Step(models.Model):
 
     is_approved = models.BooleanField(default=False)          # admin gate
     is_submitted_to_admin = models.BooleanField(default=False)  # supervisor submits for approval
+    is_completed = models.BooleanField(default=False)          # step completion status
+    progress = models.IntegerField(default=0)                  # step progress percentage (0-100)
     actual_completed = models.DateField(null=True, blank=True)
     status = models.CharField(max_length=20, choices=STEP_STATUS_CHOICES, default='PENDING')
 

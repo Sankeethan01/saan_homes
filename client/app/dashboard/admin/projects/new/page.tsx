@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/app/stores/useAuthStore';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiMapPin, FiUser, FiCheckCircle, FiAlertCircle, FiDollarSign, FiList, FiArrowRight, FiArrowLeft, FiUpload, FiCalendar, FiFileText, FiImage } from 'react-icons/fi';
+import { FiMapPin, FiUser, FiCheckCircle, FiAlertCircle, FiDollarSign, FiList, FiArrowRight, FiArrowLeft, FiUpload, FiCalendar, FiFileText, FiImage, FiDownload } from 'react-icons/fi';
 
 interface Supervisor {
   id: string;
@@ -296,9 +296,22 @@ export default function NewProjectPage() {
         
         // Try to get error message from response
         let errorMessage = 'Failed to preview BOQ file';
+        let templateUrl = null;
+        
         try {
           const errorData = await response.json();
           errorMessage = errorData.error || errorData.detail || errorMessage;
+          
+          // Check if the API returned a template URL
+          if (errorData.template_url) {
+            templateUrl = errorData.template_url;
+            console.log('Template URL provided by API:', templateUrl);
+          }
+          
+          // Check if there's a more specific message
+          if (errorData.message) {
+            errorMessage += `. ${errorData.message}`;
+          }
         } catch {
           // If response is not JSON, use status text
           errorMessage = `Failed to preview BOQ file: ${response.statusText}`;
@@ -879,30 +892,43 @@ export default function NewProjectPage() {
          animate={{ opacity: 1, y: 0 }}
          className="md:col-span-2 bg-red-50 p-6 rounded-xl"
        >
-         <div className="flex items-center mb-4">
-           <FiFileText className="text-red-600 mr-2" />
-           <h3 className="font-semibold text-gray-800">BOQ File (Required)</h3>
-         </div>
-         
-         <div className="border-2 border-dashed border-red-200 rounded-xl p-6 text-center">
-           <input
-             type="file"
-             accept=".xls,.xlsx"
-             onChange={handleBoqFileChange}
-             className="hidden"
-             id="boq-upload"
-           />
-           <label
-             htmlFor="boq-upload"
-             className="cursor-pointer flex flex-col items-center"
-           >
-             <FiUpload className="w-12 h-12 text-red-400 mb-4" />
-             <p className="text-lg font-medium text-gray-700 mb-2">
-               {boqFile ? boqFile.name : 'Upload BOQ File'}
-             </p>
-             <p className="text-sm text-gray-500">Excel files only (.xlsx, .xls)</p>
-           </label>
-         </div>
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center">
+            <FiFileText className="text-red-600 mr-2" />
+            <h3 className="font-semibold text-gray-800">BOQ File (Required)</h3>
+          </div>
+          <a 
+            href={`${process.env.NEXT_PUBLIC_API_BASE_URL}/projects/boq-template/`}
+            download="SAAN_HOMES_BOQ_TEMPLATE.xlsx"
+            className="text-sm text-blue-600 hover:text-blue-800 flex items-center"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <FiDownload className="mr-1" />
+            Download Template
+          </a>
+        </div>
+        
+        <div className="border-2 border-dashed border-red-200 rounded-xl p-6 text-center">
+          <input
+            type="file"
+            accept=".xls,.xlsx"
+            onChange={handleBoqFileChange}
+            className="hidden"
+            id="boq-upload"
+          />
+          <label
+            htmlFor="boq-upload"
+            className="cursor-pointer flex flex-col items-center"
+          >
+            <FiUpload className="w-12 h-12 text-red-400 mb-4" />
+            <p className="text-lg font-medium text-gray-700 mb-2">
+              {boqFile ? boqFile.name : 'Upload BOQ File'}
+            </p>
+            <p className="text-sm text-gray-500">Excel files only (.xlsx, .xls)</p>
+            <p className="text-xs text-blue-600 mt-2">For best results, use our standardized template</p>
+          </label>
+        </div>
 
          {/* BOQ Preview */}
          {boqPreviewLoading && (
@@ -914,14 +940,26 @@ export default function NewProjectPage() {
            </div>
          )}
          
-         {boqPreviewError && (
-           <div className="mt-4 p-4 bg-red-100 rounded-xl">
-             <div className="flex items-center">
-               <FiAlertCircle className="text-red-500 mr-2" />
-               <p className="text-sm text-red-600">{boqPreviewError}</p>
-             </div>
-           </div>
-         )}
+        {boqPreviewError && (
+          <div className="mt-4 p-4 bg-red-100 rounded-xl">
+            <div className="flex items-center">
+              <FiAlertCircle className="text-red-500 mr-2" />
+              <p className="text-sm text-red-600">{boqPreviewError}</p>
+            </div>
+            <div className="mt-2 text-center">
+              <a 
+                href={`${process.env.NEXT_PUBLIC_API_BASE_URL}/projects/boq-template/`}
+                download="SAAN_HOMES_BOQ_TEMPLATE.xlsx"
+                className="text-sm text-blue-600 hover:text-blue-800 flex items-center justify-center"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <FiDownload className="mr-1" />
+                Download our standardized template for better results
+              </a>
+            </div>
+          </div>
+        )}
          
          {boqPreviewData && !boqPreviewLoading && (
            <div className="mt-4 p-4 bg-green-100 rounded-xl">
