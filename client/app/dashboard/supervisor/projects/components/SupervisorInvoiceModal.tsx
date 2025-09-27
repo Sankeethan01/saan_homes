@@ -67,10 +67,11 @@ const fetchImageFromPublicAsBase64 = async (filename: string) => {
 export default function SupervisorInvoiceModal({
   open,
   step,
+  invoice,
   onClose,
   onSaved,
-}: SupervisorInvoiceModalProps) {
-  const [form] = useState({
+  }: SupervisorInvoiceModalProps) {
+  const [form, setForm] = useState({
     files: [] as File[],
   });
   const [saving, setSaving] = useState(false);
@@ -113,7 +114,7 @@ export default function SupervisorInvoiceModal({
   };
 
   useEffect(() => {
-    if (invoice && invoice.length > 0) {
+  if (Array.isArray(invoice) && invoice.length > 0) {
       setBillStatus("Submitted");
     } else if (existingBills.length > 0) {
       const hasSubmittedBills = existingBills.some((bill: any) => bill.is_submitted_to_admin);

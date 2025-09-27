@@ -21,8 +21,26 @@ interface Invoice {
   data?: {
     amount: number;
     description: string;
+    invoice_number?: string;
+    status?: string;
+    line_items?: Array<{
+      description: string;
+      quantity: number;
+      rate: number;
+      amount: number;
+    }>;
   };
   is_approved: boolean;
+  status_display?: string;
+  total_amount?: number;
+  step_title?: string;
+  related_bills?: Array<{
+    id: string;
+    uploaded_by: string;
+    ocr_total: number;
+    pdf?: string;
+    is_submitted_to_admin: boolean;
+  }>;
 }
 
 interface StepBill {
@@ -732,9 +750,9 @@ export default function BillsPage() {
                             if (!res.ok) throw new Error('Delete failed');
                             setToast('Bill deleted successfully!');
                             setTimeout(() => setToast(''), 3000);
-                          } catch {
+                          } catch (error) {
                             setStepBills(originalBills);
-                            alert(`Delete failed. ${error?.message ? `\n${error.message}` : ''}`);
+                            alert(`Delete failed. ${error instanceof Error ? `\n${error.message}` : ''}`);
                           }
                         }
                       }}
@@ -926,23 +944,23 @@ export default function BillsPage() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
                     <h3 className="font-semibold text-blue-800">Invoice Details</h3>
-                    <p className="text-sm text-blue-600">#{selectedInvoice.data.invoice_number || 'N/A'}</p>
-                    <p className="text-sm text-blue-600">{selectedInvoice.step_title}</p>
+                    <p className="text-sm text-blue-600">#{selectedInvoice.data?.invoice_number || 'N/A'}</p>
+                    <p className="text-sm text-blue-600">{selectedInvoice.step_title || 'N/A'}</p>
                   </div>
                   <div>
                     <h3 className="font-semibold text-blue-800">Status</h3>
                     <span className={`px-2 py-1 rounded text-xs font-semibold ${
-                      selectedInvoice.data.status === 'APPROVED' ? 'bg-green-100 text-green-800' :
-                      selectedInvoice.data.status === 'SUBMITTED' ? 'bg-yellow-100 text-yellow-800' :
-                      selectedInvoice.data.status === 'REJECTED' ? 'bg-red-100 text-red-800' :
+                      selectedInvoice.data?.status === 'APPROVED' ? 'bg-green-100 text-green-800' :
+                      selectedInvoice.data?.status === 'SUBMITTED' ? 'bg-yellow-100 text-yellow-800' :
+                      selectedInvoice.data?.status === 'REJECTED' ? 'bg-red-100 text-red-800' :
                       'bg-gray-100 text-gray-800'
                     }`}>
-                      {selectedInvoice.status_display}
+                      {selectedInvoice.status_display || selectedInvoice.data?.status || 'DRAFT'}
                     </span>
                   </div>
                   <div>
                     <h3 className="font-semibold text-blue-800">Total Amount</h3>
-                    <p className="text-lg font-bold text-blue-600">₹{selectedInvoice.total_amount.toLocaleString()}</p>
+                    <p className="text-lg font-bold text-blue-600">₹{(selectedInvoice.total_amount || selectedInvoice.data?.amount || 0).toLocaleString()}</p>
                   </div>
                 </div>
               </div>
@@ -951,7 +969,7 @@ export default function BillsPage() {
               <div>
                 <h3 className="text-lg font-semibold mb-4">Line Items</h3>
                 <div className="space-y-2">
-                  {selectedInvoice.data.line_items && selectedInvoice.data.line_items.length > 0 ? (
+                  {selectedInvoice.data?.line_items && selectedInvoice.data.line_items.length > 0 ? (
                     selectedInvoice.data.line_items.map((item: any, index: number) => (
                       <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded">
                         <div className="flex-1">
@@ -1015,7 +1033,7 @@ export default function BillsPage() {
                 >
                   Close
                 </button>
-                {selectedInvoice.data.status === 'DRAFT' && (
+                {selectedInvoice.data?.status === 'DRAFT' && (
                   <button
                     onClick={() => {
                       // This functionality has been moved to the Invoices & Billing section

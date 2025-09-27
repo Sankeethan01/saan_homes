@@ -86,15 +86,17 @@ interface ProgressLog {
   stepId: string;
   title: string;
   description: string;
-  media: ProgressLogMedia[];
+  media: MediaFile[];
   timestamp: string;
   type: string;
+  filename?: string;
+  url?: string;
 }
 
 interface MediaFile {
   id: string;
   url: string;
-  type: 'image' | 'video' | 'pdf';
+  type: 'image' | 'video' | 'pdf' | 'vr';
   filename: string;
   file_size?: number;
   uploaded_by_name?: string;
@@ -106,7 +108,7 @@ interface MediaFile {
 interface ProjectMedia {
   id: string;
   url: string;
-  type: 'image' | 'video' | 'pdf';
+  type: 'image' | 'video' | 'pdf' | 'vr';
   title: string;
   description: string;
   filename: string;
@@ -224,11 +226,16 @@ export default function ProjectDetailPage() {
         // Loop through all logs and their media
         for (const step of project.steps) {
           for (const log of step.logs) {
-            for (const media of log.media as { id: string; url: string; type: 'image' | 'video' | 'pdf'; filename: string; }[]) {
-              // Match by filename or url
+            for (const media of ((log.media as MediaFile[]) || [])) {
+              // Match by filename or url, with runtime type guard
               if (
-                (media.filename && media.filename === deletedMedia.filename) ||
-                (media.url && deletedMedia.url && media.url === deletedMedia.url)
+                typeof media === "object" && media !== null &&
+                "filename" in media && typeof media["filename"] === "string" &&
+                "url" in media && typeof media["url"] === "string" &&
+                deletedMedia && (
+                  (media["filename"] && deletedMedia["filename"] && media["filename"] === deletedMedia["filename"]) ||
+                  (media["url"] && deletedMedia["url"] && media["url"] === deletedMedia["url"])
+                )
               ) {
                 try {
                   await axios.delete(`${process.env.NEXT_PUBLIC_API_BASE_URL}/projects/progress-media/${media.id}/`, {
@@ -245,6 +252,7 @@ export default function ProjectDetailPage() {
           }
         }
       }
+      
       setProject((prev) => {
         if (!prev) return prev;
         // Remove from top-level media_files
@@ -256,7 +264,7 @@ export default function ProjectDetailPage() {
           ...step,
           logs: step.logs.map((log) => ({
             ...log,
-            media: (log.media as MediaFile[]).filter(
+            media: (Array.isArray(log.media) ? log.media : []).filter(
               (media) => String(media.id) !== String(mediaId) && (!deletedMedia || media.filename !== deletedMedia.filename)
             ),
           })),
@@ -411,7 +419,7 @@ export default function ProjectDetailPage() {
             }
           });
 
-          setProgressLogs(allLogs);
+          // setProgressLogs(allLogs);
         }
 
       } catch (err) {
@@ -1212,21 +1220,22 @@ export default function ProjectDetailPage() {
               <h2 className="text-xl font-bold mb-4">Project Overview</h2>
               <div className="flex flex-col md:flex-row gap-6">
                 <div className="flex-1">
-                  {project.thumbnail ? (
-                    <img 
-                      src={toAbsolute(project.thumbnail)} 
-                      alt={project.name} 
-                      width={800}
-                      height={192}
-                      className="rounded-xl w-full h-48 object-cover mb-4"
-                      onError={(e) => {
-                        const target = e.target as HTMLImageElement;
-                        // target.style.display = 'none';
-                        target.nextElementSibling?.classList.remove('hidden');
-                        const fallback = target.parentElement?.querySelector(".fallback");
-                        if (fallback) fallback.classList.remove("hidden");
-                      }}
-                    />
+                  {project.thumbnail && toAbsolute(project.thumbnail) ? (
+                    toAbsolute(project.thumbnail) !== '' ? (
+                      <img 
+                        src={toAbsolute(project.thumbnail)} 
+                        alt={project.name} 
+                        width={800}
+                        height={192}
+                        className="rounded-xl w-full h-48 object-cover mb-4"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.nextElementSibling?.classList.remove('hidden');
+                          const fallback = target.parentElement?.querySelector(".fallback");
+                          if (fallback) fallback.classList.remove("hidden");
+                        }}
+                      />
+                    ) : null
                   ) : null}
                   <div className={`w-full h-48 bg-gray-200 rounded-xl flex items-center justify-center mb-4 ${project.thumbnail ? 'hidden' : ''}`}>
                     <div className="text-center">

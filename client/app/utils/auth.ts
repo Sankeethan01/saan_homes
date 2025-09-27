@@ -1,3 +1,45 @@
+// Authenticated fetch helper for API requests
+export async function fetchWithAuth(url: string, options: RequestInit = {}): Promise<Response> {
+  const token = getAccessToken();
+  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
+  const fullUrl = url.startsWith('http')
+    ? url
+    : `${baseUrl}${url.startsWith('/') ? '' : '/'}${url}`;
+
+  const headers: Record<string, string> = {
+    'Accept': 'application/json',
+    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+  };
+  if (options.headers) {
+    Object.assign(headers, options.headers as Record<string, string>);
+  }
+  if (!(options.body instanceof FormData)) {
+    headers['Content-Type'] = 'application/json';
+  }
+  const config: RequestInit = {
+    ...options,
+    headers,
+    credentials: 'include',
+    mode: 'cors'
+  };
+  try {
+    const response = await fetch(fullUrl, config);
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`Request failed with status ${response.status}:`, errorText);
+      throw new Error(`HTTP ${response.status}: ${errorText}`);
+    }
+    return response;
+  } catch (error) {
+    console.error('API request failed:', error);
+    if (error instanceof TypeError) {
+      console.error('Network error - check server connection');
+    } else if (error instanceof DOMException && error.name === 'AbortError') {
+      console.error('Request was aborted (timeout or manual cancel)');
+    }
+    throw error;
+  }
+}
 // utils/auth.ts
 function getTokenFromStorage(storage: Storage) {
   const authStorage = storage.getItem('auth-storage');
@@ -285,61 +327,5 @@ export function setupTokenRefreshTimer(): void {
     clearTimeout(parseInt(existingTimerId));
   }
   
-  const token = getAccessToken();
-  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
-  
-  // Construct the full URL
-  const fullUrl = url.startsWith('http') 
-    ? url 
-    : `${baseUrl}${url.startsWith('/') ? '' : '/'}${url}`;
-
-  // Log the request URL for debugging
-  console.log('Making request to:', fullUrl);
-
-  // Build headers, but do NOT set Content-Type for FormData
-  const headers: Record<string, string> = {
-    'Accept': 'application/json',
-    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-  };
-
-  // Safely merge any additional headers
-  if (options.headers) {
-    const additionalHeaders = options.headers as Record<string, string>;
-    Object.assign(headers, additionalHeaders);
+  // ...existing code...
   }
-
-  // Only set Content-Type if not sending FormData
-  if (!(options.body instanceof FormData)) {
-    headers['Content-Type'] = 'application/json';
-  }
-
-  const config: RequestInit = {
-    ...options,
-    headers,
-    credentials: 'include',
-    mode: 'cors'
-  };
-
-  try {
-    const response = await fetch(fullUrl, config);
-    
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`Request failed with status ${response.status}:`, errorText);
-      throw new Error(`HTTP ${response.status}: ${errorText}`);
-    }
-    
-    return response;
-  } catch (error) {
-    console.error('API request failed:', error);
-    
-    // Add more detailed error logging
-    if (error instanceof TypeError) {
-      console.error('Network error - check server connection');
-    } else if (error instanceof DOMException && error.name === 'AbortError') {
-      console.error('Request was aborted (timeout or manual cancel)');
-    }
-    
-    throw error;
-  }
-}

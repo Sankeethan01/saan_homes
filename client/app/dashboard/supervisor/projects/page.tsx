@@ -35,8 +35,9 @@ interface Project {
   boq_file?: string;
   is_completed: boolean;
   location: string;
-  status: boolean;
-  currentStep: string;
+  status: string; // backend returns 'PLANNING' | 'IN_PROGRESS' | 'COMPLETED'
+  current_step?: string; // backend field
+  currentStep?: string; // optional legacy/local field
   client: string;
   budget: number;
   progress: number;
@@ -168,9 +169,9 @@ export default function SupervisorProjectsPage() {
 
   // Stats
   const totalProjects = projects.length;
-  const activeProjects = projects.filter(p => p.status && !p.is_completed).length;
-  const completedProjects = projects.filter(p => p.is_completed).length;
-  const upcomingProjects = projects.filter(p => !p.is_completed && new Date(p.start_date) > new Date()).length;
+  const activeProjects = projects.filter(p => (p.status === 'IN_PROGRESS' || p.status === 'PLANNING') && !p.is_completed).length;
+  const completedProjects = projects.filter(p => p.is_completed || p.status === 'COMPLETED').length;
+  const upcomingProjects = projects.filter(p => p.status === 'PLANNING' && !p.is_completed && new Date(p.start_date) > new Date()).length;
 
   // Filtered projects
   const filteredProjects = projects.filter(project => {
@@ -179,9 +180,9 @@ export default function SupervisorProjectsPage() {
       project.description.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus =
       statusFilter === 'All' ||
-      (statusFilter === 'Active' && project.status) ||
-      (statusFilter === 'Completed' && project.is_completed) ||
-      (statusFilter === 'Upcoming' && !project.is_completed && new Date(project.start_date) > new Date());
+      (statusFilter === 'Active' && project.status === 'IN_PROGRESS') ||
+      (statusFilter === 'Completed' && (project.is_completed || project.status === 'COMPLETED')) ||
+      (statusFilter === 'Upcoming' && project.status === 'PLANNING');
     return matchesSearch && matchesStatus;
   });
 
@@ -291,7 +292,7 @@ export default function SupervisorProjectsPage() {
                 <div className="w-full h-40 bg-gray-100 flex items-center justify-center overflow-hidden border-b border-gray-200">
                   {project.thumbnail ? (
                     <Image
-                      src={`${process.env.NEXT_PUBLIC_API_BASE_URL}/media/${project.thumbnail}`}
+                      src={toAbsolute(project.thumbnail)}
                       alt={project.name}
                       width={400}
                       height={160}
@@ -320,13 +321,13 @@ export default function SupervisorProjectsPage() {
                       {project.name}
                     </h3>
                     <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                      project.is_completed
+                      (project.is_completed || project.status === 'COMPLETED')
                         ? 'bg-green-100 text-green-800'
-                        : project.status
+                        : project.status === 'IN_PROGRESS'
                         ? 'bg-amber-100 text-amber-800'
                         : 'bg-blue-100 text-blue-800'
                     }`}>
-                      {project.is_completed ? 'Completed' : project.status ? 'Active' : 'Upcoming'}
+                      {project.is_completed || project.status === 'COMPLETED' ? 'Completed' : project.status === 'IN_PROGRESS' ? 'Active' : 'Upcoming'}
                     </span>
                   </div>
                   <p className="text-gray-600 text-sm mb-3 line-clamp-2">{project.description}</p>
@@ -402,7 +403,7 @@ export default function SupervisorProjectsPage() {
                           : 'text-slate-600 hover:text-[#1b4965]-700 hover:bg-white/80 hover:shadow'
                       }`}
                     >
-                      <tab.icon className="text-lg" />
+                      {(() => { const Icon = tab.icon; return <Icon className="text-lg" />; })()}
                       <span>{tab.label}</span>
                     </button>
                   ))}
@@ -444,58 +445,58 @@ function ProjectOverview({ project }: { project: Project }) {
   }, [project.id, token, userRole]);
 
   // Add or update note
-  const handleNoteSave = async () => {
-    setNoteLoading(true);
-    setNoteError(null);
-    try {
-      const url = noteId
-        ? `${API_BASE}/projects/supervisor-notes/${noteId}/`
-        : `${API_BASE}/projects/supervisor-notes/`;
-      const method = noteId ? 'PATCH' : 'POST';
-      const body = noteId
-        ? JSON.stringify({ note })
-        : JSON.stringify({ note, project: project.id });
-      const res = await fetch(url, {
-        method,
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body,
-      });
-      if (!res.ok) throw new Error('Failed to save note');
-      const data = await res.json();
-      setNote(data.note);
-      setNoteId(data.id);
-      setNoteEditing(false);
-    } catch (err) {
-      setNoteError('Could not save note.');
-    } finally {
-      setNoteLoading(false);
-    }
-  };
+  // const handleNoteSave = async () => {
+  //   setNoteLoading(true);
+  //   setNoteError(null);
+  //   try {
+  //     const url = noteId
+  //       ? `${API_BASE}/projects/supervisor-notes/${noteId}/`
+  //       : `${API_BASE}/projects/supervisor-notes/`;
+  //     const method = noteId ? 'PATCH' : 'POST';
+  //     const body = noteId
+  //       ? JSON.stringify({ note })
+  //       : JSON.stringify({ note, project: project.id });
+  //     const res = await fetch(url, {
+  //       method,
+  //       headers: {
+  //         'Authorization': `Bearer ${token}`,
+  //         'Content-Type': 'application/json',
+  //       },
+  //       body,
+  //     });
+  //     if (!res.ok) throw new Error('Failed to save note');
+  //     const data = await res.json();
+  //     setNote(data.note);
+  //     setNoteId(data.id);
+  //     setNoteEditing(false);
+  //   } catch (err) {
+  //     setNoteError('Could not save note.');
+  //   } finally {
+  //     setNoteLoading(false);
+  //   }
+  // };
 
-  // Delete note
-  const handleNoteDelete = async () => {
-    if (!noteId) return;
-    if (!window.confirm('Delete your note for this project?')) return;
-    setNoteLoading(true);
-    setNoteError(null);
-    try {
-      const res = await fetch(`${API_BASE}/projects/supervisor-notes/${noteId}/`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` },
-      });
-      if (!res.ok) throw new Error('Failed to delete note');
-      setNote('');
-      setNoteId(null);
-      setNoteEditing(false);
-    } catch (err) {
-      setNoteError('Could not delete note.');
-    } finally {
-      setNoteLoading(false);
-    }
-  };
+  // // Delete note
+  // const handleNoteDelete = async () => {
+  //   if (!noteId) return;
+  //   if (!window.confirm('Delete your note for this project?')) return;
+  //   setNoteLoading(true);
+  //   setNoteError(null);
+  //   try {
+  //     const res = await fetch(`${API_BASE}/projects/supervisor-notes/${noteId}/`, {
+  //       method: 'DELETE',
+  //       headers: { 'Authorization': `Bearer ${token}` },
+  //     });
+  //     if (!res.ok) throw new Error('Failed to delete note');
+  //     setNote('');
+  //     setNoteId(null);
+  //     setNoteEditing(false);
+  //   } catch (err) {
+  //     setNoteError('Could not delete note.');
+  //   } finally {
+  //     setNoteLoading(false);
+  //   }
+  // };
 
   // ---- Project Media (for thumbnails) ----
   interface ProjectMediaItem {
@@ -607,13 +608,13 @@ function ProjectOverview({ project }: { project: Project }) {
             <div className="flex justify-between items-center p-4 bg-white/70 rounded-2xl backdrop-blur-sm">
               <span className="text-slate-600 font-medium">Status:</span>
               <span className={`font-semibold px-3 py-1 rounded-full text-sm ${
-                project.is_completed
+                (project.is_completed || project.status === 'COMPLETED')
                   ? 'bg-green-100 text-green-800'
-                  : project.status
+                  : project.status === 'IN_PROGRESS'
                   ? 'bg-amber-100 text-amber-800'
                   : 'bg-blue-100 text-blue-800'
               }`}>
-                {project.is_completed ? 'Completed' : project.status ? 'Active' : 'Upcoming'}
+                {project.is_completed || project.status === 'COMPLETED' ? 'Completed' : project.status === 'IN_PROGRESS' ? 'Active' : 'Upcoming'}
               </span>
             </div>
           </div>
@@ -650,7 +651,7 @@ function ProjectOverview({ project }: { project: Project }) {
                 <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
                 Current Phase
               </div>
-              <div className="text-2xl font-bold text-emerald-900 animate-pulse group-hover:scale-105 transition-transform duration-300">{project.currentStep}</div>
+              <div className="text-2xl font-bold text-emerald-900 animate-pulse group-hover:scale-105 transition-transform duration-300">{project.current_step || project.currentStep || '—'}</div>
             </div>
 
             {/* Project Stats */}
@@ -690,7 +691,9 @@ function ProjectOverview({ project }: { project: Project }) {
                   <div className="flex items-center gap-3">
                     <div className="w-12 h-12 rounded-md overflow-hidden bg-gray-200 flex items-center justify-center">
                       {type === 'image' && src ? (
-                        <img src={src} alt={m.filename || 'Media'} className="w-full h-full object-cover" />
+                        src.trim() !== "" ? (
+                          <img src={src} alt={m.filename || 'Media'} className="w-full h-full object-cover" />
+                        ) : null
                       ) : type === 'video' ? (
                         <RiVideoLine className="w-6 h-6 text-gray-500" />
                       ) : (
@@ -725,12 +728,24 @@ function ProjectOverview({ project }: { project: Project }) {
               );
             })}
           </ul>
-=======
-      
+         
+            // Fallback when there is no media
+            // combinedProjectMedia.length === 0 && !mediaLoading
+          ) : (
+            <div className="text-gray-500">No media found for this project.</div>
+          )}
+          {process.env.NODE_ENV === 'development' && (
+            <div className="mt-2 text-[10px] text-gray-400 space-y-1">
+              <div>Debug: apiMediaFiltered={projectMedia.length}, apiMediaRaw={projectMediaRaw.length}, fallbackFromLogs={fallbackMediaFromLogs.length}</div>
+              <div>Sample URL: {combinedProjectMedia[0] ? toAbsolute((combinedProjectMedia[0].thumbnail_url || combinedProjectMedia[0].url || combinedProjectMedia[0].file) as string) : 'n/a'}</div>
+            </div>
+          )}
+        </div>
 
-      {/* Site Supervisor Notes Section */}
-      <SiteSupervisorNotes projectId={project.id} />
-    </div>
+        {/* Site Supervisor Notes Section */}
+        {/* <SiteSupervisorNotes projectId={project.id} /> */}
+      </div>
+    
   );
 }
 
@@ -858,14 +873,13 @@ function SiteSupervisorNotes({ projectId }: { projectId: string }) {
             </div>
             {noteError && <div className="text-red-600 text-sm">{noteError}</div>}
           </div>
->>>>>>> 3c5f843200b317ca1c3ee271ce4ac305c5f628bd
         ) : (
           <div className="text-gray-500">No media found for this project.</div>
         )}
         {process.env.NODE_ENV === 'development' && (
           <div className="mt-2 text-[10px] text-gray-400 space-y-1">
-            <div>Debug: apiMediaFiltered={projectMedia.length}, apiMediaRaw={projectMediaRaw.length}, fallbackFromLogs={fallbackMediaFromLogs.length}</div>
-            <div>Sample URL: {combinedProjectMedia[0] ? toAbsolute((combinedProjectMedia[0].thumbnail_url || combinedProjectMedia[0].url || combinedProjectMedia[0].file) as string) : 'n/a'}</div>
+            {/* <div>Debug: apiMediaFiltered={projectMedia.length}, apiMediaRaw={projectMediaRaw.length}, fallbackFromLogs={fallbackMediaFromLogs.length}</div>
+            <div>Sample URL: {combinedProjectMedia[0] ? toAbsolute((combinedProjectMedia[0].thumbnail_url || combinedProjectMedia[0].url || combinedProjectMedia[0].file) as string) : 'n/a'}</div> */}
           </div>
         )}
       </div>
