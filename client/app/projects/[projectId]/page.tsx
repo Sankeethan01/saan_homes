@@ -7,6 +7,7 @@ import { FaVrCardboard, FaExpand } from 'react-icons/fa';
 import { MdConstruction, MdCheckCircle, MdSchedule } from 'react-icons/md';
 import NavBarProjects from '@/app/components/ui/NavBarProjects';
 import Footer from '@/app/components/Portfolio/Footer';
+import VRPlayer from '@/app/components/VRPlayer';
 
 interface Project {
   id: string;
@@ -99,7 +100,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
   console.log('Project ID:', projectId);
   const proj = sampleProject;
   
-  const [isVRMode, setIsVRMode] = useState(false);
+  const [showVRPlayer, setShowVRPlayer] = useState(false);
   const [, setSelectedImageIndex] = useState(0);
   
   const getStatusColor = (status: string) => {
@@ -118,6 +119,14 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
       case 'pending': return <MdSchedule className="w-5 h-5" />;
       default: return <MdSchedule className="w-5 h-5" />;
     }
+  };
+
+  const handleVROpen = () => {
+    setShowVRPlayer(true);
+  };
+
+  const handleVRClose = () => {
+    setShowVRPlayer(false);
   };
   
   return (
@@ -302,62 +311,74 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
         </section>
 
         {/* VR Walkthrough Section */}
-        {proj.vrVideo && (
-          <section className="mb-12">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-3xl font-bold text-[#1b4965]">VR Walkthrough</h2>
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setIsVRMode(!isVRMode)}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
-                    isVRMode 
-                      ? 'bg-[#1b4965] text-white' 
-                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                  }`}
-                >
-                  <FaVrCardboard />
-                  {isVRMode ? 'Exit VR Mode' : 'VR Mode'}
-                </button>
+        <section className="mb-12">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-3xl font-bold text-[#1b4965]">VR Walkthrough</h2>
+            <div className="flex gap-3">
+              <button
+                onClick={handleVROpen}
+                className="flex items-center gap-2 px-6 py-3 bg-[#1b4965] text-white rounded-lg font-medium hover:bg-[#2d6a87] transition-colors shadow-lg"
+              >
+                <FaVrCardboard />
+                Launch VR Experience
+              </button>
+            </div>
+          </div>
+          
+          <div className="bg-white p-6 rounded-2xl shadow-lg">
+            <div className="text-center mb-6">
+              <div className="w-20 h-20 bg-gradient-to-br from-[#1b4965] to-[#2d6a87] rounded-full flex items-center justify-center mx-auto mb-4">
+                <FaVrCardboard className="text-white text-3xl" />
+              </div>
+              <h3 className="text-2xl font-bold text-gray-800 mb-2">360° Virtual Reality Experience</h3>
+              <p className="text-gray-600 mb-4">
+                Immerse yourself in this project with our interactive VR walkthrough
+              </p>
+            </div>
+            
+            <div className="relative w-full h-64 rounded-2xl overflow-hidden shadow-lg bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
+              <div className="text-center">
+                <FaVrCardboard className="text-6xl text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-600 text-lg mb-4">Click "Launch VR Experience" to start</p>
+                <div className="flex flex-wrap justify-center gap-2 text-sm text-gray-500">
+                  <span className="px-3 py-1 bg-white rounded-full">VR Headsets</span>
+                  <span className="px-3 py-1 bg-white rounded-full">Mobile Devices</span>
+                  <span className="px-3 py-1 bg-white rounded-full">Desktop</span>
+                  <span className="px-3 py-1 bg-white rounded-full">360° Video</span>
+                </div>
               </div>
             </div>
             
-            <div className={`bg-white p-6 rounded-2xl shadow-lg ${isVRMode ? 'border-4 border-[#1b4965]' : ''}`}>
-              {isVRMode && (
-                <div className="mb-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
-                  <p className="text-blue-800 font-medium flex items-center gap-2">
-                    <FaVrCardboard />
-                    VR Mode Active - Use your VR headset or mobile device for immersive viewing
-                  </p>
-                </div>
-              )}
-              
-              <div className="relative w-full h-0 pb-[56.25%] rounded-2xl overflow-hidden shadow-lg bg-black">
-                <iframe
-                  src={`${proj.vrVideo}${isVRMode ? '&vr=1' : ''}`}
-                  title="Project VR Walkthrough"
-                  frameBorder="0"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; xr-spatial-tracking"
-                  allowFullScreen
-                  className="absolute top-0 left-0 w-full h-full"
-                ></iframe>
+            <div className="mt-6 grid md:grid-cols-3 gap-4 text-center">
+              <div className="p-4 bg-blue-50 rounded-lg">
+                <h4 className="font-semibold text-blue-800 mb-2">Interactive Controls</h4>
+                <p className="text-sm text-blue-600">Mouse, touch, or VR controllers</p>
               </div>
-              
-              <div className="mt-4 text-center">
-                <p className="text-gray-600 mb-2">
-                  Experience this project in virtual reality for an immersive walkthrough
-                </p>
-                <p className="text-sm text-gray-500">
-                  Compatible with VR headsets, mobile devices, and desktop viewing
-                </p>
+              <div className="p-4 bg-green-50 rounded-lg">
+                <h4 className="font-semibold text-green-800 mb-2">Full Immersion</h4>
+                <p className="text-sm text-green-600">360° panoramic viewing</p>
+              </div>
+              <div className="p-4 bg-purple-50 rounded-lg">
+                <h4 className="font-semibold text-purple-800 mb-2">Multi-Platform</h4>
+                <p className="text-sm text-purple-600">Works on all devices</p>
               </div>
             </div>
-          </section>
-        )}
+          </div>
+        </section>
 
       </div>
 
       {/*Footer*/}
       <Footer />
+
+      {/* VR Player Modal */}
+      {showVRPlayer && (
+        <VRPlayer
+          videoSrc="/assets/videos/vr.mp4"
+          projectTitle={proj.title}
+          onClose={handleVRClose}
+        />
+      )}
 
     </main>
   );
