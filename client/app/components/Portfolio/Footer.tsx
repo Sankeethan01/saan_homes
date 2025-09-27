@@ -280,7 +280,7 @@ export default function Footer() {
         </div>
 
         {/* Copyright Section */}
-        <div className="border-t border-2-white mt-3 py-8  text-center text-gray-400">
+        <div className="border-t border-2-white mt-3 py-8 md:hidden lg:block text-center text-gray-400">
           <p>© 2025 SAAN HOMES. All rights reserved.</p>
         </div>
       </div>

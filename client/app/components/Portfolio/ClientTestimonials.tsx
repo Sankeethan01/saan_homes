@@ -59,7 +59,7 @@ const ClientTestimonialsPortfolio = () => {
   const [selected, setSelected] = useState(0);
 
   return (
-    <section id="testimonials" className="py-8 md:py-2" style={{ background: 'radial-gradient(ellipse at 20% 40%, #f3f8ff 60%, #f8fafc 100%)' }}>
+    <section id="testimonials" className="pt-12 py-8 mt-8 md:py-2" style={{ background: 'radial-gradient(ellipse at 20% 40%, #f3f8ff 60%, #f8fafc 100%)' }}>
       {/* Heading/Tagline Section */}
       <motion.div className="text-center max-w-3xl mx-auto mb-6 md:mb-2 px-4">
         <motion.h2 
@@ -79,7 +79,7 @@ const ClientTestimonialsPortfolio = () => {
       <div className="max-w-3xl mx-auto flex flex-col items-center px-4">
         
         {/* Quote Icon - Responsive sizing */}
-        <div className="text-center text-[#1b4965] mb-8 md:mb-20">
+        <div className="text-center text-[#1b4965] mb-4 md:mb-12">
           <FaQuoteRight className="w-8 h-8 md:w-9 md:h-9" />
         </div>
         
