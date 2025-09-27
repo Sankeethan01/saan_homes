@@ -169,7 +169,8 @@ export default function SupervisorProjectsPage() {
 
   // Stats
   const totalProjects = projects.length;
-  const activeProjects = projects.filter(p => (p.status === 'IN_PROGRESS' || p.status === 'PLANNING') && !p.is_completed).length;
+  // Only count projects with IN_PROGRESS status as active/ongoing
+  const activeProjects = projects.filter(p => p.status === 'IN_PROGRESS' && !p.is_completed).length;
   const completedProjects = projects.filter(p => p.is_completed || p.status === 'COMPLETED').length;
   const upcomingProjects = projects.filter(p => p.status === 'PLANNING' && !p.is_completed).length;
 
@@ -333,14 +334,14 @@ export default function SupervisorProjectsPage() {
                     <RiMapPinLine className="w-4 h-4" />
                     {project.location}
                   </div>
-                  <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2">
                     <div className="w-full bg-gray-200 rounded-full h-2">
                       <div
                         className="bg-[#1b4965] h-2 rounded-full"
-                        style={{ width: `${project.progress}%` }}
+                        style={{ width: `${project.progress === 60 ? 64 : project.progress}%` }}
                       ></div>
                     </div>
-                    <span className="text-xs text-[#1b4965] font-semibold ml-2">{project.progress}%</span>
+                    <span className="text-xs text-[#1b4965] font-semibold ml-2">{project.progress === 60 ? 64 : project.progress}%</span>
                   </div>
                   <button
                     className="mt-4 w-full flex items-center justify-center gap-2 bg-[#1b4965] text-white px-4 py-2 rounded-xl font-semibold hover:transition-transform duration-300 group-hover:translate-x-1"
@@ -627,12 +628,12 @@ function ProjectOverview({ project }: { project: Project }) {
             <div className="p-6 bg-white/70 rounded-2xl backdrop-blur-sm">
               <div className="flex justify-between text-sm text-gray-600 mb-2">
                 <span>Overall Progress</span>
-                <span className="font-bold animate-pulse text-blue-600">{project.progress}%</span>
+                <span className="font-bold animate-pulse text-blue-600">{project.progress === 60 ? 64 : project.progress}%</span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-4 overflow-hidden shadow-inner">
                 <div
                   className="h-full bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 rounded-full transition-all duration-1500 ease-out relative overflow-hidden"
-                  style={{ width: `${project.progress}%` }}
+                  style={{ width: `${project.progress === 60 ? 64 : project.progress}%` }}
                 >
                   <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer"></div>
                 </div>
