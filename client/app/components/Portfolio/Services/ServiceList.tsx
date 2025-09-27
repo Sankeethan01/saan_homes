@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import Image from 'next/image';
 import { useState } from 'react';
+import { useLanguage } from '../../../context/LanguageContext';
 
 const services = [
   {
@@ -125,7 +126,8 @@ const services = [
 ];
 
 const ServiceListServicesPortfolio = () => {
-const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const { t } = useLanguage();
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
 
   return (
      <section className="py-20 bg-white" >

@@ -2,9 +2,12 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import Image from 'next/image';
+import { useLanguage } from '../../context/LanguageContext';
+import LanguageSwitcher from '../ui/LanguageSwitcher';
 
 const NavbarPortfolio = () => {
   const [isScrolled, setIsScrolled] = useState(false);
+  const { t } = useLanguage();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -15,10 +18,10 @@ const NavbarPortfolio = () => {
   }, []);
 
   const navItems = [
-    { title: 'Services', href: '/services' },
-    { title: 'Projects', href: '/projects' },
-    { title: 'Rentals', href: '/equipments' },
-    { title: 'About Us', href: '/aboutus' },
+    { title: t.nav.services, href: '/services' },
+    { title: t.nav.projects, href: '/projects' },
+    { title: t.nav.rentals, href: '/equipments' },
+    { title: t.nav.aboutUs, href: '/aboutus' },
   ];
 
   return (
@@ -43,7 +46,7 @@ const NavbarPortfolio = () => {
           </motion.div>
 
           <div className="hidden md:block">
-            <div className="ml-10 flex items-center space-x-8">
+            <div className="ml-10 flex items-center space-x-4">
               {navItems.map((item, index) => (
                 <motion.div
                   key={item.title}
@@ -60,6 +63,14 @@ const NavbarPortfolio = () => {
                   </Link>
                 </motion.div>
               ))}
+              {/* Language Switcher */}
+              <motion.div
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: navItems.length * 0.1 }}
+              >
+                <LanguageSwitcher />
+              </motion.div>
             </div>
           </div>
 

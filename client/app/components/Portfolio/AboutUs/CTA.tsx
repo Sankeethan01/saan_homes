@@ -3,10 +3,11 @@
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import { useLanguage } from '../../../context/LanguageContext';
 
 const CTAAboutUsPortfolio = () => {
     const router = useRouter();
-
+    const { t } = useLanguage();
   return (
     <section className="py-20 bg-[#1b4965] text-white relative overflow-hidden">
         {/* Background Image */}
@@ -29,9 +30,9 @@ const CTAAboutUsPortfolio = () => {
             transition={{ duration: 0.8 }}
             viewport={{ once: true }}
           >
-            <h2 className="text-4xl font-bold mb-6">Ready to Start Your Project?</h2>
+            <h2 className="text-4xl font-bold mb-6">{t.aboutUsPage.cta.title}</h2>
             <p className="text-xl mb-8 opacity-90 max-w-2xl mx-auto">
-              Whether you need construction services or equipment rentals, our team is ready to help you succeed.
+              {t.aboutUsPage.cta.subtitle}
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <motion.button
@@ -40,7 +41,7 @@ const CTAAboutUsPortfolio = () => {
                 onClick={() => router.push("/equipments")}
                 className=" border-2 border-white text-white px-8 py-3 rounded-lg font-semibold text-lg hover:bg-white hover:text-[#1b4965] transition-colors"
               >
-                Get Equipment Quote
+                {t.aboutUsPage.cta.getStarted}
               </motion.button>
               <motion.button
                 whileHover={{ scale: 1.05 }}
@@ -48,7 +49,7 @@ const CTAAboutUsPortfolio = () => {
                 onClick={() => router.push("/projects")}
                 className="border-2 border-white text-white px-8 py-3 rounded-lg font-semibold text-lg hover:bg-white hover:text-[#1b4965] transition-colors"
               >
-                View Our Projects
+                {t.aboutUsPage.cta.learnMore}
               </motion.button>
             </div>
           </motion.div>

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Rubik } from "next/font/google";
 import "./styles/globals.css";
 import AuthCheck from "./components/ui/AuthCheck";
+import { LanguageProvider } from "./context/LanguageContext";
 
 const rubik = Rubik({
   variable: "--font-rubik",
@@ -24,9 +25,11 @@ export default function RootLayout({
       <body
         className={`${rubik.variable} antialiased`}
       >
-        <AuthCheck>
-          {children}
-        </AuthCheck>
+        <LanguageProvider>
+          <AuthCheck>
+            {children}
+          </AuthCheck>
+        </LanguageProvider>
       </body>
     </html>
   );

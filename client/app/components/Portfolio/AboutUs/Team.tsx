@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import Image from "next/image";
+import { useLanguage } from '../../../context/LanguageContext';
 
 const teamMembers = [
     {
@@ -25,6 +26,7 @@ const teamMembers = [
   ];
 
 const TeamAboutUsPortfolio = () => {
+  const { t } = useLanguage();
   return (
     <section className="py-20 bg-gray-50">
         <div className="container mx-auto px-4">
@@ -35,9 +37,9 @@ const TeamAboutUsPortfolio = () => {
             viewport={{ once: true }}
             className="text-center mb-16"
           >
-            <h2 className="text-4xl font-bold text-[#1b4965] mb-4">Meet Our Leadership</h2>
+            <h2 className="text-4xl font-bold text-[#1b4965] mb-4">{t.aboutUsPage.team.title}</h2>
             <p className="text-gray-600 max-w-2xl mx-auto">
-              The experienced professionals behind our success
+              {t.aboutUsPage.team.subtitle}
             </p>
           </motion.div>
 

@@ -3,10 +3,11 @@
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import Image from 'next/image';
+import { useLanguage } from '../../../context/LanguageContext';
 
 
 const CallActionsRentalsPortfolio = () => {
-
+  const { t } = useLanguage();
   return (
     <section className="py-16  relative overflow-hidden">
       {/* White texture image overlay */}
@@ -42,7 +43,7 @@ const CallActionsRentalsPortfolio = () => {
             whileInView={{ opacity: 1, y: 0 }}
             className="text-3xl md:text-4xl font-bold mb-6 text-[#1b4965]"
           >
-            Do Your Looking for Reliable Equipment??
+            {t.rentalsPage.callAction.title}
           </motion.h2>
           <motion.p
             initial={{ opacity: 0, y: 20 }}
@@ -50,7 +51,7 @@ const CallActionsRentalsPortfolio = () => {
             transition={{ delay: 0.1 }}
             className="text-xl mb-8 text-[#1b4965]"
           >
-            Rent top-quality machines from our catalog and get to work with confidence.
+            {t.rentalsPage.callAction.description}
           </motion.p>
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -64,7 +65,7 @@ const CallActionsRentalsPortfolio = () => {
                 whileTap={{ scale: 0.97 }}
                 className="group inline-flex items-center gap-2 text-white px-8 py-3 rounded-full text-lg font-medium bg-[#1b4965] transition-transform duration-500 focus:outline-none mb-8"
               >
-                <span>Login</span>
+                <span>{t.rentalsPage.callAction.login}</span>
                 
               </motion.button>
             </Link>
@@ -74,7 +75,7 @@ const CallActionsRentalsPortfolio = () => {
                 whileTap={{ scale: 0.97 }}
                 className="group inline-flex items-center gap-2 text-white px-8 py-3 rounded-full text-lg font-medium bg-[#1b4965] transition-transform duration-500 focus:outline-none mb-8"
               >
-                <span>Rental Inquiry</span>
+                <span>{t.rentalsPage.callAction.rentalInquiry}</span>
                 
               </motion.button>
             </Link>

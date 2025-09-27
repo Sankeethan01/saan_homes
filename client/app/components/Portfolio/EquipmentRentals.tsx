@@ -2,6 +2,7 @@ import { motion } from 'framer-motion';
 import Link from 'next/link';
 import Image from 'next/image';
 import React, { useState } from 'react';
+import { useLanguage } from '../../context/LanguageContext';
 
 const fadeInUp = {
   initial: { opacity: 0, y: 40 },
@@ -45,6 +46,7 @@ const equipments = [
 const animationDuration = 18; // seconds, medium speed
 
 const EquipmentRentalsPortfolio = () => {
+  const { t } = useLanguage();
   // Duplicate for seamless loop
   const scrollingEquipments = [...equipments, ...equipments];
   const [isHovered, setIsHovered] = useState(false);
@@ -66,14 +68,14 @@ const EquipmentRentalsPortfolio = () => {
             {...fadeInUp}
             className="text-2xl md:text-3xl font-bold mb-2 bg-clip-text text-transparent bg-[#1b4965]"
           >
-            Equipment Rentals
+            {t.equipment.title}
           </motion.h2>
           <motion.p
             initial={{ opacity: 0 }}
             whileInView={{ opacity: 1 }}
             className="text-gray-600 text-xl md:text-2xl"
           >
-            From Concept to Concrete – Our Finest Work !!!
+            {t.equipment.subtitle}
           </motion.p>
         </motion.div>
         {/* Mobile Carousel Layout */}

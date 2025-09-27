@@ -2,6 +2,7 @@ import Link from 'next/link';
 import React from 'react';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
+import { useLanguage } from '../../context/LanguageContext';
 
 const fadeInUp = {
   initial: { opacity: 0, y: 40 },
@@ -15,40 +16,43 @@ const gridFadeInUp = {
   transition: { duration: 0.5, ease: 'easeOut' }
 };
 
-const services = [
+const getServices = (t: any) => [
   {
-    label: 'Construction',
+    label: t.services.items.construction.title,
     image: '/assets/images/construction.png',
-    tagline: 'Expert construction services with attention to detail.'
+    tagline: t.services.items.construction.tagline
   },
   {
-    label: 'Renovation',
+    label: t.services.items.renovation.title,
     image: '/assets/images/renovation.png',
-    tagline: 'Transforming spaces to new heights.'
+    tagline: t.services.items.renovation.tagline
   },
   {
-    label: 'Interior Design',
+    label: t.services.items.interiorDesign.title,
     image: '/assets/images/interior.png',
-    tagline: 'Beautiful, functional spaces tailored to your needs.'
+    tagline: t.services.items.interiorDesign.tagline
   },
   {
-    label: 'Garden Setup',
+    label: t.services.items.gardenSetup.title,
     image: '/assets/images/garden.png',
-    tagline: 'Lush gardens and outdoor spaces for every home.'
+    tagline: t.services.items.gardenSetup.tagline
   },
   {
-    label: 'Equipment Rentals',
+    label: t.services.items.equipmentRentals.title,
     image: '/assets/images/equipment_rental.png',
-    tagline: 'Modern equipment and property rentals for every project.'
+    tagline: t.services.items.equipmentRentals.tagline
   },
   {
-    label: 'Carpentry Works',
+    label: t.services.items.carpentryWorks.title,
     image: '/assets/images/carpentary.png',
-    tagline: 'Custom woodwork solutions crafted with precision.'
+    tagline: t.services.items.carpentryWorks.tagline
   }
 ];
 
 const OurServicesPortfolio = () => {
+  const { t } = useLanguage();
+  const services = getServices(t);
+  
   return (
     <section className="py-8 sm:py-12 md:py-16 lg:py-20" style={{ background: 'radial-gradient(ellipse at 20% 40%, #f3f8ff 60%, #f8fafc 100%)' }}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
@@ -58,14 +62,14 @@ const OurServicesPortfolio = () => {
             {...fadeInUp}
             className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4 bg-clip-text text-transparent bg-[#1b4965]"
           >
-            Our Services
+            {t.services.title}
           </motion.h2>
           <motion.div
             initial={{ opacity: 0 }}
             whileInView={{ opacity: 1 }}
             className="text-gray-600 text-base sm:text-lg md:text-xl mb-6 sm:mb-8"
           >
-            From Concept to Concrete – Our Finest Work !!!
+            {t.services.subtitle}
           </motion.div>
           <Link href="/services">
             <motion.button
@@ -121,14 +125,14 @@ const OurServicesPortfolio = () => {
                   {...fadeInUp}
                   className="text-3xl font-bold mb-2 bg-clip-text text-transparent bg-[#1b4965]"
                 >
-                  Our Services
+                  {t.services.title}
                 </motion.h2>
                 <motion.div
                   initial={{ opacity: 0 }}
                   whileInView={{ opacity: 1 }}
                   className="text-gray-600 text-xl mb-6"
                 >
-                  From Concept to Concrete – Our Finest Work !!!
+                  {t.services.subtitle}
                 </motion.div>
                 <Link href="/services">
                   <motion.button

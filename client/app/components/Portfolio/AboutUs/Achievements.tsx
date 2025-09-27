@@ -2,15 +2,17 @@
 
 import { motion, useInView } from "framer-motion";
 import { useState, useEffect, useRef } from "react";
+import { useLanguage } from '../../../context/LanguageContext';
 
-const achievements = [
-    { number: 500, label: "Projects Completed", suffix: "+" },
-    { number: 25, label: "Years Experience", suffix: "+" },
-    { number: 100, label: "Client Satisfaction", suffix: "%" },
-    { number: 200, label: "Equipment Fleet", suffix: "+" }
+const getAchievements = (t: any) => [
+    { number: 500, label: t.aboutUsPage.achievements.items.projectsCompleted, suffix: "+" },
+    { number: 25, label: t.aboutUsPage.achievements.items.yearsExperience, suffix: "+" },
+    { number: 100, label: t.aboutUsPage.achievements.items.happyClients, suffix: "%" },
+    { number: 200, label: t.aboutUsPage.achievements.items.awardsWon, suffix: "+" }
   ];
 
 const AchievementsAboutUsPortfolio = () => {
+  const { t } = useLanguage();
   const [counts, setCounts] = useState([0, 0, 0, 0]);
   const [hasAnimated, setHasAnimated] = useState(false);
   const ref = useRef(null);
@@ -33,7 +35,7 @@ const AchievementsAboutUsPortfolio = () => {
     const timer = setInterval(() => {
       currentStep++;
       
-      const newCounts = achievements.map((achievement) => {
+      const newCounts = getAchievements(t).map((achievement) => {
         const progress = currentStep / steps;
         const currentCount = Math.floor(achievement.number * progress);
         return currentCount;
@@ -43,7 +45,7 @@ const AchievementsAboutUsPortfolio = () => {
 
       if (currentStep >= steps) {
         clearInterval(timer);
-        setCounts(achievements.map(a => a.number));
+        setCounts(getAchievements(t).map(a => a.number));
       }
     }, stepDuration);
   };
@@ -58,12 +60,12 @@ const AchievementsAboutUsPortfolio = () => {
             viewport={{ once: true }}
             className="text-center mb-16"
           >
-            <h2 className="text-4xl font-bold mb-4">Our Achievements</h2>
-            <p className="text-xl opacity-90">Numbers that speak for themselves</p>
+            <h2 className="text-4xl font-bold mb-4">{t.aboutUsPage.achievements.title}</h2>
+            <p className="text-xl opacity-90">{t.aboutUsPage.achievements.subtitle}</p>
           </motion.div>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            {achievements.map((achievement, index) => (
+            {getAchievements(t).map((achievement, index) => (
               <motion.div
                 key={index}
                 initial={{ opacity: 0, scale: 0.8 }}

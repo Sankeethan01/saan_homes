@@ -2,26 +2,26 @@
 
 import { motion } from "framer-motion";
 import {  RiCheckLine } from "react-icons/ri";
+import { useLanguage } from '../../../context/LanguageContext';
 
 
-const services = [
+const getServices = (t: any) => [
     {
-      title: "Construction Services",
-      items: ["Residential Construction", "Commercial Buildings", "Infrastructure Projects", "Renovation & Remodeling"]
+      title: t.aboutUsPage.services.items.residential.title,
+      items: [t.aboutUsPage.services.items.residential.description]
     },
     {
-      title: "Equipment Rentals",
-      items: ["Excavators & Bulldozers", "Cranes & Loaders", "Concrete Equipment", "Trucks & Transport"]
+      title: t.aboutUsPage.services.items.commercial.title,
+      items: [t.aboutUsPage.services.items.commercial.description]
     },
     {
-      title: "Project Management",
-      items: ["Site Planning", "Quality Control", "Safety Management", "Timeline Coordination"]
+      title: t.aboutUsPage.services.items.renovation.title,
+      items: [t.aboutUsPage.services.items.renovation.description]
     }
   ];
 
 const ServiceAboutUsPortfolio = () => {
-
-
+  const { t } = useLanguage();
   return (
     <section className="py-20 bg-gray-50">
         <div className="container mx-auto px-4">
@@ -32,14 +32,14 @@ const ServiceAboutUsPortfolio = () => {
             viewport={{ once: true }}
             className="text-center mb-16"
           >
-            <h2 className="text-4xl font-bold text-[#1b4965] mb-4">Our Services</h2>
+            <h2 className="text-4xl font-bold text-[#1b4965] mb-4">{t.aboutUsPage.services.title}</h2>
             <p className="text-gray-600 max-w-2xl mx-auto">
-              Comprehensive construction and equipment rental solutions for all your project needs
+              {t.aboutUsPage.services.subtitle}
             </p>
           </motion.div>
 
           <div className="grid md:grid-cols-3 gap-8">
-            {services.map((service, index) => (
+            {getServices(t).map((service, index) => (
               <motion.div
                 key={index}
                 initial={{ opacity: 0, y: 30 }}

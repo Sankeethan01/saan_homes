@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { useState } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
+import { useLanguage } from '../../../context/LanguageContext';
 
 const faqs = [
   {
@@ -29,6 +30,7 @@ const faqs = [
 ];
 
 const FAQRentalsPortfolio = () => {
+  const { t } = useLanguage();
   const [current, setCurrent] = useState(0);
   const [direction, setDirection] = useState(0); // -1 for left, 1 for right
 
@@ -90,7 +92,7 @@ const FAQRentalsPortfolio = () => {
           whileInView={{ opacity: 1, y: 0 }}
           className="text-3xl font-bold text-center mb-12 text-[#1b4965]"
         >
-          Frequently Asked Questions
+          {t.rentalsPage.faq.title}
         </motion.h2>
         <div className="flex items-center justify-center gap-4 max-w-xl md:max-w-full mx-auto">
           {/* Left Arrow */}

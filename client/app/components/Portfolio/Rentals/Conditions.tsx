@@ -1,10 +1,11 @@
 'use client';
 
 import { motion } from 'framer-motion';
+import { useLanguage } from '../../../context/LanguageContext';
 
 
 const ConditionsRentalsPortfolio = () => {
-
+  const { t } = useLanguage();
   return (
     <section className="py-16 bg-gray-50">
         <div className="container mx-auto px-4">
@@ -15,35 +16,35 @@ const ConditionsRentalsPortfolio = () => {
               whileInView={{ opacity: 1, y: 10 }}
               className="text-3xl font-bold mb-0 mt-8 lg:mt-12 lg:col-start-3 md:col-span-2 md:text-center md:order-first lg:row-start-1 lg:text-center text-[#1b4965]"
             >
-              Rental Conditions
+              {t.rentalsPage.conditions.title}
             </motion.h2>
             <div className="lg:col-start-3 lg:row-start-1 md:col-span-2 md:order-2 text-center mt-0 mb-4">
-              <span className="text-lg md:text-center text-gray-500 font-medium"> &quot;Know the terms before you rent&quot; </span>
+              <span className="text-lg md:text-center text-gray-500 font-medium"> &quot;{t.rentalsPage.conditions.subtitle}&quot; </span>
             </div>
             {[
               {
-                title: "Login Required",
-                description: "If you want to book equipment, you must login first to proceed with the rental process.",
+                title: t.rentalsPage.conditions.items.loginRequired.title,
+                description: t.rentalsPage.conditions.items.loginRequired.description,
                 icon: "🔐"
               },
               {
-                title: "Security Deposit",
-                description: "A security deposit of 20% of the rental value is required for all equipment rentals.",
+                title: t.rentalsPage.conditions.items.securityDeposit.title,
+                description: t.rentalsPage.conditions.items.securityDeposit.description,
                 icon: "💰"
               },
               {
-                title: "Valid Documentation",
-                description: "Must provide valid ID and proof of insurance before renting any equipment.",
+                title: t.rentalsPage.conditions.items.validDocumentation.title,
+                description: t.rentalsPage.conditions.items.validDocumentation.description,
                 icon: "📄"
               },
               {
-                title: "Minimum Rental Period",
-                description: "Minimum rental period is 24 hours, starting from the time of pickup.",
+                title: t.rentalsPage.conditions.items.minimumRentalPeriod.title,
+                description: t.rentalsPage.conditions.items.minimumRentalPeriod.description,
                 icon: "⏰"
               },
               {
-                title: "Damage Policy",
-                description: "Renter is responsible for any damage beyond normal wear and tear.",
+                title: t.rentalsPage.conditions.items.damagePolicy.title,
+                description: t.rentalsPage.conditions.items.damagePolicy.description,
                 icon: "🛡️"
               }
             ].map((condition, index) => {
@@ -54,7 +55,7 @@ const ConditionsRentalsPortfolio = () => {
               if (index === 3) gridClass = 'lg:row-start-2 lg:col-start-2';
               if (index === 4) gridClass = 'lg:row-start-2 lg:col-start-3';
               let colorClass = '';
-              if (["Security Deposit", "Valid Documentation", "Damage Policy"].includes(condition.title)) {
+              if ([t.rentalsPage.conditions.items.securityDeposit.title, t.rentalsPage.conditions.items.validDocumentation.title, t.rentalsPage.conditions.items.damagePolicy.title].includes(condition.title)) {
                 colorClass = 'bg-[rgba(27,73,101,0.2)] ' ;
               } else {
                 colorClass = 'bg-white';

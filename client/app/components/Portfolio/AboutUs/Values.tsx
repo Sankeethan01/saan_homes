@@ -3,34 +3,34 @@
 import { motion } from "framer-motion";
 
 import { RiUser3Line, RiBuilding2Line, RiToolsLine, RiAwardLine } from "react-icons/ri";
+import { useLanguage } from '../../../context/LanguageContext';
 
 
-const values = [
+const getValues = (t: any) => [
     {
       icon: RiBuilding2Line,
-      title: "Quality Construction",
-      description: "We deliver exceptional quality in every project, using the finest materials and skilled craftsmanship."
+      title: t.aboutUsPage.values.items.quality.title,
+      description: t.aboutUsPage.values.items.quality.description
     },
     {
       icon: RiToolsLine,
-      title: "Equipment Excellence",
-      description: "Premium construction equipment rentals with maintenance and support for all your project needs."
+      title: t.aboutUsPage.values.items.integrity.title,
+      description: t.aboutUsPage.values.items.integrity.description
     },
     {
       icon: RiUser3Line,
-      title: "Customer Focus",
-      description: "Your satisfaction is our priority. We work closely with clients to bring their vision to life."
+      title: t.aboutUsPage.values.items.innovation.title,
+      description: t.aboutUsPage.values.items.innovation.description
     },
     {
       icon: RiAwardLine,
-      title: "Proven Track Record",
-      description: "25+ years of successful projects and equipment rentals with industry recognition."
+      title: t.aboutUsPage.values.items.sustainability.title,
+      description: t.aboutUsPage.values.items.sustainability.description
     }
   ];
 
 const ValuesAboutUsPortfolio = () => {
-
-
+  const { t } = useLanguage();
   return (
     <section className="py-20 bg-white">
         <div className="container mx-auto px-4">
@@ -41,14 +41,14 @@ const ValuesAboutUsPortfolio = () => {
             viewport={{ once: true }}
             className="text-center mb-16"
           >
-            <h2 className="text-4xl font-bold text-[#1b4965] mb-4">Our Values</h2>
+            <h2 className="text-4xl font-bold text-[#1b4965] mb-4">{t.aboutUsPage.values.title}</h2>
             <p className="text-gray-600 max-w-2xl mx-auto">
-              The principles that guide our work and define our company culture
+              {t.aboutUsPage.values.subtitle}
             </p>
           </motion.div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {values.map((value, index) => (
+            {getValues(t).map((value, index) => (
               <motion.div
                 key={index}
                 initial={{ opacity: 0, y: 30 }}

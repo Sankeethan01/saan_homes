@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { RiCheckLine, } from "react-icons/ri";
 import Image from "next/image";
 import { useState, useRef, useEffect } from "react";
+import { useLanguage } from '../../../context/LanguageContext';
 
 // Optimized Video Component with Intersection Observer
 const LazyAutoplayVideo = ({ src, fallbackImage, className }: { src: string; fallbackImage: string; className: string }) => {
@@ -92,6 +93,7 @@ const LazyAutoplayVideo = ({ src, fallbackImage, className }: { src: string; fal
 };
 
 const OurStoryAboutUsPortfolio = () => {
+  const { t } = useLanguage();
   return (
     <section className="py-10 bg-white">
         <div className="container mx-auto px-2">
@@ -102,7 +104,7 @@ const OurStoryAboutUsPortfolio = () => {
             viewport={{ once: true }}
             className="max-w-6xl mx-auto text-center"
           >
-            <h2 className="text-4xl font-bold text-[#1b4965] mb-8">Our Story</h2>
+            <h2 className="text-4xl font-bold text-[#1b4965] mb-8">{t.aboutUsPage.ourStory.title}</h2>
             <div className="grid md:grid-cols-2 gap-12 w-full items-center">
               <motion.div
                 initial={{ opacity: 0, x: 30 }}
@@ -124,15 +126,9 @@ const OurStoryAboutUsPortfolio = () => {
                 viewport={{ once: true }}
                 className="text-left"
               >
-                <h3 className="text-2xl font-semibold text-[#1b4965] mb-4">Building Excellence Since 2015</h3>
+                <h3 className="text-2xl font-semibold text-[#1b4965] mb-4">{t.aboutUsPage.ourStory.subtitle}</h3>
                 <p className="text-gray-600 mb-6 text-justify leading-relaxed">
-                SAAN Homes began its journey as a modest construction service provider in Jaffna, Sri Lanka. Over the years, we&apos;ve grown into a trusted name in the region&apos;s construction industry, recognized for our dedication to quality, innovation, and client satisfaction.
-                </p>
-                <p className="text-gray-600 mb-6 text-justify leading-relaxed">
-                Today, we deliver a full spectrum of construction solutions — including new constructions, renovations, interior design, gardening, and carpentry works tailored to meet both residential and commercial needs. We also operate a dependable equipment rental service, supporting contractors and builders across the Northern Province with modern, well-maintained machinery.
-                </p>
-                <p className="text-gray-600 mb-6 text-justify leading-relaxed">
-                Our portfolio reflects not only the diversity of our services but also the strength of our team, the efficiency of our processes, and the long-standing trust of our clients.
+                {t.aboutUsPage.ourStory.description}
                 </p>
                 <div className="flex items-center space-x-4">
                   <RiCheckLine className="text-green-500 text-2xl" />

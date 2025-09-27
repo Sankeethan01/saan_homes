@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import { RiMapPinLine, RiPhoneLine, RiMailLine, RiTimeLine } from "react-icons/ri";
+import { useLanguage } from '../../../context/LanguageContext';
 
 
 
@@ -13,8 +14,7 @@ const contactInfo = {
   };
 
 const ContactAboutUsPortfolio = () => {
-
-
+  const { t } = useLanguage();
   return (
     <section className="py-20 bg-white">
         <div className="container mx-auto px-4">
@@ -25,9 +25,9 @@ const ContactAboutUsPortfolio = () => {
             viewport={{ once: true }}
             className="text-center mb-16"
           >
-            <h2 className="text-4xl font-bold text-[#1b4965] mb-4">Contact Info & Location</h2>
+            <h2 className="text-4xl font-bold text-[#1b4965] mb-4">{t.aboutUsPage.contact.title}</h2>
             <p className="text-gray-600 max-w-2xl mx-auto">
-            Visit. Call. Connect. Let’s Start Building.
+            {t.aboutUsPage.contact.subtitle}
             </p>
           </motion.div>
 
@@ -41,13 +41,13 @@ const ContactAboutUsPortfolio = () => {
               className="space-y-8"
             >
               <div className="bg-gray-50 p-8 rounded-xl">
-                <h3 className="text-2xl font-semibold text-[#1b4965] mb-6">Get In Touch</h3>
+                <h3 className="text-2xl font-semibold text-[#1b4965] mb-6">{t.aboutUsPage.contact.getInTouch}</h3>
                 
                 <div className="space-y-6">
                   <div className="flex items-start space-x-4">
                     <RiMapPinLine className="text-[#1b4965] text-2xl mt-1 flex-shrink-0" />
                     <div>
-                      <h4 className="font-semibold text-gray-800 mb-1">Address</h4>
+                      <h4 className="font-semibold text-gray-800 mb-1">{t.aboutUsPage.contact.address}</h4>
                       <p className="text-gray-600">{contactInfo.address}</p>
                     </div>
                   </div>
@@ -55,7 +55,7 @@ const ContactAboutUsPortfolio = () => {
                   <div className="flex items-start space-x-4">
                     <RiPhoneLine className="text-[#1b4965] text-2xl mt-1 flex-shrink-0" />
                     <div>
-                      <h4 className="font-semibold text-gray-800 mb-1">Phone</h4>
+                      <h4 className="font-semibold text-gray-800 mb-1">{t.aboutUsPage.contact.phone}</h4>
                       <p className="text-gray-600">{contactInfo.phone}</p>
                     </div>
                   </div>
@@ -63,7 +63,7 @@ const ContactAboutUsPortfolio = () => {
                   <div className="flex items-start space-x-4">
                     <RiMailLine className="text-[#1b4965] text-2xl mt-1 flex-shrink-0" />
                     <div>
-                      <h4 className="font-semibold text-gray-800 mb-1">Email</h4>
+                      <h4 className="font-semibold text-gray-800 mb-1">{t.aboutUsPage.contact.email}</h4>
                       <p className="text-gray-600">{contactInfo.email}</p>
                     </div>
                   </div>
@@ -71,7 +71,7 @@ const ContactAboutUsPortfolio = () => {
                   <div className="flex items-start space-x-4">
                     <RiTimeLine className="text-[#1b4965] text-2xl mt-1 flex-shrink-0" />
                     <div>
-                      <h4 className="font-semibold text-gray-800 mb-1">Working Hours</h4>
+                      <h4 className="font-semibold text-gray-800 mb-1">{t.aboutUsPage.contact.workingHours}</h4>
                       <p className="text-gray-600">{contactInfo.workingHours}</p>
                     </div>
                   </div>
