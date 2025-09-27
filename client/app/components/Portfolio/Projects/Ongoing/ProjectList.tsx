@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import Image from 'next/image';
 import { RiCheckLine, RiArrowRightLine } from 'react-icons/ri';
 import Link from 'next/link';
+import { useState, useEffect } from 'react';
 
 const ongoingProjects = [
   {
