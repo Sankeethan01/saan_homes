@@ -278,11 +278,15 @@ export default function SupervisorLayout({
       className="flex items-center gap-3 mb-4"
     >
       {user?.profile_image ? (
-        <img
-          src={`${process.env.NEXT_PUBLIC_API_BASE_URL}${user.profile_image}`}
-          alt="Profile"
-          className="w-10 h-10 rounded-full object-cover border-2 border-[#1b4965] shadow-sm"
-        />
+        <div className="relative w-10 h-10">
+          <Image
+            src={`${process.env.NEXT_PUBLIC_API_BASE_URL}${user.profile_image}`}
+            alt="Profile"
+            fill
+            sizes="40px"
+            className="rounded-full object-cover border-2 border-[#1b4965] shadow-sm"
+          />
+        </div>
       ) : (
         <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white font-semibold text-sm">
           {user?.first_name?.charAt(0)?.toUpperCase() || 'U'}

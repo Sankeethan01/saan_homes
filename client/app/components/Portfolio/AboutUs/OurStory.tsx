@@ -1,8 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { RiArrowLeftLine, RiHome5Line, RiCheckLine, RiStarFill, RiUser3Line, RiBuilding2Line, RiToolsLine, RiAwardLine, RiMapPinLine, RiPhoneLine, RiMailLine, RiTimeLine } from "react-icons/ri";
-import { useRouter } from "next/navigation";
+import { RiCheckLine, } from "react-icons/ri";
 import Image from "next/image";
 import { useState, useRef, useEffect } from "react";
 
@@ -28,9 +27,10 @@ const LazyAutoplayVideo = ({ src, fallbackImage, className }: { src: string; fal
       observer.observe(containerRef.current);
     }
 
+    const currentRef = containerRef.current;
     return () => {
-      if (containerRef.current) {
-        observer.unobserve(containerRef.current);
+      if (currentRef) {
+        observer.unobserve(currentRef);
       }
     };
   }, []);
@@ -126,7 +126,7 @@ const OurStoryAboutUsPortfolio = () => {
               >
                 <h3 className="text-2xl font-semibold text-[#1b4965] mb-4">Building Excellence Since 2015</h3>
                 <p className="text-gray-600 mb-6 text-justify leading-relaxed">
-                SAAN Homes began its journey as a modest construction service provider in Jaffna, Sri Lanka. Over the years, we've grown into a trusted name in the region's construction industry, recognized for our dedication to quality, innovation, and client satisfaction.
+                SAAN Homes began its journey as a modest construction service provider in Jaffna, Sri Lanka. Over the years, we&apos;ve grown into a trusted name in the region&apos;s construction industry, recognized for our dedication to quality, innovation, and client satisfaction.
                 </p>
                 <p className="text-gray-600 mb-6 text-justify leading-relaxed">
                 Today, we deliver a full spectrum of construction solutions — including new constructions, renovations, interior design, gardening, and carpentry works tailored to meet both residential and commercial needs. We also operate a dependable equipment rental service, supporting contractors and builders across the Northern Province with modern, well-maintained machinery.

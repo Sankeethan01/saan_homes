@@ -33,7 +33,7 @@ const AchievementsAboutUsPortfolio = () => {
     const timer = setInterval(() => {
       currentStep++;
       
-      const newCounts = achievements.map((achievement, index) => {
+      const newCounts = achievements.map((achievement) => {
         const progress = currentStep / steps;
         const currentCount = Math.floor(achievement.number * progress);
         return currentCount;

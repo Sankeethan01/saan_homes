@@ -95,11 +95,11 @@ export default function StepDetailsPage({ params }: { params: Promise<{ projectI
       // If the key is a number, try to get a name from the details if available
       if (typeof details === 'object' && details !== null) {
         if ('name' in details) {
-          materialName = details.name;
+          materialName = details.name as string;
         } else if ('description' in details) {
-          materialName = details.description;
+          materialName = details.description as string;
         } else if ('material' in details) {
-          materialName = details.material;
+          materialName = details.material as string;
         }
       }
       // If we still have a numeric key with no name, add a generic name

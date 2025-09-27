@@ -1,10 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { useRouter } from "next/navigation";
 import Image from "next/image";
-
-import { RiHome5Line, RiBuilding4Line, RiTimeLine, RiCheckLine, RiCalendarLine, RiTeamLine, RiMapPinLine, RiArrowRightLine, RiHomeSmileLine, RiPaletteLine, RiLeafLine } from 'react-icons/ri';
 
 
 const HeroAboutUsPortfolio = () => {
@@ -13,11 +10,13 @@ const HeroAboutUsPortfolio = () => {
   return (
     <section className="relative h-[75vh] overflow-hidden">
         <div className="absolute inset-0">
-          <img
+          <Image
             src="/assets/images/hero_about_us.png"
             alt="Project Hero Background"
             className="w-full h-full object-cover object-center"
             style={{ zIndex: 0 }}
+            fill
+            priority
           />
           
         </div>

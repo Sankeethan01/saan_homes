@@ -268,6 +268,7 @@ interface MediaFile {
   url: string;
   type: "image" | "video" | "pdf";
   filename: string;
+  step_id?: string;
 }
 
 interface Project {
@@ -607,7 +608,6 @@ export default function ProgressLogs({
     setLoadingInvoice(true);
     let step = localSteps.find((s) => s.id === stepId);
     if (!step) {
-      setLoadingInvoice(false);
       return;
     }
 
@@ -632,7 +632,6 @@ export default function ProgressLogs({
     setCurrentStep(step);
     setCurrentInvoice(invoice);
     setShowInvoiceModal(true);
-    setLoadingInvoice(false);
   };
 
   const sortedSteps = [...(localProject.steps || [])].sort((a, b) => a.order - b.order);
@@ -1304,8 +1303,8 @@ const handleSubmitMediaToAdmin = async (mediaId: string) => {
       {showInvoiceModal && (
         <SupervisorInvoiceModal
           open={showInvoiceModal}
-          step={currentStep}
-          invoice={currentInvoice}
+          step={currentStep || { id: '', title: '' }}
+          invoice={currentInvoice ? { ...currentInvoice, status: currentInvoice.is_approved ? 'approved' : 'pending' } : undefined}
           onClose={() => {
             setShowInvoiceModal(false);
             setCurrentInvoice(null);

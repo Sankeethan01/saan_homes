@@ -1,10 +1,18 @@
 // components/Loader.tsx
 import React from 'react';
+import Image from 'next/image';
 
 const Loader: React.FC = () => {
   return (
     <div className="loader">
-      <img src="/assets/images/loader.gif" alt="Loading..." className="gif" />
+      <Image 
+        src="/assets/images/loader.gif" 
+        alt="Loading..." 
+        className="gif" 
+        width={120}
+        height={120}
+        priority
+      />
       <style jsx>{`
         .loader {
           position: fixed;

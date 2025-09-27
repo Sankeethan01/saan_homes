@@ -37,8 +37,8 @@ const ongoingProjects = [
   {
     id: 3,
     title: "Educational Campus",
-    category: "Educational Institutions",
-    description: "We specialize in creating modern educational spaces that combine functionality with aesthetic appeal. Our educational construction services are designed to meet the unique needs of institutions while ensuring maximum learning efficiency.",
+    category: "Smart Home Construction",
+    description: "This modern villa project features contemporary architecture, sustainable materials, and smart home technology. The design emphasizes open spaces, natural light, and seamless indoor-outdoor living. Key highlights include a rooftop garden, infinity pool, and energy-efficient systems throughout the property. The villa also integrates cutting-edge smart home technology, allowing for seamless control of lighting, security, and climate with just a touch, enhancing both convenience and efficiency..",
     features: [
       "Modern Design Solutions",
       "Sustainable Building Practices",

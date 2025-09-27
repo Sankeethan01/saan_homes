@@ -181,7 +181,15 @@ export default function MePage() {
     ],
   };
 
-  const StatCard = ({ icon, title, value, change, isPositive }: any) => (
+  interface StatCardProps {
+    icon: React.ReactNode;
+    title: string;
+    value: string | number;
+    change?: number;
+    isPositive?: boolean;
+  }
+
+  const StatCard = ({ icon, title, value, change, isPositive }: StatCardProps) => (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}

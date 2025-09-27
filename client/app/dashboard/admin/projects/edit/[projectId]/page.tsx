@@ -2,9 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useAuthStore } from '@/app/stores/useAuthStore';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import { FiSave, FiX, FiChevronLeft } from 'react-icons/fi';
-import { use } from 'react';
 
 interface Project {
   id: string;
@@ -29,20 +28,30 @@ interface Project {
   } | null;
 }
 
-export default function EditProjectPage({ params }: { params: { projectId: string } }) {
-  const { projectId } = use(params);
+export default function EditProjectPage() {
+  const params = useParams();
+  const projectId = params.projectId as string;
   
   const [project, setProject] = useState<Project | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [supervisors, setSupervisors] = useState<any[]>([]);
+  const [supervisors, setSupervisors] = useState<Array<{
+    id: string;
+    username: string;
+    first_name?: string;
+    last_name?: string;
+    email?: string;
+  }>>([]);
   const token = useAuthStore((s) => s.token);
   const router = useRouter();
   const clearToken = useAuthStore((s) => s.clear);
 
   // Form state
-  const [formData, setFormData] = useState<Partial<Project>>({});
+  interface FormData extends Omit<Partial<Project>, 'supervisor'> {
+    supervisor: string;
+  }
+  const [formData, setFormData] = useState<FormData>({} as FormData);
 
   useEffect(() => {
     if (!token) {
@@ -84,7 +93,7 @@ export default function EditProjectPage({ params }: { params: { projectId: strin
           client_email: data.client_email,
           client_phone: data.client_phone,
           is_completed: data.is_completed,
-          supervisor: data.supervisor?.id || null,
+          supervisor: data.supervisor?.id || '',
         });
         
         setError(null);

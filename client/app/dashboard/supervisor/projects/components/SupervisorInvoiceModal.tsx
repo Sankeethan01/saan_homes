@@ -3,6 +3,19 @@ import { RiCloseLine } from "react-icons/ri";
 import { fetchWithAuth } from "@/app/utils/auth";
 import { jsPDF } from "jspdf";
 
+interface Step {
+  id: string;
+  title: string;
+  thumbnail?: string;
+}
+
+interface Invoice {
+  id: string;
+  amount: number;
+  date: string;
+  status: string;
+}
+
 interface SupervisorInvoiceModalProps {
   open: boolean;
   step: any;
@@ -54,11 +67,10 @@ const fetchImageFromPublicAsBase64 = async (filename: string) => {
 export default function SupervisorInvoiceModal({
   open,
   step,
-  invoice,
   onClose,
   onSaved,
 }: SupervisorInvoiceModalProps) {
-  const [form, setForm] = useState({
+  const [form] = useState({
     files: [] as File[],
   });
   const [saving, setSaving] = useState(false);
@@ -140,7 +152,7 @@ export default function SupervisorInvoiceModal({
       setBillStatus("Uploaded");
       onSaved && onSaved();
       onClose();
-    } catch (err) {
+    } catch {
       alert("Failed to submit bills.");
     } finally {
       setSaving(false);
@@ -657,7 +669,7 @@ export default function SupervisorInvoiceModal({
       if (step?.thumbnail) {
         try {
           logo = await fetchImageAsBase64(getThumbnailUrl(step.thumbnail));
-        } catch (e) {
+        } catch {
           console.warn("Using fallback logo from public folder");
         }
       }

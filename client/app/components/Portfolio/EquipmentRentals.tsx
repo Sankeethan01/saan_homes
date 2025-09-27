@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import Link from 'next/link';
+import Image from 'next/image';
 import React, { useState } from 'react';
 
 const fadeInUp = {
@@ -89,7 +90,13 @@ const EquipmentRentalsPortfolio = () => {
                 className="group relative w-96 h-[26rem] flex-shrink-0 overflow-hidden rounded-3xl  transition-all duration-300 bg-white/80 backdrop-blur-md border-2 border-gray-200"
               >
                 <div className="relative !h-[18rem] overflow-hidden">
-                  <img src={equipment.image} alt={equipment.name} className="object-fill w-full !h-[18rem] group-hover:scale-110 transition-transform duration-500" />
+                  <Image 
+                    src={equipment.image} 
+                    alt={equipment.name} 
+                    className="object-fill w-full !h-[18rem] group-hover:scale-110 transition-transform duration-500"
+                    width={400}
+                    height={288}
+                  />
                 </div>
                 <div className="p-6 !h-[8rem]">
                   <h3 className="text-xl font-semibold mb-2 group-hover:text-[#1b4965] transition-colors">{equipment.name}</h3>

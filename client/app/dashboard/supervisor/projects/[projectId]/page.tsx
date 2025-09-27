@@ -8,7 +8,6 @@ import {
   RiTimeLine,
   RiFileTextLine,
   RiEyeLine,
-  RiArrowRightLine,
   RiCameraLine,
   RiVideoLine,
   RiUploadLine,
@@ -87,7 +86,7 @@ interface ProgressLog {
   stepId: string;
   title: string;
   description: string;
-  media: MediaFile[];
+  media: ProgressLogMedia[];
   timestamp: string;
   type: string;
 }
@@ -95,14 +94,19 @@ interface ProgressLog {
 interface MediaFile {
   id: string;
   url: string;
-  type: string;
+  type: 'image' | 'video' | 'pdf';
   filename: string;
+  file_size?: number;
+  uploaded_by_name?: string;
+  uploaded_at?: string;
+  title?: string;
+  description?: string;
 }
 
 interface ProjectMedia {
   id: string;
   url: string;
-  type: string;
+  type: 'image' | 'video' | 'pdf';
   title: string;
   description: string;
   filename: string;
@@ -148,7 +152,7 @@ export default function ProjectDetailPage() {
   const [project, setProject] = useState<Project | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [progressLogs, setProgressLogs] = useState<ProgressLog[]>([]);
+
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL;
 
@@ -204,10 +208,10 @@ export default function ProjectDetailPage() {
     try {
       const token = localStorage.getItem("access_token");
       // Find the media object to get filename/url before deletion
-      let deletedMedia: any = null;
+      let deletedMedia: ProjectMedia | null = null;
       setProject((prev) => {
         if (!prev) return prev;
-        deletedMedia = prev.media_files.find((media: any) => String(media.id) === String(mediaId));
+        deletedMedia = prev.media_files.find((media) => String(media.id) === String(mediaId)) || null;
         return prev;
       });
       await axios.delete(`${process.env.NEXT_PUBLIC_API_BASE_URL}/projects/project-media/${mediaId}/`, {
@@ -220,7 +224,7 @@ export default function ProjectDetailPage() {
         // Loop through all logs and their media
         for (const step of project.steps) {
           for (const log of step.logs) {
-            for (const media of log.media as any[]) {
+            for (const media of log.media as { id: string; url: string; type: 'image' | 'video' | 'pdf'; filename: string; }[]) {
               // Match by filename or url
               if (
                 (media.filename && media.filename === deletedMedia.filename) ||
@@ -245,14 +249,14 @@ export default function ProjectDetailPage() {
         if (!prev) return prev;
         // Remove from top-level media_files
         const updatedMediaFiles = prev.media_files.filter(
-          (media: any) => String(media.id) !== String(mediaId)
+          (media: ProjectMedia) => String(media.id) !== String(mediaId)
         );
         // Remove from nested logs under each step
         const updatedSteps = prev.steps.map((step) => ({
           ...step,
           logs: step.logs.map((log) => ({
             ...log,
-            media: (log.media as any[]).filter(
+            media: (log.media as MediaFile[]).filter(
               (media) => String(media.id) !== String(mediaId) && (!deletedMedia || media.filename !== deletedMedia.filename)
             ),
           })),
@@ -1062,6 +1066,8 @@ export default function ProjectDetailPage() {
               <button 
                 onClick={() => window.location.reload()} 
                 className="px-4 py-2 bg-[#1b4965] text-white rounded-lg hover:bg-[#1b4965]/90 transition-colors"
+                title="Retry loading the project"
+                aria-label="Retry loading the project"
               >
                 Retry
               </button>
@@ -1099,7 +1105,7 @@ export default function ProjectDetailPage() {
             <span key={item.path} className="flex items-center">
               {idx > 0 && <span className="mx-2 text-[#1b4965]">/</span>}
               {idx < breadcrumbs.length - 1 ? (
-                <button onClick={() => router.push(item.path)} className="text-[#1b4965] hover:underline">{item.name}</button>
+                <button onClick={() => router.push(item.path)} className="text-[#1b4965] hover:underline" title={`Navigate to ${item.name}`} aria-label={`Navigate to ${item.name}`}>{item.name}</button>
               ) : (
                 <span className="text-[#1b4965] font-semibold">{item.name}</span>
               )}
@@ -1190,6 +1196,8 @@ export default function ProjectDetailPage() {
                   ? "bg-[#1b4965] text-white shadow"
                   : "text-slate-600 hover:text-[#1b4965]-700 hover:bg-white/80 hover:shadow"
               }`}
+              title={`Switch to ${tab.label} tab`}
+              aria-label={`Switch to ${tab.label} tab`}
             >
               <tab.icon className="text-lg" />
               <span>{tab.label}</span>
@@ -1208,6 +1216,8 @@ export default function ProjectDetailPage() {
                     <img 
                       src={toAbsolute(project.thumbnail)} 
                       alt={project.name} 
+                      width={800}
+                      height={192}
                       className="rounded-xl w-full h-48 object-cover mb-4"
                       onError={(e) => {
                         const target = e.target as HTMLImageElement;
@@ -1674,6 +1684,8 @@ export default function ProjectDetailPage() {
                 <button
                   onClick={() => setShowMediaUpload(true)}
                   className="flex items-center gap-2 px-4 py-2 bg-[#1b4965] text-white rounded-lg hover:bg-[#1b4965]/90 transition-colors"
+                  title="Upload new media files to the project"
+                  aria-label="Upload new media files to the project"
                 >
                   <RiAddLine className="w-4 h-4" />
                   Upload Media
@@ -1703,14 +1715,16 @@ export default function ProjectDetailPage() {
                           </a>
                           <button
                             className="text-green-600 hover:text-green-800"
-                            title="Edit"
+                            title="Edit media"
+                            aria-label="Edit media"
                             onClick={() => handleEditMedia(media)}
                           >
                             <RiFileTextLine className="w-5 h-5" />
                           </button>
                           <button
                             className="text-red-600 hover:text-red-800"
-                            title="Delete"
+                            title="Delete media"
+                            aria-label="Delete media"
                             onClick={() => handleDeleteMedia(media.id)}
                           >
                             <RiCloseLine className="w-5 h-5" />
@@ -1764,7 +1778,7 @@ export default function ProjectDetailPage() {
                 <div className="text-center text-gray-500 py-8">
                   <RiCameraLine className="mx-auto h-12 w-12 text-gray-300 mb-4" />
                   <p>No media files uploaded yet</p>
-                  <p className="text-sm">Click "Upload Media" to add images, videos, or VR content</p>
+                  <p className="text-sm">Click &quot;Upload Media&quot; to add images, videos, or VR content</p>
                 </div>
               )}
             </div>
@@ -1781,6 +1795,8 @@ export default function ProjectDetailPage() {
               <button
                 onClick={() => setShowMediaUpload(false)}
                 className="text-gray-400 hover:text-gray-600"
+                title="Close media upload modal"
+                aria-label="Close media upload modal"
               >
                 <RiCloseLine className="w-5 h-5" />
               </button>
@@ -1959,6 +1975,8 @@ export default function ProjectDetailPage() {
                   value={editMediaForm.step}
                   onChange={e => setEditMediaForm(f => ({ ...f, step: e.target.value }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                  title="Select project step for media"
+                  aria-label="Select project step for media"
                 >
                   <option value="">Select Step</option>
                   {project.steps.map(step => (
@@ -1973,6 +1991,8 @@ export default function ProjectDetailPage() {
                   accept="image/*,video/*"
                   onChange={e => setEditMediaForm(f => ({ ...f, file: e.target.files ? e.target.files[0] : null }))}
                   className="w-full"
+                  title="Choose a new file to replace the current media"
+                  aria-label="Choose a new file to replace the current media"
                 />
                 {editingMedia.url && (
                   <div className="mt-2 text-xs text-gray-500">Current file: {editingMedia.filename}</div>
