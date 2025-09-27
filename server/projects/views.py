@@ -358,14 +358,41 @@ def create_steps_from_boq(project, boq_data):
     Returns:
         list: Created step IDs
     """
-    from .models import Step
+    from .models import Step, Project
+    
+    # Ensure we have a valid project instance
+    if not isinstance(project, Project):
+        print(f"ERROR: Invalid project object passed to create_steps_from_boq: {type(project)}")
+        if isinstance(project, str) and project.startswith('http'):
+            print(f"ERROR: Received URL instead of project object: {project}")
+            return []
+        elif isinstance(project, dict):
+            print(f"ERROR: Received dict instead of project object: {project}")
+            # Try to get the project by ID
+            project_id = project.get('id')
+            if project_id:
+                try:
+                    project = Project.objects.get(id=project_id)
+                    print(f"Successfully retrieved project from ID: {project.name} (ID: {project.id})")
+                except Project.DoesNotExist:
+                    print(f"ERROR: Project with ID {project_id} does not exist")
+                    return []
+            else:
+                return []
+    
+    print(f"Creating steps from BOQ data for project: {project.name} (ID: {project.id})")
+    print(f"BOQ data keys: {list(boq_data.keys())}")
     
     created_steps = []
     
     # Check if we have explicit steps from the BOQ file
     if "steps" in boq_data and boq_data["steps"]:
+        print(f"Found {len(boq_data['steps'])} explicit steps in BOQ data")
+        
         # Create steps directly from the BOQ file structure
         for order, step_data in enumerate(boq_data["steps"], 1):
+            print(f"Processing step {order}: {step_data.get('title', 'Unnamed Step')}")
+            
             # Extract material details
             materials = []
             for material_item in step_data["materials"]:
@@ -378,24 +405,37 @@ def create_steps_from_boq(project, boq_data):
                     "rate": material_details.get("rate", 0)
                 })
             
-            # Create the step
-            step = Step.objects.create(
-                project=project,
-                title=step_data["title"],
-                description=f"Materials for {step_data['title']}",
-                order=order,
-                expected_materials=materials,
-                expected_budget=step_data["budget"]
-            )
+            print(f"Step {order} has {len(materials)} materials")
             
-            created_steps.append(step.id)
+            try:
+                # Create the step
+                step = Step.objects.create(
+                    project=project,
+                    title=step_data["title"],
+                    description=f"Materials for {step_data['title']}",
+                    order=order,
+                    expected_materials=materials,
+                    expected_budget=step_data["budget"],
+                    is_completed=False,
+                    progress=0
+                )
+                
+                print(f"Created step with ID: {step.id}")
+                created_steps.append(step.id)
+            except Exception as e:
+                print(f"Error creating step {order}: {str(e)}")
         
+        print(f"Created {len(created_steps)} steps from explicit BOQ steps")
         return created_steps
     
     # Fallback to construction phases if no explicit steps
     # Get construction phases from BOQ data
     construction_phases = boq_data.get('construction_phases', {})
     phase_budgets = boq_data.get('phase_budgets', {})
+    
+    print(f"Fallback to construction phases. Found {len(construction_phases)} phases")
+    for phase, items in construction_phases.items():
+        print(f"Phase '{phase}' has {len(items)} materials")
     
     # Define phase order and display names
     phase_order = {
@@ -483,7 +523,9 @@ def create_steps_from_boq(project, boq_data):
                     description=f"Finishing work for {room_name}",
                     order=room_order,
                     expected_materials=expected_materials,
-                    expected_budget=room_budget
+                    expected_budget=room_budget,
+                    is_completed=False,
+                    progress=0
                 )
                 
                 created_steps.append(step.id)
@@ -518,7 +560,9 @@ def create_steps_from_boq(project, boq_data):
             description=f"Materials for {title}",
             order=order,
             expected_materials=expected_materials,
-            expected_budget=expected_budget
+            expected_budget=expected_budget,
+            is_completed=False,
+            progress=0
         )
         
         created_steps.append(step.id)
@@ -943,6 +987,8 @@ class ProjectViewSet(viewsets.ModelViewSet):
             full_temp_path = os.path.join(settings.MEDIA_ROOT, temp_path)
             
             try:
+                print(f"Processing BOQ file for project: {project.name} (ID: {project.id})")
+                
                 # Check if this is our standardized template for optimized parsing
                 is_standard_template = False
                 try:
@@ -954,16 +1000,40 @@ class ProjectViewSet(viewsets.ModelViewSet):
                     print(f"Error checking if file is standard template: {str(e)}")
                 
                 # Parse the BOQ file
+                print(f"Parsing BOQ file: {full_temp_path}")
                 boq_data = parse_boq_file(full_temp_path)
                 
+                if "error" in boq_data:
+                    print(f"Error in BOQ parsing: {boq_data['error']}")
+                    raise Exception(boq_data["error"])
+                
+                print(f"BOQ parsing successful. Data keys: {list(boq_data.keys())}")
+                
+                # Ensure we have a valid project instance before creating steps
+                if not project or not hasattr(project, 'id'):
+                    print(f"ERROR: Invalid project object: {project}")
+                    raise Exception("Invalid project object, cannot create steps")
+                
                 # Create steps based on BOQ data
-                create_steps_from_boq(project, boq_data)
+                print(f"Creating steps from BOQ data for project ID: {project.id}")
+                try:
+                    step_ids = create_steps_from_boq(project, boq_data)
+                    print(f"Steps created: {len(step_ids)}")
+                    
+                    if not step_ids:
+                        print("WARNING: No steps were created from the BOQ data")
+                except Exception as step_error:
+                    print(f"ERROR creating steps: {step_error}")
+                    raise
                 
                 # No need to store the BOQ file after successful parsing
                 # The steps and materials are now in the database
                 
             except Exception as e:
                 print(f"Error processing BOQ: {e}")
+                print(f"Exception type: {type(e)}")
+                import traceback
+                traceback.print_exc()
             finally:
                 # Clean up the temp file - use try/except to handle potential file access issues
                 try:
@@ -991,8 +1061,15 @@ class ProjectViewSet(viewsets.ModelViewSet):
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
     
     def perform_create(self, serializer):
-        """Override to return the created instance"""
-        return serializer.save()
+        """
+        Override to return the created instance
+        
+        This method is called by the create method to save the project instance.
+        We need to return the saved instance so that create_steps_from_boq can use it.
+        """
+        project = serializer.save()
+        print(f"Project saved successfully: {project.name} (ID: {project.id})")
+        return project
 
     @action(detail=False, methods=['get'])
     def supervisor_projects(self, request):
