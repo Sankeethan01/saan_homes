@@ -1,3 +1,45 @@
+// Authenticated fetch helper for API requests
+export async function fetchWithAuth(url: string, options: RequestInit = {}): Promise<Response> {
+  const token = getAccessToken();
+  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
+  const fullUrl = url.startsWith('http')
+    ? url
+    : `${baseUrl}${url.startsWith('/') ? '' : '/'}${url}`;
+
+  const headers: Record<string, string> = {
+    'Accept': 'application/json',
+    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+  };
+  if (options.headers) {
+    Object.assign(headers, options.headers as Record<string, string>);
+  }
+  if (!(options.body instanceof FormData)) {
+    headers['Content-Type'] = 'application/json';
+  }
+  const config: RequestInit = {
+    ...options,
+    headers,
+    credentials: 'include',
+    mode: 'cors'
+  };
+  try {
+    const response = await fetch(fullUrl, config);
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`Request failed with status ${response.status}:`, errorText);
+      throw new Error(`HTTP ${response.status}: ${errorText}`);
+    }
+    return response;
+  } catch (error) {
+    console.error('API request failed:', error);
+    if (error instanceof TypeError) {
+      console.error('Network error - check server connection');
+    } else if (error instanceof DOMException && error.name === 'AbortError') {
+      console.error('Request was aborted (timeout or manual cancel)');
+    }
+    throw error;
+  }
+}
 // utils/auth.ts
 function getTokenFromStorage(storage: Storage) {
   const authStorage = storage.getItem('auth-storage');
@@ -285,114 +327,5 @@ export function setupTokenRefreshTimer(): void {
     clearTimeout(parseInt(existingTimerId));
   }
   
-  const token = getAccessToken();
-  const expiration = getTokenExpiration(token);
-  
-  if (!token || !expiration) return;
-  
-  // Calculate when to refresh (5 minutes before expiration)
-  const now = Math.floor(Date.now() / 1000);
-  const timeUntilRefresh = (expiration - now - 300) * 1000; // 5 minutes before expiry, in milliseconds
-  
-  // Only set timer if expiration is in the future
-  if (timeUntilRefresh <= 0) {
-    // Token is already expired or about to expire, refresh now
-    refreshAccessToken();
-    return;
+  // ...existing code...
   }
-  
-  // Set timer to refresh token
-  const timerId = setTimeout(() => {
-    console.log('Token refresh timer triggered');
-    refreshAccessToken().then(success => {
-      if (success) {
-        // Set up the next timer after successful refresh
-        setupTokenRefreshTimer();
-      }
-    });
-  }, timeUntilRefresh);
-  
-  // Store timer ID to be able to clear it later
-  window.localStorage.setItem('token_refresh_timer_id', timerId.toString());
-  
-  console.log(`Token refresh scheduled in ${Math.floor(timeUntilRefresh / 60000)} minutes`);
-}
-
-// Helper function to make authenticated API calls with token refresh
-export async function fetchWithAuth(url: string, options: RequestInit = {}) {
-  let token = getAccessToken();
-
-  // Build headers, but do NOT set Content-Type for FormData
-  const headers: Record<string, string> = {
-    'Accept': 'application/json',
-    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-  };
-
-  // Safely merge any additional headers
-  if (options.headers) {
-    const additionalHeaders = options.headers as Record<string, string>;
-    Object.assign(headers, additionalHeaders);
-  }
-
-  // Only set Content-Type if not sending FormData
-  if (!(options.body instanceof FormData)) {
-    headers['Content-Type'] = 'application/json';
-  }
-
-  const config: RequestInit = {
-    ...options,
-    headers,
-    credentials: 'include',
-    mode: 'cors'
-  };
-
-  try {
-    const controller = new AbortController();
-    
-    // If no signal is provided, use our own with a default timeout
-    if (!config.signal) {
-      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second default timeout
-      config.signal = controller.signal;
-      
-      // Clean up timeout if fetch completes
-      const cleanup = () => clearTimeout(timeoutId);
-      setTimeout(cleanup, 30000);
-    }
-    
-    // First attempt with current token
-    let response = await fetch(url, config);
-    
-    // If unauthorized and we have a refresh token, try to refresh and retry
-    if (response.status === 401 && getRefreshToken()) {
-      console.log('Token expired, attempting refresh...');
-      
-      const refreshSuccess = await refreshAccessToken();
-      
-      if (refreshSuccess) {
-        // Update token in headers
-        token = getAccessToken();
-        if (token) {
-          headers['Authorization'] = `Bearer ${token}`;
-          config.headers = headers;
-          
-          // Retry the request with new token
-          console.log('Retrying request with new token...');
-          response = await fetch(url, config);
-        }
-      }
-    }
-    
-    return response;
-  } catch (error) {
-    console.error('API request failed:', error);
-    
-    // Add more detailed error logging
-    if (error instanceof TypeError) {
-      console.error('Network error - check server connection');
-    } else if (error instanceof DOMException && error.name === 'AbortError') {
-      console.error('Request was aborted (timeout or manual cancel)');
-    }
-    
-    throw error;
-  }
-}

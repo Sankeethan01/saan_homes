@@ -2,6 +2,8 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { fetchWithAuth } from "@/app/utils/auth";
+import { extractBillFromPdf } from "@/app/utils/pdfOcr";
+import InvoiceGenerationModal from "../projects/components/InvoiceGenerationModal";
 import {
   RiUploadLine,
   RiDeleteBin6Line,
@@ -10,6 +12,8 @@ import {
   RiCheckLine,
   RiDownloadLine,
   RiEdit2Line,
+  RiBillLine,
+  RiEyeLine,
 } from "react-icons/ri";
 
 interface Invoice {
@@ -17,8 +21,26 @@ interface Invoice {
   data?: {
     amount: number;
     description: string;
+    invoice_number?: string;
+    status?: string;
+    line_items?: Array<{
+      description: string;
+      quantity: number;
+      rate: number;
+      amount: number;
+    }>;
   };
   is_approved: boolean;
+  status_display?: string;
+  total_amount?: number;
+  step_title?: string;
+  related_bills?: Array<{
+    id: string;
+    uploaded_by: string;
+    ocr_total: number;
+    pdf?: string;
+    is_submitted_to_admin: boolean;
+  }>;
 }
 
 interface StepBill {
@@ -64,6 +86,25 @@ export default function BillsPage() {
   const [refresh, setRefresh] = useState<number>(0);
   const [backgroundRefresh, setBackgroundRefresh] = useState<boolean>(false);
   const [searchTerm, setSearchTerm] = useState("");
+  
+  // Invoice management state
+  const [showInvoiceModal, setShowInvoiceModal] = useState<boolean>(false);
+  const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
+  const [invoiceLoading, setInvoiceLoading] = useState<boolean>(false);
+  
+  // New invoice generation modal state
+  const [showNewInvoiceModal, setShowNewInvoiceModal] = useState<boolean>(false);
+  const [selectedStepForInvoice, setSelectedStepForInvoice] = useState<any>(null);
+  
+  // Remove invoice generation state - this belongs in Invoices & Billing section
+  // const [generatedInvoice, setGeneratedInvoice] = useState<any>(null);
+  // const [invoiceGenerated, setInvoiceGenerated] = useState<boolean>(false);
+
+  // Toast notification function
+  const showToast = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
+    setToast(message);
+    setTimeout(() => setToast(""), 3000);
+  };
 
   const fetchProjects = useCallback(async () => {
     try {
@@ -204,13 +245,43 @@ export default function BillsPage() {
       alert("Please select a step and upload at least one PDF.");
       return;
     }
+    // Prevent duplicate bill for the same step
+    const existingBill = stepBills.find(bill => bill.stepId === form.step);
+    if (existingBill) {
+      showToast("A bill already exists for this step. Only one bill per step is allowed.", "error");
+      setSaving(false);
+      return;
+    }
     setSaving(true);
     try {
       for (const file of form.files) {
+        // 1) OCR Extract
+        let ocrPayload: any = {};
+        try {
+          const ocr = await extractBillFromPdf(file);
+          console.log("OCR extraction successful:", ocr);
+          showToast(`OCR Debug: Total=${ocr.total}, Items=${ocr.items?.length ?? 0}, Confidence=${ocr.confidence ?? 'N/A'}`,'info');
+          ocrPayload = {
+            raw_text: ocr.rawText,
+            items: ocr.items,
+            total: ocr.total,
+            confidence: ocr.confidence,
+            issues: ocr.issues,
+            meta: ocr.meta,
+          };
+        } catch (ocrErr) {
+          console.error("OCR extraction failed, continuing without OCR:", ocrErr);
+          // Continue without OCR data - the backend will handle the bill upload
+        }
+
         const fd = new FormData();
         fd.append("step", form.step);
-        fd.append("project", projectId); // ✅ Include projectId
+        fd.append("project", projectId); // 
         fd.append("pdf", file);
+        if (Object.keys(ocrPayload).length > 0) {
+          // Send as plain text so DRF JSONField parses it from multipart
+          fd.append("ocr_data", JSON.stringify(ocrPayload));
+        }
         const res = await fetchWithAuth(
           `${process.env.NEXT_PUBLIC_API_BASE_URL}/projects/bills/`,
           {
@@ -221,7 +292,7 @@ export default function BillsPage() {
         if (!res.ok) throw new Error("Upload failed");
         // Optimistically add the new bill card
         const currentProject = projects.find((p) => p.id === projectId);
-        const currentStep = steps[projectId]?.find((s) => s.id === form.step);  // <-- fixed here
+        const currentStep = steps[projectId]?.find((s) => s.id === form.step);  
         setStepBills((prev) => [
           {
             id: `temp-${Date.now()}-${Math.random()}`,
@@ -241,10 +312,9 @@ export default function BillsPage() {
       }
       setShowForm(false);
       setForm({ step: "", files: [] });
-      setToast("Bill uploaded successfully!");
+      showToast("Bill uploaded successfully!");
       setBackgroundRefresh(true);
       setRefresh((r) => r + 1);
-      setTimeout(() => setToast(""), 3000);
     } catch (error) {
       console.error(error);
       alert("Upload failed.");
@@ -259,6 +329,146 @@ export default function BillsPage() {
     setForm({ step: "", files: [] });
   };
 
+  // Client-side OCR processing function
+  const processWithClientSideOCR = async (bill: StepBill) => {
+    try {
+      if (!bill.invoice_file) {
+        showToast("No PDF file available for OCR", "error");
+        return;
+      }
+
+      showToast("Downloading PDF for client-side OCR...", "info");
+      
+      // Try to download the PDF file
+      let response;
+      try {
+        response = await fetch(bill.invoice_file);
+        if (!response.ok) {
+          throw new Error(`Failed to fetch PDF: ${response.status}`);
+        }
+      } catch (fetchError) {
+        console.error("Error fetching PDF:", fetchError);
+        showToast("Failed to download PDF for OCR", "error");
+        return;
+      }
+      
+      const blob = await response.blob();
+      const file = new File([blob], bill.description, { type: 'application/pdf' });
+     
+      // Import and use the OCR function
+      const { extractBillFromPdf } = await import('@/app/utils/pdfOcr');
+      const ocrResult = await extractBillFromPdf(file);
+      
+      console.log("Client-side OCR Result:", ocrResult);
+      
+      if (ocrResult.total > 0) {
+        // Update the bill with the correct amount
+        const updateResponse = await fetchWithAuth(
+          `${process.env.NEXT_PUBLIC_API_BASE_URL}/projects/bills/${bill.id}/`,
+          {
+            method: 'PATCH',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              ocr_data: {
+                total: ocrResult.total,
+                items: ocrResult.items,
+                raw_text: ocrResult.rawText
+              }
+            })
+          }
+        );
+        
+        if (updateResponse.ok) {
+          showToast(`OCR completed! Total: ${ocrResult.total.toLocaleString()}`, "success");
+          setRefresh(r => r + 1);
+        } else {
+          showToast("Failed to update bill with OCR data", "error");
+        }
+      } else {
+        showToast("OCR completed but no total found", "error");
+      }
+    } catch (error) {
+      console.error("Error in client-side OCR:", error);
+      showToast("Failed to process OCR", "error");
+    }
+  };
+
+  // Invoice management functions
+  const handleViewInvoiceModal = async (stepId: string) => {
+    setInvoiceLoading(true);
+    try {
+      const response = await fetchWithAuth(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/projects/invoices/by_step/?step=${stepId}`
+      );
+      if (response.ok) {
+        const invoice = await response.json();
+        setSelectedInvoice(invoice);
+        setShowInvoiceModal(true);
+      } else {
+        // Create invoice if it doesn't exist
+        const createResponse = await fetchWithAuth(
+          `${process.env.NEXT_PUBLIC_API_BASE_URL}/projects/invoices/`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              step: stepId,
+              data: {
+                amount: 0,
+                description: `Invoice for step`,
+                line_items: [],
+                status: 'DRAFT'
+              }
+            })
+          }
+        );
+        if (createResponse.ok) {
+          const newInvoice = await createResponse.json();
+          setSelectedInvoice(newInvoice);
+          setShowInvoiceModal(true);
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching invoice:", error);
+      showToast("Failed to load invoice", "error");
+    } finally {
+      setInvoiceLoading(false);
+    }
+  };
+
+  const handleUpdateInvoice = async (invoiceId: string, updatedData: any) => {
+    try {
+      const response = await fetchWithAuth(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/projects/invoices/${invoiceId}/`,
+        {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            data: updatedData
+          })
+        }
+      );
+      if (response.ok) {
+        const updatedInvoice = await response.json();
+        setSelectedInvoice(updatedInvoice);
+        showToast("Invoice updated successfully!");
+      } else {
+        showToast("Failed to update invoice", "error");
+      }
+    } catch (error) {
+      console.error("Error updating invoice:", error);
+      showToast("Failed to update invoice", "error");
+    }
+  };
+
+  
+
   const filteredBills = stepBills.filter((bill) => {
     const matchesProject = projectId ? bill.projectId === projectId : true;
     const matchesSearch = bill.description
@@ -268,10 +478,9 @@ export default function BillsPage() {
   });
 
   const totalBills = filteredBills.length;
-  const paidBills = filteredBills.filter(
-    (b) => b.amount > 0 && b.amount % 2 === 0
-  ).length;
-  const unpaidBills = totalBills - paidBills;
+  const submittedBills = filteredBills.filter((b) => b.is_submitted_to_admin).length;
+  const pendingBills = filteredBills.filter((b) => !b.is_submitted_to_admin).length;
+  const totalAmount = filteredBills.reduce((sum, b) => sum + b.amount, 0);
 
 
   if (loading) {
@@ -299,7 +508,7 @@ export default function BillsPage() {
           aria-label="Filter by project"
         >
           <option value="">All Projects</option>
-          {projects.map((project) => (
+          {Array.isArray(projects) && projects.map((project) => (
             <option key={project.id} value={project.id}>
               {project.name}
             </option>
@@ -337,7 +546,7 @@ export default function BillsPage() {
       )}
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
         <div className="bg-blue-50 p-6 rounded-xl flex items-center gap-4">
           <RiFileTextLine className="text-3xl text-blue-600" />
           <div>
@@ -348,18 +557,78 @@ export default function BillsPage() {
         <div className="bg-green-50 p-6 rounded-xl flex items-center gap-4">
           <RiCheckLine className="text-3xl text-green-600" />
           <div>
-            <div className="text-xl font-bold">{paidBills}</div>
-            <div className="text-green-600">Paid</div>
+            <div className="text-xl font-bold">{submittedBills}</div>
+            <div className="text-green-600">Submitted</div>
           </div>
         </div>
-        <div className="bg-red-50 p-6 rounded-xl flex items-center gap-4">
-          <RiCloseLine className="text-3xl text-red-600" />
+        <div className="bg-yellow-50 p-6 rounded-xl flex items-center gap-4">
+          <RiCloseLine className="text-3xl text-yellow-600" />
           <div>
-            <div className="text-xl font-bold">{unpaidBills}</div>
-            <div className="text-red-600">Unpaid</div>
+            <div className="text-xl font-bold">{pendingBills}</div>
+            <div className="text-yellow-600">Pending</div>
+          </div>
+        </div>
+        <div className={`p-6 rounded-xl flex items-center gap-4 transition-all duration-300 ${
+          // invoiceGenerated && generatedInvoice?.status === 'SUBMITTED' 
+          //   ? 'bg-green-50 border-2 border-green-200' 
+          //   : 'bg-purple-50'
+          false ? 'bg-green-50 border-2 border-green-200' : 'bg-purple-50'
+        }`}>
+          <RiBillLine className={`text-3xl ${
+            // invoiceGenerated && generatedInvoice?.status === 'SUBMITTED' 
+            //   ? 'text-green-600' 
+            //   : 'text-purple-600'
+            false ? 'text-green-600' : 'text-purple-600'
+          }`} />
+          <div>
+            <div className="text-xl font-bold">Rs. {totalAmount.toLocaleString('en-IN')}</div>
+            <div className={false ? 'text-green-600' : 'text-purple-600'}>
+              {/* {invoiceGenerated && generatedInvoice?.status === 'SUBMITTED' ? 'Invoice Submitted' : 'Total Amount'} */}
+              Total Amount
+            </div>
           </div>
         </div>
       </div>
+
+      {/* Generate Invoice Button */}
+      {projectId && filteredBills.length > 0 && (
+        <div className="mb-6 p-6 bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-xl">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+            <div>
+              <h3 className="text-xl font-bold text-purple-800 mb-2">Invoice Generation</h3>
+              <p className="text-purple-600">
+                Generate professional invoices from your uploaded bills. Select bills and create detailed invoices for project steps.
+              </p>
+            </div>
+            <div className="flex flex-col md:flex-row gap-3">
+              <button
+                onClick={() => {
+                  // Get the first step that has bills
+                  const stepWithBills = filteredBills[0];
+                  if (stepWithBills) {
+                    // Create a mock step object for the modal
+                    const mockStep = {
+                      id: stepWithBills.stepId,
+                      title: stepWithBills.stepName || 'Unknown Step',
+                      project: {
+                        name: stepWithBills.projectName || 'Unknown Project'
+                      },
+                      order: 1,
+                      status: 'COMPLETED'
+                    };
+                    setSelectedStepForInvoice(mockStep);
+                    setShowNewInvoiceModal(true);
+                  }
+                }}
+                className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition flex items-center gap-2 font-semibold"
+              >
+                <RiFileTextLine className="text-xl" />
+                Generate Invoice from Bills
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Bills Grid/List */}
       {filteredBills.length === 0 ? (
@@ -398,15 +667,71 @@ export default function BillsPage() {
                         <RiFileTextLine />
                       </a>
                     )}
+                    {/* Invoice Icon */}
+                    <button
+                      className="text-purple-600 hover:text-purple-800 ml-2"
+                      title="View/Edit Invoice"
+                      onClick={() => handleViewInvoiceModal(bill.stepId)}
+                      disabled={invoiceLoading}
+                    >
+                      <RiBillLine />
+                    </button>
                     {/* Edit Icon */}
                     <button
                       className="text-yellow-600 hover:text-yellow-800 ml-2"
-                      title="Edit Bill"
-                      onClick={() => {
-                        alert(`Edit bill: ${bill.id}`);
+                      title="Re-process OCR"
+                      onClick={async () => {
+                                                if (bill.amount === 0) {
+                          try {
+                            showToast("Re-processing OCR on server...", "info");
+                            
+                            // Use the server-side OCR re-processing endpoint
+                            const response = await fetchWithAuth(
+                              `${process.env.NEXT_PUBLIC_API_BASE_URL}/projects/bills/${bill.id}/reprocess_ocr/`,
+                              {
+                                method: 'POST',
+                                headers: {
+                                  'Content-Type': 'application/json',
+                                }
+                              }
+                            );
+                            
+                            if (response.ok) {
+                              const result = await response.json();
+                              console.log("OCR Re-processing Result:", result);
+                              
+                              if (result.status === 'success' && result.total > 0) {
+                                showToast(`OCR completed! Total: ${result.total.toLocaleString()}`, "success");
+                                setRefresh(r => r + 1);
+                              } else if (result.status === 'warning') {
+                                showToast(result.message, "error");
+                              } else if (result.status === 'error' && result.message.includes('Binary PDF')) {
+                                // Fallback to client-side OCR for binary PDFs
+                                showToast("Binary PDF detected, using client-side OCR...", "info");
+                                await processWithClientSideOCR(bill);
+                              } else {
+                                showToast("OCR completed but no total found", "error");
+                              }
+                            } else {
+                              const errorData = await response.json();
+                              if (errorData.message && errorData.message.includes('Binary PDF')) {
+                                // Fallback to client-side OCR
+                                showToast("Binary PDF detected, using client-side OCR...", "info");
+                                await processWithClientSideOCR(bill);
+                              } else {
+                                showToast(`OCR failed: ${errorData.error || 'Unknown error'}`, "error");
+                              }
+                            }
+                          } catch (error) {
+                            console.error("Error re-processing OCR:", error);
+                            showToast("Failed to re-process OCR", "error");
+                          }
+                        } else {
+                          alert(`Edit bill: ${bill.id}`);
+                        }
                       }}
                     >
-                      <RiEdit2Line />
+                      {bill.amount === 0 ? <RiFileTextLine /> : <RiEdit2Line />}
                     </button>
                     <button
                       className="text-red-600 hover:text-red-800 ml-2"
@@ -425,9 +750,9 @@ export default function BillsPage() {
                             if (!res.ok) throw new Error('Delete failed');
                             setToast('Bill deleted successfully!');
                             setTimeout(() => setToast(''), 3000);
-                          } catch {
+                          } catch (error) {
                             setStepBills(originalBills);
-                            alert('Delete failed.');
+                            alert(`Delete failed. ${error instanceof Error ? `\n${error.message}` : ''}`);
                           }
                         }
                       }}
@@ -475,7 +800,7 @@ export default function BillsPage() {
                   </button>
                 )}
                 {bill.is_submitted_to_admin && (
-                  <span className="inline-block mt-2 px-3 py-1 text-xs font-semibold bg-blue-100 text-blue-700 rounded-full">
+                  <span className="inline-block mt-2 px-3 py-1 text-xs font-semibold bg-green-100 text-green-700 rounded-full">
                     Submitted to Admin
                   </span>
                 )}
@@ -599,10 +924,165 @@ export default function BillsPage() {
           </div>
         </div>
       )}
+      {/* Invoice Modal */}
+      {showInvoiceModal && selectedInvoice && (
+        <div className="absolute inset-0 backdrop-blur-sm flex items-center justify-center z-50 transition-opacity duration-300">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl m-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <h2 className="text-2xl font-bold text-gray-800">Invoice Management</h2>
+              <button
+                onClick={() => setShowInvoiceModal(false)}
+                className="p-1 rounded-full text-gray-400 hover:bg-gray-200 hover:text-gray-600 transition-all"
+              >
+                <RiCloseLine size={24} />
+              </button>
+            </div>
+            
+            <div className="p-6 space-y-6">
+              {/* Invoice Header */}
+              <div className="bg-blue-50 p-4 rounded-lg">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <h3 className="font-semibold text-blue-800">Invoice Details</h3>
+                    <p className="text-sm text-blue-600">#{selectedInvoice.data?.invoice_number || 'N/A'}</p>
+                    <p className="text-sm text-blue-600">{selectedInvoice.step_title || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-blue-800">Status</h3>
+                    <span className={`px-2 py-1 rounded text-xs font-semibold ${
+                      selectedInvoice.data?.status === 'APPROVED' ? 'bg-green-100 text-green-800' :
+                      selectedInvoice.data?.status === 'SUBMITTED' ? 'bg-yellow-100 text-yellow-800' :
+                      selectedInvoice.data?.status === 'REJECTED' ? 'bg-red-100 text-red-800' :
+                      'bg-gray-100 text-gray-800'
+                    }`}>
+                      {selectedInvoice.status_display || selectedInvoice.data?.status || 'DRAFT'}
+                    </span>
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-blue-800">Total Amount</h3>
+                    <p className="text-lg font-bold text-blue-600">₹{(selectedInvoice.total_amount || selectedInvoice.data?.amount || 0).toLocaleString()}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Line Items */}
+              <div>
+                <h3 className="text-lg font-semibold mb-4">Line Items</h3>
+                <div className="space-y-2">
+                  {selectedInvoice.data?.line_items && selectedInvoice.data.line_items.length > 0 ? (
+                    selectedInvoice.data.line_items.map((item: any, index: number) => (
+                      <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded">
+                        <div className="flex-1">
+                          <p className="font-medium">{item.description}</p>
+                          <p className="text-sm text-gray-600">Qty: {item.quantity} × ₹{item.rate}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-semibold">₹{item.amount}</p>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-gray-500 text-center py-4">No line items available</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Related Bills */}
+              <div>
+                <h3 className="text-lg font-semibold mb-4">Related Bills</h3>
+                <div className="space-y-2">
+                  {selectedInvoice.related_bills && selectedInvoice.related_bills.length > 0 ? (
+                    selectedInvoice.related_bills.map((bill: any, index: number) => (
+                      <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded">
+                        <div className="flex-1">
+                          <p className="font-medium">Bill #{bill.id.slice(0, 8)}</p>
+                          <p className="text-sm text-gray-600">Uploaded by: {bill.uploaded_by}</p>
+                          <p className="text-sm text-gray-600">OCR Total: ₹{bill.ocr_total}</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {bill.pdf && (
+                            <a
+                              href={bill.pdf}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-blue-600 hover:text-blue-800"
+                              title="View Bill"
+                            >
+                              <RiEyeLine />
+                            </a>
+                          )}
+                          <span className={`px-2 py-1 rounded text-xs ${
+                            bill.is_submitted_to_admin ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                          }`}>
+                            {bill.is_submitted_to_admin ? 'Submitted' : 'Pending'}
+                          </span>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-gray-500 text-center py-4">No bills uploaded yet</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex justify-end gap-4 pt-4 border-t">
+                <button
+                  onClick={() => setShowInvoiceModal(false)}
+                  className="px-6 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition"
+                >
+                  Close
+                </button>
+                {selectedInvoice.data?.status === 'DRAFT' && (
+                  <button
+                    onClick={() => {
+                      // This functionality has been moved to the Invoices & Billing section
+                      alert('Please use the Invoices & Billing section to submit invoices to admin.');
+                    }}
+                    className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                  >
+                    Submit to Admin
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* New Invoice Generation Modal */}
+      {selectedStepForInvoice && (
+        <InvoiceGenerationModal
+          open={showNewInvoiceModal}
+          step={selectedStepForInvoice}
+          onClose={() => {
+            setShowNewInvoiceModal(false);
+            setSelectedStepForInvoice(null);
+            setRefresh(r => r + 1);
+          }}
+          onInvoiceGenerated={(invoice) => {
+            setShowNewInvoiceModal(false);
+            setSelectedStepForInvoice(null);
+            setRefresh(r => r + 1);
+            showToast("Invoice generated successfully!", "success");
+          }}
+        />
+      )}
+
+      {/* Toast Notifications */}
       {toast && (
         <div className="fixed top-20 right-20 z-50 bg-green-500 text-white p-4 rounded-lg shadow-lg"
         >
-          {toast}
+          <div className="flex items-center gap-3">
+            {toast.includes('successfully') ? (
+              <RiCheckLine className="text-xl" />
+            ) : toast.includes('Failed') ? (
+              <RiCloseLine className="text-xl" />
+            ) : (
+              <RiFileTextLine className="text-xl" />
+            )}
+            <span className="font-medium">{toast}</span>
+          </div>
         </div>
       )}
     </div>
