@@ -15,6 +15,7 @@ from django.core.files.base import ContentFile
 from django.http import FileResponse
 import uuid
 from django.utils import timezone
+from datetime import datetime, timedelta
 from .boq_template_generator import generate_boq_template
 
 from .models import (
@@ -40,6 +41,62 @@ from .serializers import (
     ProgressLogMediaSerializer,
     ProjectMediaSerializer,
 )
+
+
+# ──────────────────────────────────────────────
+# File Cleanup Utilities
+# ──────────────────────────────────────────────
+def cleanup_old_temp_files(max_age_hours=24):
+    """
+    Clean up old temporary BOQ files from the temp_boq directory.
+    
+    Args:
+        max_age_hours (int): Maximum age of files to keep in hours
+    
+    Returns:
+        dict: Cleanup statistics
+    """
+    temp_boq_dir = os.path.join(settings.MEDIA_ROOT, 'temp_boq')
+    
+    if not os.path.exists(temp_boq_dir):
+        return {'deleted': 0, 'size_freed': 0, 'errors': []}
+    
+    cutoff_time = datetime.now() - timedelta(hours=max_age_hours)
+    deleted_count = 0
+    size_freed = 0
+    errors = []
+    
+    try:
+        files = os.listdir(temp_boq_dir)
+        for filename in files:
+            file_path = os.path.join(temp_boq_dir, filename)
+            
+            if os.path.isfile(file_path):
+                try:
+                    stat = os.stat(file_path)
+                    file_mtime = datetime.fromtimestamp(stat.st_mtime)
+                    
+                    if file_mtime < cutoff_time:
+                        size_freed += stat.st_size
+                        os.remove(file_path)
+                        deleted_count += 1
+                        print(f"Cleaned up old temp file: {filename}")
+                except OSError as e:
+                    errors.append(f"Error deleting {filename}: {e}")
+        
+        # Remove empty directory
+        if not os.listdir(temp_boq_dir):
+            os.rmdir(temp_boq_dir)
+            print(f"Removed empty temp_boq directory")
+            
+    except OSError as e:
+        errors.append(f"Error accessing temp_boq directory: {e}")
+    
+    return {
+        'deleted': deleted_count,
+        'size_freed': size_freed,
+        'errors': errors
+    }
 
 
 # ──────────────────────────────────────────────
@@ -884,6 +941,11 @@ class ProjectViewSet(viewsets.ModelViewSet):
         """
         Custom create method to handle multiple file uploads and BOQ parsing
         """
+        # Clean up old temporary files before processing new ones
+        cleanup_stats = cleanup_old_temp_files(max_age_hours=24)
+        if cleanup_stats['deleted'] > 0:
+            print(f"Cleaned up {cleanup_stats['deleted']} old temp files, freed {cleanup_stats['size_freed']} bytes")
+        
         # Validate required fields
         required_fields = ['name', 'start_date', 'estimated_end_date']
         for field in required_fields:
@@ -1006,24 +1068,34 @@ class ProjectViewSet(viewsets.ModelViewSet):
                 # Clean up the temp file - use try/except to handle potential file access issues
                 try:
                     if os.path.exists(full_temp_path):
-                        os.close(os.open(full_temp_path, os.O_RDONLY))  # Ensure file is closed
                         os.remove(full_temp_path)
                         print(f"Temporary BOQ file deleted: {full_temp_path}")
-                except Exception as e:
+                except (OSError, PermissionError) as e:
                     print(f"Warning: Could not delete temporary file {full_temp_path}: {e}")
+                except Exception as e:
+                    print(f"Unexpected error deleting temporary file {full_temp_path}: {e}")
                     
                 # Also clean up the stored BOQ file since we don't need it anymore
                 # (The data has been extracted and stored in the database)
                 try:
-                    boq_file_path = project.boq_file.path
-                    project.boq_file = None  # Clear the reference in the model
-                    project.save()
-                    
-                    if os.path.exists(boq_file_path):
-                        os.remove(boq_file_path)
-                        print(f"Stored BOQ file deleted after successful processing: {boq_file_path}")
-                except Exception as e:
+                    if project.boq_file and hasattr(project.boq_file, 'path'):
+                        boq_file_path = project.boq_file.path
+                        # Clear the reference in the model first
+                        project.boq_file = None
+                        project.save(update_fields=['boq_file'])
+                        
+                        # Then delete the physical file
+                        if os.path.exists(boq_file_path):
+                            os.remove(boq_file_path)
+                            print(f"Stored BOQ file deleted after successful processing: {boq_file_path}")
+                        else:
+                            print(f"BOQ file not found at path: {boq_file_path}")
+                    else:
+                        print("No BOQ file reference found in project model")
+                except (OSError, PermissionError) as e:
                     print(f"Warning: Could not delete stored BOQ file: {e}")
+                except Exception as e:
+                    print(f"Unexpected error deleting stored BOQ file: {e}")
         
         headers = self.get_success_headers(serializer.data)
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
