@@ -230,7 +230,8 @@ export default function ProjectDetailsPage({ params }: { params: Promise<{ proje
   const handleConfirmDelete = async () => {
     setDeleteLoading(true);
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/projects/${projectId}/soft-delete/`, {
+      // The correct endpoint format according to DRF is /projects/{id}/soft_delete/ (with underscore, not dash)
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/projects/${projectId}/soft_delete/`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
