@@ -35,8 +35,9 @@ interface Project {
   boq_file?: string;
   is_completed: boolean;
   location: string;
-  status: boolean;
-  currentStep: string;
+  status: string; // backend returns 'PLANNING' | 'IN_PROGRESS' | 'COMPLETED'
+  current_step?: string; // backend field
+  currentStep?: string; // optional legacy/local field
   client: string;
   budget: number;
   progress: number;
@@ -84,6 +85,46 @@ interface Invoice {
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://127.0.0.1:8000/api';
 
+// Shared helper: build absolute URL for media and thumbnails
+const toAbsolute = (input?: string) => {
+  if (!input) return '';
+  let s = String(input).trim();
+  // If the string contains multiple 'http' segments (e.g., '.../apihttp://host/media/...'),
+  // keep the last absolute URL segment.
+  const firstHttp = s.indexOf('http');
+  if (firstHttp !== -1) {
+    const secondHttp = s.indexOf('http', firstHttp + 1);
+    if (secondHttp > 0) {
+      s = s.slice(secondHttp);
+    } else if (firstHttp > 0) {
+      s = s.slice(firstHttp);
+    }
+  }
+  // Normalize accidental '/apihttp' concatenations and '/api ' + http (with whitespace)
+  s = s.replace('/apihttp', 'http');
+  s = s.replace(/\/api\s+(?=http)/, '');
+  // Normalize '/api/media/...' -> '/media/...'
+  s = s.replace(/\b\/api\/(?=media\/)/, '/');
+  // Determine the backend origin preference
+  const backendOrigin = (process.env.NEXT_PUBLIC_BACKEND_URL || '').replace(/\/$/, '');
+  let origin = backendOrigin;
+  if (!origin) {
+    try {
+      const u = new URL(API_BASE);
+      origin = u.origin;
+    } catch {
+      origin = API_BASE.replace(/\/?api\/?$/, '');
+    }
+  }
+  // If already absolute or blob/data, return as-is
+  if (s.startsWith('http') || s.startsWith('blob:') || s.startsWith('data:')) return s;
+  // If already starts with origin, return
+  if (origin && s.startsWith(origin)) return s;
+  // Otherwise prefix origin
+  if (s.startsWith('/')) return `${origin}${s}`;
+  return `${origin}/${s}`;
+};
+
 export default function SupervisorProjectsPage() {
   const token = useAuthStore((s) => s.token);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -128,9 +169,9 @@ export default function SupervisorProjectsPage() {
 
   // Stats
   const totalProjects = projects.length;
-  const activeProjects = projects.filter(p => p.status).length;
-  const completedProjects = projects.filter(p => p.is_completed).length;
-  const upcomingProjects = projects.filter(p => !p.is_completed && new Date(p.start_date) > new Date()).length;
+  const activeProjects = projects.filter(p => (p.status === 'IN_PROGRESS' || p.status === 'PLANNING') && !p.is_completed).length;
+  const completedProjects = projects.filter(p => p.is_completed || p.status === 'COMPLETED').length;
+  const upcomingProjects = projects.filter(p => p.status === 'PLANNING' && !p.is_completed && new Date(p.start_date) > new Date()).length;
 
   // Filtered projects
   const filteredProjects = projects.filter(project => {
@@ -139,9 +180,9 @@ export default function SupervisorProjectsPage() {
       project.description.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus =
       statusFilter === 'All' ||
-      (statusFilter === 'Active' && project.status) ||
-      (statusFilter === 'Completed' && project.is_completed) ||
-      (statusFilter === 'Upcoming' && !project.is_completed && new Date(project.start_date) > new Date());
+      (statusFilter === 'Active' && project.status === 'IN_PROGRESS') ||
+      (statusFilter === 'Completed' && (project.is_completed || project.status === 'COMPLETED')) ||
+      (statusFilter === 'Upcoming' && project.status === 'PLANNING');
     return matchesSearch && matchesStatus;
   });
 
@@ -251,21 +292,22 @@ export default function SupervisorProjectsPage() {
                 <div className="w-full h-40 bg-gray-100 flex items-center justify-center overflow-hidden border-b border-gray-200">
                   {project.thumbnail ? (
                     <Image
-                      src={`${process.env.NEXT_PUBLIC_API_BASE_URL}/media/${project.thumbnail}`}
+                      src={toAbsolute(project.thumbnail)}
                       alt={project.name}
                       width={400}
                       height={160}
                       className="object-cover w-full h-full"
                       onError={(e) => {
                         const target = e.target as HTMLImageElement;
-                        target.style.display = 'none';
-                        target.nextElementSibling?.classList.remove('hidden');
+                        // target.style.display = 'none';
+                        const fallback = target.parentElement?.querySelector(".fallback");
+                        if (fallback) fallback.classList.remove("hidden");
                       }}
                     />
                   ) : null}
                   <div className={`absolute inset-0 flex items-center justify-center ${project.thumbnail ? 'hidden' : ''}`}>
                     <Image
-                      src="/assets/images/project_saan.png"
+                      src={toAbsolute(project.thumbnail)}
                       alt={project.name}
                       width={400}
                       height={160}
@@ -279,13 +321,13 @@ export default function SupervisorProjectsPage() {
                       {project.name}
                     </h3>
                     <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                      project.is_completed
+                      (project.is_completed || project.status === 'COMPLETED')
                         ? 'bg-green-100 text-green-800'
-                        : project.status
+                        : project.status === 'IN_PROGRESS'
                         ? 'bg-amber-100 text-amber-800'
                         : 'bg-blue-100 text-blue-800'
                     }`}>
-                      {project.is_completed ? 'Completed' : project.status ? 'Active' : 'Upcoming'}
+                      {project.is_completed || project.status === 'COMPLETED' ? 'Completed' : project.status === 'IN_PROGRESS' ? 'Active' : 'Upcoming'}
                     </span>
                   </div>
                   <p className="text-gray-600 text-sm mb-3 line-clamp-2">{project.description}</p>
@@ -331,7 +373,7 @@ export default function SupervisorProjectsPage() {
           )}
         </div>
 
-        {/* Project Details Modal (unchanged) */}
+        {/* Project Details Modal */}
         {selectedProject && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
             <div className="bg-white rounded-2xl shadow-xl w-full max-w-3xl p-8 relative overflow-y-auto max-h-[90vh] flex flex-col items-center border border-slate-200">
@@ -342,7 +384,7 @@ export default function SupervisorProjectsPage() {
               >
                 <RiCloseLine className="text-2xl" />
               </button>
-              {/* Tab Navigation and Content (reuse existing logic) */}
+              {/* Tab Navigation and Content */}
               <div className="w-full">
                 {/* Tab Navigation */}
                 <div className="flex space-x-2 mb-6">
@@ -361,7 +403,7 @@ export default function SupervisorProjectsPage() {
                           : 'text-slate-600 hover:text-[#1b4965]-700 hover:bg-white/80 hover:shadow'
                       }`}
                     >
-                      <tab.icon className="text-lg" />
+                      {(() => { const Icon = tab.icon; return <Icon className="text-lg" />; })()}
                       <span>{tab.label}</span>
                     </button>
                   ))}
@@ -402,6 +444,133 @@ function ProjectOverview({ project }: { project: Project }) {
       });
   }, [project.id, token, userRole]);
 
+  // Add or update note
+  // const handleNoteSave = async () => {
+  //   setNoteLoading(true);
+  //   setNoteError(null);
+  //   try {
+  //     const url = noteId
+  //       ? `${API_BASE}/projects/supervisor-notes/${noteId}/`
+  //       : `${API_BASE}/projects/supervisor-notes/`;
+  //     const method = noteId ? 'PATCH' : 'POST';
+  //     const body = noteId
+  //       ? JSON.stringify({ note })
+  //       : JSON.stringify({ note, project: project.id });
+  //     const res = await fetch(url, {
+  //       method,
+  //       headers: {
+  //         'Authorization': `Bearer ${token}`,
+  //         'Content-Type': 'application/json',
+  //       },
+  //       body,
+  //     });
+  //     if (!res.ok) throw new Error('Failed to save note');
+  //     const data = await res.json();
+  //     setNote(data.note);
+  //     setNoteId(data.id);
+  //     setNoteEditing(false);
+  //   } catch (err) {
+  //     setNoteError('Could not save note.');
+  //   } finally {
+  //     setNoteLoading(false);
+  //   }
+  // };
+
+  // // Delete note
+  // const handleNoteDelete = async () => {
+  //   if (!noteId) return;
+  //   if (!window.confirm('Delete your note for this project?')) return;
+  //   setNoteLoading(true);
+  //   setNoteError(null);
+  //   try {
+  //     const res = await fetch(`${API_BASE}/projects/supervisor-notes/${noteId}/`, {
+  //       method: 'DELETE',
+  //       headers: { 'Authorization': `Bearer ${token}` },
+  //     });
+  //     if (!res.ok) throw new Error('Failed to delete note');
+  //     setNote('');
+  //     setNoteId(null);
+  //     setNoteEditing(false);
+  //   } catch (err) {
+  //     setNoteError('Could not delete note.');
+  //   } finally {
+  //     setNoteLoading(false);
+  //   }
+  // };
+
+  // ---- Project Media (for thumbnails) ----
+  interface ProjectMediaItem {
+    id: string | number;
+    url?: string;
+    thumbnail_url?: string;
+    file?: string;
+    filename?: string;
+    media_type?: string; // IMAGE | VIDEO | DOCUMENT
+    uploaded_at?: string;
+    step?: string | number;
+    step_id?: string | number;
+    project?: string | number;
+    type?: 'image' | 'video' | 'pdf';
+  }
+  const [mediaLoading, setMediaLoading] = useState(false);
+  const [projectMedia, setProjectMedia] = useState<ProjectMediaItem[]>([]);
+  const [projectMediaRaw, setProjectMediaRaw] = useState<ProjectMediaItem[]>([]);
+  // Derived fallback media from step logs when API list is empty
+  const fallbackMediaFromLogs: ProjectMediaItem[] = (project?.steps || [])
+    .flatMap((st) => (st.logs || []).flatMap((lg) => (lg.media || [])))
+    .map((mf) => ({
+      id: mf.id,
+      url: mf.url,
+      filename: mf.filename,
+      type: mf.type,
+      media_type: (mf.type || 'image').toString().toUpperCase(),
+      project: project?.id,
+    }));
+  const combinedProjectMedia = projectMedia.length > 0
+    ? projectMedia
+    : (projectMediaRaw.length > 0 ? projectMediaRaw : fallbackMediaFromLogs);
+
+  // Compute API origin(s) in case we need them elsewhere
+  const apiOrigin = (() => {
+    try {
+      const u = new URL(API_BASE);
+      return u.origin;
+    } catch {
+      return API_BASE.replace(/\/?api\/?$/, '');
+    }
+  })();
+  const backendOrigin = (process.env.NEXT_PUBLIC_BACKEND_URL || '').replace(/\/$/, '');
+  const origin = backendOrigin || apiOrigin;
+
+  // Build a usable media URL from url/thumbnail_url/file
+  const getMediaSrc = (m: ProjectMediaItem) => {
+    const u = m.thumbnail_url || m.url || m.file;
+    return toAbsolute(u as string);
+  };
+
+  useEffect(() => {
+    if (!project?.id || !token) return;
+    setMediaLoading(true);
+    // Ask backend for media by project; if backend ignores the filter, we filter client-side below
+    fetch(`${API_BASE}/projects/project-media/?project=${project.id}&include_deleted=1`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then(async (res) => {
+        if (!res.ok) throw new Error(await res.text());
+        return res.json();
+      })
+      .then((data) => {
+        const items: ProjectMediaItem[] = Array.isArray(data)
+          ? data
+          : (Array.isArray((data as any)?.results) ? (data as any).results : []);
+        setProjectMediaRaw(items);
+        const byProject = items.filter((m) => String((m as any).project ?? project.id) === String(project.id));
+        setProjectMedia(byProject);
+      })
+      .catch(() => setProjectMedia([]))
+      .finally(() => setMediaLoading(false));
+  }, [project?.id, token]);
+
   return (
     <div className="space-y-8">
       {/* Header */}
@@ -439,11 +608,13 @@ function ProjectOverview({ project }: { project: Project }) {
             <div className="flex justify-between items-center p-4 bg-white/70 rounded-2xl backdrop-blur-sm">
               <span className="text-slate-600 font-medium">Status:</span>
               <span className={`font-semibold px-3 py-1 rounded-full text-sm ${
-                project.is_completed 
-                  ? 'bg-green-100 text-green-800' 
+                (project.is_completed || project.status === 'COMPLETED')
+                  ? 'bg-green-100 text-green-800'
+                  : project.status === 'IN_PROGRESS'
+                  ? 'bg-amber-100 text-amber-800'
                   : 'bg-blue-100 text-blue-800'
               }`}>
-                {project.is_completed ? 'Completed' : 'In Progress'}
+                {project.is_completed || project.status === 'COMPLETED' ? 'Completed' : project.status === 'IN_PROGRESS' ? 'Active' : 'Upcoming'}
               </span>
             </div>
           </div>
@@ -460,13 +631,13 @@ function ProjectOverview({ project }: { project: Project }) {
           <div className="space-y-6">
             {/* Overall Progress */}
             <div className="p-6 bg-white/70 rounded-2xl backdrop-blur-sm">
-              <div className="flex justify-between text-sm font-semibold text-slate-700 mb-3">
+              <div className="flex justify-between text-sm text-gray-600 mb-2">
                 <span>Overall Progress</span>
-                <span className="text-emerald-600 animate-pulse font-bold">{project.progress}%</span>
+                <span className="font-bold animate-pulse text-blue-600">{project.progress}%</span>
               </div>
-              <div className="w-full bg-slate-200 rounded-full h-4 overflow-hidden shadow-inner">
+              <div className="w-full bg-gray-200 rounded-full h-4 overflow-hidden shadow-inner">
                 <div
-                  className="h-full bg-gradient-to-r from-emerald-500 via-green-500 to-emerald-600 rounded-full transition-all duration-1500 ease-out shadow-lg progress-animate"
+                  className="h-full bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 rounded-full transition-all duration-1500 ease-out relative overflow-hidden"
                   style={{ width: `${project.progress}%` }}
                 >
                   <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer"></div>
@@ -480,7 +651,7 @@ function ProjectOverview({ project }: { project: Project }) {
                 <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
                 Current Phase
               </div>
-              <div className="text-2xl font-bold text-emerald-900 animate-pulse group-hover:scale-105 transition-transform duration-300">{project.currentStep}</div>
+              <div className="text-2xl font-bold text-emerald-900 animate-pulse group-hover:scale-105 transition-transform duration-300">{project.current_step || project.currentStep || '—'}</div>
             </div>
 
             {/* Project Stats */}
@@ -500,11 +671,81 @@ function ProjectOverview({ project }: { project: Project }) {
         </div>
       </div>
 
-      
+      {/* Project Media List */}
+      <div className="bg-white/90 rounded-3xl p-6 shadow border border-slate-200">
+        <h3 className="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">
+          <RiCameraLine className="text-blue-600" /> Project Media
+          <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-blue-100 text-blue-700 border border-blue-200">
+            {combinedProjectMedia.length}
+          </span>
+        </h3>
+        {mediaLoading ? (
+          <div className="text-gray-500">Loading media...</div>
+        ) : combinedProjectMedia.length > 0 ? (
+          <ul className="divide-y divide-gray-200">
+            {combinedProjectMedia.map((m) => {
+              const type = (m.type || (m.media_type || '').toLowerCase()) as 'image' | 'video' | 'pdf' | string;
+              const src = getMediaSrc(m);
+              return (
+                <li key={m.id} className="py-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-md overflow-hidden bg-gray-200 flex items-center justify-center">
+                      {type === 'image' && src ? (
+                        src.trim() !== "" ? (
+                          <img src={src} alt={m.filename || 'Media'} className="w-full h-full object-cover" />
+                        ) : null
+                      ) : type === 'video' ? (
+                        <RiVideoLine className="w-6 h-6 text-gray-500" />
+                      ) : (
+                        <RiFileTextLine className="w-6 h-6 text-gray-500" />
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="text-sm font-medium text-gray-900 truncate">{m.filename || 'Media file'}</div>
+                      <div className="text-xs text-gray-500 capitalize truncate">{(m.media_type || (type as string) || 'image').toString().toUpperCase()}</div>
+                      {/* Submission Status */}
+                      <div className="mt-1">
+                        {(m as any).is_submitted_to_admin ? (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-green-100 text-green-800 border border-green-200">
+                            <RiCheckLine className="w-3 h-3 mr-1" />
+                            Submitted to Admin
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-yellow-100 text-yellow-800 border border-yellow-200">
+                            <RiTimeLine className="w-3 h-3 mr-1" />
+                            Not Submitted
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    {src && (
+                      <a href={src} target="_blank" rel="noopener noreferrer" download className="text-blue-600 hover:text-blue-800">
+                        <RiDownloadLine className="w-5 h-5" />
+                      </a>
+                    )}
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+         
+            // Fallback when there is no media
+            // combinedProjectMedia.length === 0 && !mediaLoading
+          ) : (
+            <div className="text-gray-500">No media found for this project.</div>
+          )}
+          {process.env.NODE_ENV === 'development' && (
+            <div className="mt-2 text-[10px] text-gray-400 space-y-1">
+              <div>Debug: apiMediaFiltered={projectMedia.length}, apiMediaRaw={projectMediaRaw.length}, fallbackFromLogs={fallbackMediaFromLogs.length}</div>
+              <div>Sample URL: {combinedProjectMedia[0] ? toAbsolute((combinedProjectMedia[0].thumbnail_url || combinedProjectMedia[0].url || combinedProjectMedia[0].file) as string) : 'n/a'}</div>
+            </div>
+          )}
+        </div>
 
-      {/* Site Supervisor Notes Section */}
-      <SiteSupervisorNotes projectId={project.id} />
-    </div>
+        {/* Site Supervisor Notes Section */}
+        {/* <SiteSupervisorNotes projectId={project.id} /> */}
+      </div>
+    
   );
 }
 
@@ -633,9 +874,18 @@ function SiteSupervisorNotes({ projectId }: { projectId: string }) {
             {noteError && <div className="text-red-600 text-sm">{noteError}</div>}
           </div>
         ) : (
-          <p className="text-emerald-900 leading-relaxed text-lg">{note || <span className="text-slate-400 italic">No notes added yet.</span>}</p>
+          <div className="text-gray-500">No media found for this project.</div>
+        )}
+        {process.env.NODE_ENV === 'development' && (
+          <div className="mt-2 text-[10px] text-gray-400 space-y-1">
+            {/* <div>Debug: apiMediaFiltered={projectMedia.length}, apiMediaRaw={projectMediaRaw.length}, fallbackFromLogs={fallbackMediaFromLogs.length}</div>
+            <div>Sample URL: {combinedProjectMedia[0] ? toAbsolute((combinedProjectMedia[0].thumbnail_url || combinedProjectMedia[0].url || combinedProjectMedia[0].file) as string) : 'n/a'}</div> */}
+          </div>
         )}
       </div>
+
+      {/* Site Supervisor Notes Section */}
+      {/* <SiteSupervisorNotes projectId={project.id} /> */}
     </div>
   );
 }
@@ -699,7 +949,7 @@ function ProgressLogs({ project }: { project: Project }) {
             <div className="relative p-6">
               {/* Header */}
               <div className="flex items-center justify-between mb-4">
-                <h4 className="text-lg font-bold text-gray-800 group-hover:text-blue-700 transition-colors duration-300">
+                <h4 className="text-lg font-bold text-gray-800 group-hover:text-blue-700 transition-colors">
                   {step.name}
                 </h4>
                 <div className={`px-3 py-1 rounded-full text-xs font-bold shadow-lg ${
@@ -724,7 +974,7 @@ function ProgressLogs({ project }: { project: Project }) {
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden group-hover:h-4 transition-all duration-500">
                   <div
-                    className="h-full bg-gradient-to-r from-blue-500 via-purple-500 to-indigo-500 rounded-full transition-all duration-1000 ease-out relative overflow-hidden"
+                    className="h-full bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 rounded-full transition-all duration-1000 ease-out relative overflow-hidden"
                     style={{ width: `${step.progress}%` }}
                   >
                     <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer"></div>
@@ -771,7 +1021,7 @@ function ProgressLogs({ project }: { project: Project }) {
                 <div className="relative">
                   {/* Header */}
                   <div className="flex items-center justify-between mb-4">
-                    <h5 className="text-lg font-bold text-gray-800 group-hover:text-blue-700 transition-colors duration-300">
+                    <h5 className="text-lg font-bold text-gray-800 group-hover:text-blue-700 transition-colors">
                       {log.title}
                     </h5>
                     <div className="flex items-center gap-2">
@@ -823,7 +1073,7 @@ function ProgressLogs({ project }: { project: Project }) {
                   <div className="mt-4 flex justify-end">
                     <span className={`px-3 py-1 rounded-full text-xs font-bold shadow-md ${
                       log.type === 'PHOTO' 
-                        ? 'bg-gradient-to-r from-blue-400 to-indigo-500 text-white'
+                        ? 'bg-gradient-to-r from-blue-400 to-indigo-500 text-white' 
                         : log.type === 'VIDEO'
                         ? 'bg-gradient-to-r from-red-400 to-pink-500 text-white'
                         : 'bg-gradient-to-r from-gray-400 to-gray-500 text-white'
@@ -1097,11 +1347,7 @@ function ProjectInvoices({ }: { project: Project }) {
               {invoice.bills.map((bill, index) => (
                 <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
                   <span className="text-sm text-gray-600">{bill}</span>
-                  <button 
-                    className="text-blue-600 hover:text-blue-700"
-                    title="Download bill"
-                    aria-label="Download bill"
-                  >
+                  <button className="text-blue-600 hover:text-blue-800">
                     <RiDownloadLine className="text-lg" />
                   </button>
                 </div>
@@ -1124,5 +1370,3 @@ function ProjectInvoices({ }: { project: Project }) {
     </div>
   );
 }
-
-
