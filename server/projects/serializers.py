@@ -15,10 +15,16 @@ class ProgressLogMediaSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProgressLogMedia
         fields = ['id', 'url', 'type', 'filename', 'file_size', 'uploaded_at']
-        read_only_fields = ['id', 'uploaded_at']
+        read_only_fields = ['id', 'uploaded_at', 'filename', 'file_size']
     
     def get_url(self, obj):
-        return obj.file.url if obj.file else None
+        if not obj.file:
+            return None
+        request = self.context.get('request')
+        try:
+            return request.build_absolute_uri(obj.file.url) if request else obj.file.url
+        except Exception:
+            return obj.file.url
     
     def get_type(self, obj):
         return obj.media_type.lower()
@@ -34,11 +40,12 @@ class ProjectMediaSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProjectMedia
         fields = [
-            'id', 'project', 'file', 'media_type',
+            'id', 'project', 'step', 'file', 'media_type',
             'title', 'description', 'filename', 'file_size',
             'uploaded_by_name', 'uploaded_at',
             'url', 'type',
             'step_id', 'step_title',
+            'is_submitted_to_admin',
             'is_deleted', 'deleted_at',
         ]
         read_only_fields = [
@@ -46,7 +53,13 @@ class ProjectMediaSerializer(serializers.ModelSerializer):
         ]
 
     def get_url(self, obj):
-        return obj.file.url if obj.file else None
+        if not obj.file:
+            return None
+        request = self.context.get('request')
+        try:
+            return request.build_absolute_uri(obj.file.url) if request else obj.file.url
+        except Exception:
+            return obj.file.url
 
     def get_type(self, obj):
         return obj.media_type.lower()
@@ -79,7 +92,7 @@ class ProgressLogSerializer(serializers.ModelSerializer):
     media = serializers.SerializerMethodField()
     timestamp = serializers.DateTimeField(source='created')
     type = serializers.SerializerMethodField()
-      # ✅ Accept stepId in input and map to `step`
+      # Accept stepId in input and map to `step`
     stepId = serializers.PrimaryKeyRelatedField(
         source='step',
         queryset=Step.objects.all(),
@@ -174,7 +187,6 @@ class BillSerializer(serializers.ModelSerializer):
 
 class StepSerializer(serializers.ModelSerializer):
     logs = ProgressLogSerializer(many=True, read_only=True)
-    progress = serializers.SerializerMethodField()
     status = serializers.SerializerMethodField()
     bills = BillSerializer(many=True, read_only=True)
     invoice = serializers.SerializerMethodField()
@@ -197,15 +209,6 @@ class StepSerializer(serializers.ModelSerializer):
         except Exception:
             pass
         return None
-    
-    def get_progress(self, obj):
-        """Calculate step progress based on completion"""
-        if obj.is_approved:
-            return 100
-        elif obj.actual_completed:
-            return 75
-        else:
-            return 0
     
     def get_status(self, obj):
         """Get step status"""
@@ -250,30 +253,39 @@ class ProjectSerializer(serializers.ModelSerializer):
     
     def get_progress(self, obj):
         """Calculate overall project progress based on completed steps"""
-        # Use prefetched steps to avoid additional queries
-        steps = obj.steps.all()
-        total_steps = len(steps)
-        if total_steps == 0:
+        try:
+            # Use prefetched steps to avoid additional queries
+            steps = obj.steps.all()
+            total_steps = len(steps)
+            if total_steps == 0:
+                return 0
+            
+            completed_steps = sum(1 for step in steps if step.is_approved)
+            return int((completed_steps / total_steps) * 100)
+        except Exception:
             return 0
-        
-        completed_steps = sum(1 for step in steps if step.is_approved)
-        return int((completed_steps / total_steps) * 100)
     
     def get_current_step(self, obj):
         """Get the current step in progress"""
-        # Use prefetched steps to avoid additional queries
-        steps = obj.steps.all()
-        current_step = next((step for step in sorted(steps, key=lambda s: s.order) if not step.is_approved), None)
-        return current_step.title if current_step else "Completed"
+        try:
+            # Use prefetched steps to avoid additional queries
+            steps = obj.steps.all()
+            current_step = next((step for step in sorted(steps, key=lambda s: s.order) if not step.is_approved), None)
+            return current_step.title if current_step else "Completed"
+        except Exception:
+            return "Unknown"
     
     def get_status(self, obj):
         """Get project status"""
-        if obj.is_completed:
-            return "COMPLETED"
-        # Use prefetched steps to avoid additional queries
-        steps = obj.steps.all()
-        has_pending_steps = any(not step.is_approved for step in steps)
-        return "IN_PROGRESS" if has_pending_steps else "PLANNING"
+        try:
+            if obj.is_completed:
+                return "COMPLETED"
+            # Use prefetched steps to avoid additional queries
+            steps = obj.steps.all()
+            has_pending_steps = any(not step.is_approved for step in steps)
+            return "IN_PROGRESS" if has_pending_steps else "PLANNING"
+        except Exception:
+            return "UNKNOWN"
     
     def get_client(self, obj):
         """Get client information from project model"""
@@ -283,10 +295,13 @@ class ProjectSerializer(serializers.ModelSerializer):
     
     def get_budget(self, obj):
         """Calculate total budget from steps"""
-        # Use prefetched steps to avoid additional queries
-        steps = obj.steps.all()
-        total_budget = sum(step.expected_budget or 0 for step in steps)
-        return float(total_budget)
+        try:
+            # Use prefetched steps to avoid additional queries
+            steps = obj.steps.all()
+            total_budget = sum(step.expected_budget or 0 for step in steps)
+            return float(total_budget)
+        except Exception:
+            return 0.0
 
     def to_representation(self, instance):
         """Override to handle null supervisor gracefully"""

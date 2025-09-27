@@ -852,7 +852,13 @@ class ProjectViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_403_FORBIDDEN
             )
         
-        projects = Project.objects.filter(supervisor=request.user)
+        # Use optimized queryset with prefetch_related to avoid N+1 queries
+        projects = Project.objects.select_related('supervisor').prefetch_related(
+            'steps', 
+            'steps__logs', 
+            'steps__invoice'
+        ).filter(supervisor=request.user, is_deleted=False)
+        
         serializer = self.get_serializer(projects, many=True)
         return Response(serializer.data)
 
@@ -1064,6 +1070,60 @@ class ProjectMediaViewSet(viewsets.ModelViewSet):
     filter_backends = [SearchFilter, OrderingFilter]
     search_fields = ["title", "description", "filename", "project__name"]
     ordering = ["-uploaded_at"]
+    parser_classes = (MultiPartParser, FormParser, JSONParser)
+    
+    def get_queryset(self):
+        qs = super().get_queryset()
+        # Include deleted for detail actions that must operate on deleted items
+        if getattr(self, "action", None) in ("restore", "purge", "destroy"):
+            return qs
+        only_deleted = self.request.query_params.get("only_deleted") in ("1", "true", "True")
+        include_deleted = self.request.query_params.get("include_deleted") in ("1", "true", "True")
+        if only_deleted:
+            return qs.filter(is_deleted=True)
+        if include_deleted:
+            base = qs
+        else:
+            base = qs.filter(is_deleted=False)
+        
+        # Extra filters: by project and step when provided
+        project_id = self.request.query_params.get("project")
+        step_id = self.request.query_params.get("step")
+        if project_id:
+            base = base.filter(project_id=project_id)
+        if step_id:
+            base = base.filter(step_id=step_id)
+        return base
+    
+    def perform_create(self, serializer):
+        """
+        Save ProjectMedia and, if a step is provided, also create a ProgressLog and
+        attach the same file as a ProgressLogMedia so it shows up step-wise.
+        """
+        instance: ProjectMedia = serializer.save(uploaded_by=self.request.user)
+        
+        # If this media is tied to a specific step, mirror it into Progress Logs
+        step = getattr(instance, "step", None)
+        try:
+            if step:
+                # Create a concise log message
+                msg = instance.description or instance.title or f"Media uploaded: {instance.filename}"
+                log = ProgressLog.objects.create(step=step, message=msg)
+                
+                # Determine media type from the ProjectMedia instance
+                media_type = instance.media_type or 'DOCUMENT'
+                
+                # Create a ProgressLogMedia entry reusing the same stored file
+                ProgressLogMedia.objects.create(
+                    progress_log=log,
+                    file=instance.file,
+                    media_type=media_type,
+                    filename=instance.filename or (instance.file.name if instance.file else ''),
+                    file_size=instance.file_size or (instance.file.size if instance.file else 0),
+                )
+        except Exception:
+            # If any mirroring error occurs, we still keep ProjectMedia; avoid breaking the upload.
+            pass
     
     def get_queryset(self):
         qs = super().get_queryset()
@@ -1119,6 +1179,16 @@ class ProjectMediaViewSet(viewsets.ModelViewSet):
         
         serializer = self.get_serializer(deleted_media, many=True)
         return Response(serializer.data)
+    
+    @action(detail=True, methods=['post'])
+    def submit_to_admin(self, request, pk=None):
+        """Mark a project media item as submitted to admin and return updated object."""
+        instance = self.get_object()
+        if not getattr(instance, 'is_submitted_to_admin', False):
+            instance.is_submitted_to_admin = True
+            instance.save(update_fields=["is_submitted_to_admin"])
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class BillViewSet(viewsets.ModelViewSet):
@@ -1128,6 +1198,108 @@ class BillViewSet(viewsets.ModelViewSet):
     filter_backends = [SearchFilter, OrderingFilter]
     search_fields = ["step__title", "pdf"]
     ordering = ["-uploaded_at"]
+    
+    @action(detail=False, methods=['post'], url_path='process-pdf')
+    def process_pdf(self, request):
+        """
+        Process PDF file to extract text and parse bill data
+        """
+        try:
+            pdf_file = request.FILES.get('pdf')
+            if not pdf_file:
+                return Response({"error": "No PDF file provided"}, status=400)
+            
+            # For now, we'll implement a basic text extraction
+            # In production, you would use libraries like PyPDF2, pdfplumber, or OCR services
+            
+            import PyPDF2
+            import io
+            
+            # Read PDF content
+            pdf_content = pdf_file.read()
+            pdf_reader = PyPDF2.PdfReader(io.BytesIO(pdf_content))
+            
+            # Extract text from all pages
+            full_text = ""
+            for page_num in range(len(pdf_reader.pages)):
+                page = pdf_reader.pages[page_num]
+                full_text += page.extract_text() + "\n"
+            
+            # Parse the text to extract bill items
+            items = self.parse_bill_text(full_text)
+            
+            # Calculate total
+            total = sum(item.get('total', 0) for item in items)
+            
+            return Response({
+                "raw_text": full_text,
+                "items": items,
+                "total": total,
+                "status": "success"
+            })
+            
+        except Exception as e:
+            return Response({
+                "error": f"Failed to process PDF: {str(e)}",
+                "status": "error"
+            }, status=500)
+    
+    def parse_bill_text(self, text):
+        """
+        Parse bill text to extract line items
+        """
+        items = []
+        lines = [line.strip() for line in text.split('\n') if line.strip()]
+        
+        # Patterns to match bill items
+        patterns = [
+            # Pattern: Description Quantity Rate Amount
+            r'^(.+?)\s+(\d+(?:\.\d+)?)\s+(\d+(?:\.\d+)?)\s+(\d+(?:\.\d+)?)$',
+            # Pattern: Description Qty x Rate = Amount  
+            r'^(.+?)\s+(\d+(?:\.\d+)?)\s*[x×]\s*(\d+(?:\.\d+)?)\s*=\s*(\d+(?:\.\d+)?)$',
+            # Pattern: Description, Quantity, Rate, Amount
+            r'^(.+?),\s*(\d+(?:\.\d+)?),\s*(\d+(?:\.\d+)?),\s*(\d+(?:\.\d+)?)$',
+        ]
+        
+        for line in lines:
+            for pattern in patterns:
+                import re
+                match = re.match(pattern, line)
+                if match:
+                    description = match.group(1).strip()
+                    quantity = float(match.group(2))
+                    rate = float(match.group(3))
+                    amount = float(match.group(4))
+                    
+                    # Validate the extracted data
+                    if (description and len(description) > 2 and 
+                        quantity > 0 and rate > 0 and amount > 0):
+                        items.append({
+                            "itemName": description,
+                            "description": description,
+                            "quantity": quantity,
+                            "unit": "pcs",
+                            "unitPrice": rate,
+                            "total": amount
+                        })
+                        break
+        
+        # If no structured items found, try to find total amount
+        if not items:
+            import re
+            total_match = re.search(r'(?:total|amount|sum)[:\s]*(\d+(?:\.\d+)?)', text, re.IGNORECASE)
+            if total_match:
+                total = float(total_match.group(1))
+                items.append({
+                    "itemName": "Bill Total",
+                    "description": "Total amount from bill",
+                    "quantity": 1,
+                    "unit": "bill",
+                    "unitPrice": total,
+                    "total": total
+                })
+        
+        return items
     
     def get_queryset(self):
         qs = super().get_queryset()
@@ -1186,6 +1358,39 @@ class BillViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         bill = serializer.save(uploaded_by=self.request.user)
+        
+        # Process PDF to extract OCR data if not already provided
+        if not bill.ocr_data or not bill.ocr_data.get('items'):
+            try:
+                # Extract text from PDF
+                import PyPDF2
+                import io
+                
+                pdf_content = bill.pdf.read()
+                pdf_reader = PyPDF2.PdfReader(io.BytesIO(pdf_content))
+                
+                # Extract text from all pages
+                full_text = ""
+                for page_num in range(len(pdf_reader.pages)):
+                    page = pdf_reader.pages[page_num]
+                    full_text += page.extract_text() + "\n"
+                
+                # Parse the text to extract bill items
+                items = self.parse_bill_text(full_text)
+                total = sum(item.get('total', 0) for item in items)
+                
+                # Update bill with extracted OCR data
+                bill.ocr_data = {
+                    'items': items,
+                    'total': total,
+                    'raw_text': full_text
+                }
+                bill.save(update_fields=['ocr_data'])
+                
+            except Exception as e:
+                print(f"Error processing PDF OCR: {e}")
+                # Keep original ocr_data if processing fails
+        
         # Auto-generate invoice if not already exists for this step
         if not hasattr(bill.step, 'invoice'):
             from .models import Invoice

@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, useParams } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState, useEffect, type FormEvent, type ChangeEvent } from "react";
 import {
   RiBuildingLine,
   RiProgress1Line,
@@ -20,6 +20,11 @@ import {
   RiCheckLine,
 } from "react-icons/ri";
 import { FiSearch } from "react-icons/fi";
+import {
+  HiOutlineEye,
+  HiOutlineDownload,
+  HiOutlineUpload
+} from "react-icons/hi";
 import { fetchWithAuth } from "@/app/utils/auth";
 import ProgressLogs from "../components/ProgressLogs";
 import InvoiceGenerationModal from "../components/InvoiceGenerationModal";
@@ -106,6 +111,7 @@ interface ProjectMedia {
   uploaded_at: string;
   step_id?: string;
   step_title?: string;
+  is_submitted_to_admin?: boolean;
 }
 
 interface Bill {
@@ -145,12 +151,23 @@ export default function ProjectDetailPage() {
   const [progressLogs, setProgressLogs] = useState<ProgressLog[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL;
-  
+
+  // Build absolute URL from relative path
+  const toAbsolute = (input?: string) => {
+    if (!input) return '';
+    const s = String(input);
+    if (s.startsWith('http') || s.startsWith('blob:') || s.startsWith('data:')) return s;
+    const base = (process.env.NEXT_PUBLIC_BACKEND_URL || API_BASE || '').replace(/\/$/, '');
+    if (!base) return s;
+    return s.startsWith('/') ? `${base}${s}` : `${base}/${s}`;
+  };
+
   // Media upload states
   const [showMediaUpload, setShowMediaUpload] = useState(false);
   const [mediaUploadData, setMediaUploadData] = useState({
-    step: '', // <-- new required field
+    step: '', 
     description: '',
+    mediaType: 'IMAGE', 
     files: [] as File[]
   });
   const [uploading, setUploading] = useState(false);
@@ -178,6 +195,7 @@ export default function ProjectDetailPage() {
   const [submittingInvoice, setSubmittingInvoice] = useState(false);
   const [refresh, setRefresh] = useState(0);
   const [recentlySubmittedInvoices, setRecentlySubmittedInvoices] = useState<Set<string>>(new Set());
+  const [submittedMediaIds, setSubmittedMediaIds] = useState<Set<string>>(new Set());
 
   // Delete media from both project.media_files and all log.media arrays
   const handleDeleteMedia = async (mediaId: string) => {
@@ -254,7 +272,7 @@ export default function ProjectDetailPage() {
       displayToast("Failed to delete media", "error");
     }
   };
-  
+
   // Handler to open edit modal
   const handleEditMedia = (media: ProjectMedia) => {
     setEditingMedia(media);
@@ -268,7 +286,7 @@ export default function ProjectDetailPage() {
   };
 
   // Handler to save edit
-  const handleEditMediaSave = async (e: React.FormEvent) => {
+  const handleEditMediaSave = async (e: FormEvent) => {
     e.preventDefault();
     if (!editingMedia) return;
     setEditMediaSaving(true);
@@ -307,10 +325,30 @@ export default function ProjectDetailPage() {
   const refetchProject = async () => {
     if (!projectId) return;
     const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api';
+
     const projectResponse = await fetchWithAuth(`${apiBaseUrl}/projects/${projectId}/`);
     if (projectResponse.ok) {
       const updatedProject = await projectResponse.json();
-      setProject(updatedProject);
+      
+      // Preserve submission status from current state
+      setProject(prevProject => {
+        if (!prevProject) return updatedProject;
+        
+        // Merge submission status from current state with fresh data
+        const mergedMediaFiles = updatedProject.media_files?.map((media: any) => {
+          const currentMedia = prevProject.media_files?.find((m: any) => String(m.id) === String(media.id));
+          return {
+            ...media,
+            // Preserve submission status if it was set in current session
+            is_submitted_to_admin: submittedMediaIds.has(String(media.id)) || media.is_submitted_to_admin
+          };
+        }) || [];
+        
+        return {
+          ...updatedProject,
+          media_files: mergedMediaFiles
+        };
+      });
     }
   };
 
@@ -318,13 +356,13 @@ export default function ProjectDetailPage() {
   useEffect(() => {
     const fetchProjectData = async () => {
       if (!projectId) return;
-      
+
       try {
         setLoading(true);
         setError(null);
-        
+
         const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api';
-        
+
         // Fetch project details
         const projectResponse = await fetchWithAuth(`${apiBaseUrl}/projects/${projectId}/`);
         if (!projectResponse.ok) {
@@ -332,14 +370,14 @@ export default function ProjectDetailPage() {
         }
         const projectData = await projectResponse.json();
         console.log('✅ Project data fetched:', projectData);
-        
+
         // Debug: Check if steps have invoice data
         if (projectData.steps) {
           projectData.steps.forEach((step: any, index: number) => {
             console.log(`🔍 Step ${index + 1}: ${step.title} - Invoice:`, step.invoice);
           });
         }
-        
+
         setProject(projectData);
 
         // Fetch invoices separately to ensure we have the latest data
@@ -362,13 +400,13 @@ export default function ProjectDetailPage() {
         // Extract them from the project data
         if (projectData.steps) {
           const allLogs: ProgressLog[] = [];
-          
+
           projectData.steps.forEach((step: any) => {
             if (step.logs) {
               allLogs.push(...step.logs);
             }
           });
-          
+
           setProgressLogs(allLogs);
         }
 
@@ -391,16 +429,16 @@ export default function ProjectDetailPage() {
   // Sync invoice data between project steps and invoices state
   const syncInvoiceData = () => {
     if (!project || !invoices.length) return;
-    
+
     setProject(prevProject => {
       if (!prevProject) return prevProject;
-      
+
       const updatedSteps = prevProject.steps.map(step => {
         // Find matching invoice for this step
-        const matchingInvoice = invoices.find(inv => 
+        const matchingInvoice = invoices.find(inv =>
           inv.step && inv.step.title === step.title
         );
-        
+
         if (matchingInvoice && matchingInvoice.data?.status === 'SUBMITTED') {
           return {
             ...step,
@@ -419,7 +457,7 @@ export default function ProjectDetailPage() {
         }
         return step;
       });
-      
+
       return {
         ...prevProject,
         steps: updatedSteps
@@ -463,7 +501,7 @@ export default function ProjectDetailPage() {
   }, [project]);
 
   // Handle media file selection
-  const handleMediaFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleMediaFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       alert('File selected!');
       const files = Array.from(e.target.files);
@@ -478,7 +516,7 @@ export default function ProjectDetailPage() {
   const handleGenerateInvoice = async (step: Step) => {
     try {
       setSelectedStepForInvoice(step);
-      
+
       // Calculate total amount from step bills
       const totalAmount = step.bills?.reduce((sum, bill) => {
         return sum + (bill.ocr_data?.total || bill.amount || 0);
@@ -508,7 +546,7 @@ export default function ProjectDetailPage() {
 
       setGeneratedInvoice(invoiceData);
       setInvoiceGenerated(true);
-      
+
       displayToast("Invoice generated successfully!");
     } catch (error) {
       console.error("Error generating invoice:", error);
@@ -518,7 +556,7 @@ export default function ProjectDetailPage() {
 
   const handleViewInvoice = () => {
     if (!generatedInvoice) return;
-    
+
     // Create a new window to display the invoice
     const invoiceWindow = window.open('', '_blank');
     if (invoiceWindow) {
@@ -549,7 +587,7 @@ export default function ProjectDetailPage() {
               <h1>SAAN HOMES</h1>
               <h2>INVOICE</h2>
             </div>
-            
+
             <div class="invoice-details">
               <div>
                 <strong>Project:</strong> ${project?.name || 'N/A'}<br>
@@ -562,7 +600,7 @@ export default function ProjectDetailPage() {
                 <strong>Status:</strong> ${generatedInvoice.status}
               </div>
             </div>
-            
+
             <div class="line-items">
               <h3 style="color: #1b4965; border-bottom: 2px solid #1b4965; padding-bottom: 10px;">Bill Details</h3>
               <table>
@@ -586,11 +624,11 @@ export default function ProjectDetailPage() {
                 </tbody>
               </table>
             </div>
-            
+
             <div class="total">
               <strong>Total Amount: Rs. ${generatedInvoice.amount.toLocaleString('en-LK')}</strong>
             </div>
-            
+
             <div class="footer">
               <p>Generated by Saan Homes Supervisor Portal</p>
               <p>Thank you for your business!</p>
@@ -605,7 +643,7 @@ export default function ProjectDetailPage() {
 
   const handleDownloadInvoice = async () => {
     if (!generatedInvoice) return;
-    
+
     try {
       // Import jsPDF dynamically
       const jsPDFModule = await import('jspdf');
@@ -687,7 +725,7 @@ export default function ProjectDetailPage() {
       displayToast("Select a step to submit its invoice.", "error");
       return;
     }
-    
+
     setSubmittingInvoice(true);
     try {
       const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api';
@@ -697,7 +735,7 @@ export default function ProjectDetailPage() {
       const localInvoice = invoices.find(inv => inv.step && (inv.step as any).id === selectedStepForInvoice.id);
       if (localInvoice?.id) {
         invoiceId = localInvoice.id as string;
-          } else {
+      } else {
         const byStepRes = await fetchWithAuth(`${apiBaseUrl}/projects/invoices/by_step/?step=${selectedStepForInvoice.id}`);
         if (byStepRes.ok) {
           const byStep = await byStepRes.json();
@@ -723,23 +761,23 @@ export default function ProjectDetailPage() {
       }
 
       // 3) Optimistically update UI immediately
-            setRecentlySubmittedInvoices(prev => new Set([...prev, selectedStepForInvoice.id]));
-            
+      setRecentlySubmittedInvoices(prev => new Set([...prev, selectedStepForInvoice.id]));
+
       setProject(prev => {
         if (!prev) return prev;
         const updatedSteps = prev.steps.map(s => {
           if (s.id !== selectedStepForInvoice.id) return s;
           const prevInvoice = s.invoice || {};
-                  return {
+          return {
             ...s,
-                    invoice: {
+            invoice: {
               ...(prevInvoice as any),
               id: (prevInvoice as any)?.id ?? invoiceId,
-                      is_approved: false,
+              is_approved: false,
               created: (prevInvoice as any)?.created || new Date().toISOString(),
-                      data: {
+              data: {
                 ...(prevInvoice as any)?.data,
-                        status: 'SUBMITTED',
+                status: 'SUBMITTED',
                 submitted_at: new Date().toISOString()
               }
             }
@@ -762,16 +800,16 @@ export default function ProjectDetailPage() {
       });
 
       // 4) Soft refresh data in background
-            setTimeout(async () => {
-              try {
-                await refetchProject();
+      setTimeout(async () => {
+        try {
+          await refetchProject();
           const invRes = await fetchWithAuth(`${apiBaseUrl}/projects/invoices/by_project/?project=${project?.id}`);
           if (invRes.ok) setInvoices(await invRes.json());
         } catch (_) {}
       }, 500);
 
       displayToast("Invoice submitted to admin.");
-        } catch (error) {
+    } catch (error) {
       console.error('Error submitting invoice:', error);
       displayToast("Failed to submit invoice", "error");
     } finally {
@@ -796,7 +834,7 @@ export default function ProjectDetailPage() {
   };
 
   // Upload media files
-  const handleMediaUpload = async (e: React.FormEvent) => {
+  const handleMediaUpload = async (e: FormEvent) => {
     e.preventDefault();
     if (!project || mediaUploadData.files.length === 0 || !mediaUploadData.step) return;
 
@@ -809,6 +847,7 @@ export default function ProjectDetailPage() {
       const formDataToSend = new FormData();
       formDataToSend.append('project', project.id);
       formDataToSend.append('step', mediaUploadData.step);
+      formDataToSend.append('media_type', mediaUploadData.mediaType); 
       formDataToSend.append('description', mediaUploadData.description || '');
       mediaUploadData.files.forEach(file => {
         formDataToSend.append('file', file);
@@ -833,7 +872,7 @@ export default function ProjectDetailPage() {
         setProject(updatedProject);
       }
 
-      setMediaUploadData({ step: '', description: '', files: [] });
+      setMediaUploadData({ step: '', description: '', mediaType: 'IMAGE', files: [] });
       setShowMediaUpload(false);
 
     } catch (err) {
@@ -844,16 +883,42 @@ export default function ProjectDetailPage() {
     }
   };
 
-    // Helper function to safely extract invoice data
+  // Set selected media as project thumbnail
+  const handleSetThumbnail = async (media: ProjectMedia) => {
+    if (!project) return;
+    try {
+      const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api';
+      const body = { thumbnail: media.url } as any;
+      const res = await fetchWithAuth(`${apiBaseUrl}/projects/${project.id}/`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) {
+        const t = await res.text();
+        console.error('Failed to set thumbnail:', t);
+        displayToast('Failed to set thumbnail', 'error');
+        return;
+      }
+      const updated = await res.json();
+      setProject(prev => prev ? { ...prev, thumbnail: updated.thumbnail || media.url } : prev);
+      displayToast('Thumbnail updated successfully', 'success');
+    } catch (e) {
+      console.error('Error setting thumbnail:', e);
+      displayToast('Error setting thumbnail', 'error');
+    }
+  };
+
+  // Helper function to safely extract invoice data
   const getInvoiceData = (stepInvoice: any, step: Step) => {
     if (!stepInvoice) return null;
-    
+
     // Handle both step.invoice and invoices array items
     const amount = stepInvoice.data?.amount || stepInvoice.amount || step.expected_budget || 0;
     const created = stepInvoice.created || stepInvoice.data?.submitted_at;
     const invoiceNumber = stepInvoice.data?.invoice_number || `INV-${step.title}`;
     const status = stepInvoice.data?.status || 'DRAFT';
-    
+
     return {
       amount,
       created,
@@ -865,13 +930,14 @@ export default function ProjectDetailPage() {
   // Calculate stats from real data
   const getStats = () => {
     if (!project) return { totalPhases: 0, completed: 0, active: 0, upcoming: 0 };
-    
+
     const steps = project.steps || [];
     const totalPhases = steps.length;
     const completed = steps.filter(step => step.is_approved).length;
-    const active = steps.filter(step => step.actual_completed && !step.is_approved).length;
-    const upcoming = steps.filter(step => !step.actual_completed && !step.is_approved).length;
-    
+    // Updated logic: count any step with progress between 0-100% as active
+    const active = steps.filter(step => step.progress > 0 && step.progress < 100 && !step.is_approved).length;
+    const upcoming = steps.filter(step => step.progress === 0 && !step.is_approved).length;
+
     return { totalPhases, completed, active, upcoming };
   };
 
@@ -894,6 +960,77 @@ export default function ProjectDetailPage() {
       setTimeout(() => setShowToast(false), 5000);
     }
     // Success and info messages stay until manually dismissed
+  };
+
+  const handleSubmitMediaToAdmin = async (mediaId: string) => {
+    try {
+      // Optimistically update the UI first
+      setSubmittedMediaIds(prev => new Set([...prev, String(mediaId)]));
+      setProject(prev => {
+        if (!prev) return prev;
+        const updatedList = prev.media_files.map((m: any) =>
+          String(m.id) === String(mediaId) ? { ...m, is_submitted_to_admin: true } : m
+        );
+        return { ...prev, media_files: updatedList } as any;
+      });
+
+      const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api';
+      const res = await fetchWithAuth(`${apiBaseUrl}/projects/project-media/${mediaId}/submit_to_admin/`, {
+        method: 'POST'
+      });
+
+      if (!res.ok) {
+        const t = await res.text();
+        console.error('Media submit_to_admin failed:', t);
+        
+        // Revert the optimistic update on failure
+        setSubmittedMediaIds(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(String(mediaId));
+          return newSet;
+        });
+        setProject(prev => {
+          if (!prev) return prev;
+          const updatedList = prev.media_files.map((m: any) =>
+            String(m.id) === String(mediaId) ? { ...m, is_submitted_to_admin: false } : m
+          );
+          return { ...prev, media_files: updatedList } as any;
+        });
+        
+        displayToast('Failed to submit media to admin', 'error');
+        return;
+      }
+
+      // Get updated media from server and update local project state
+      const updatedMedia = await res.json();
+      setProject(prev => {
+        if (!prev) return prev;
+        const updatedList = prev.media_files.map((m: any) =>
+          String(m.id) === String(mediaId) ? { ...m, ...updatedMedia, is_submitted_to_admin: true } : m
+        );
+        return { ...prev, media_files: updatedList } as any;
+      });
+
+      displayToast('Media submitted to admin');
+    } catch (e) {
+      console.error('Error submitting media:', e);
+      
+      // Revert the optimistic update on error
+      setSubmittedMediaIds(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(String(mediaId));
+        return newSet;
+      });
+      setProject(prev => {
+        if (!prev) return prev;
+        const updatedList = prev.media_files.map((m: any) =>
+          String(m.id) === String(mediaId) ? { ...m, is_submitted_to_admin: false } : m
+        );
+        return { ...prev, media_files: updatedList } as any;
+      });
+      
+      displayToast('Error submitting media', 'error');
+    }
   };
 
   if (loading) {
@@ -1069,7 +1206,7 @@ export default function ProjectDetailPage() {
                 <div className="flex-1">
                   {project.thumbnail ? (
                     <img 
-                      src={`${project.thumbnail}`} 
+                      src={toAbsolute(project.thumbnail)} 
                       alt={project.name} 
                       className="rounded-xl w-full h-48 object-cover mb-4"
                       onError={(e) => {
@@ -1109,102 +1246,122 @@ export default function ProjectDetailPage() {
                     )}
                   </div>
                 </div>
-                
+
                 <div className="flex-1 flex flex-col gap-4">
-                  {/* Project Media Section */}
-                  <div className="bg-gray-100 rounded-xl p-4">
-                    <h4 className="font-semibold mb-2">Project Media</h4>
-                    {project.media_files && project.media_files.length > 0 ? (
-                      <div className="grid grid-cols-1 gap-3">
-                        {project.media_files.map((media) => (
-                          <div key={media.id} className="flex items-center gap-3 border-b border-gray-200 pb-2 mb-2 last:border-b-0 last:mb-0 last:pb-0">
-                            {/* Thumbnail or icon */}
-                            
-                            {media.type === 'image' ? (
-                              <img
-                                src={`${API_BASE}${media.url}`}
-                                alt={media.title || media.filename}
-                                className="w-16 h-16 object-cover rounded-lg border"
-                              />
-                            ) : media.type === 'video' || media.type === 'vr' ? (
-                              <button
-                                onClick={() => window.open(`${API_BASE}${media.url}`, '_blank')}
-                                className="w-16 h-16 flex items-center justify-center bg-gradient-to-br from-blue-100 to-purple-100 rounded-lg border hover:from-blue-200 hover:to-purple-200"
-                                title="Play Video"
-                              >
-                                <RiPlayLine className="text-2xl text-purple-600" />
-                              </button>
-                            ) : (
-                              <a
-                                href={`${API_BASE}${media.url}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="w-16 h-16 flex items-center justify-center bg-gray-200 rounded-lg border"
-                                title="Download File"
-                              >
-                                <RiDownloadLine className="text-2xl text-gray-600" />
-                              </a>
-                            )}
-                            {/* Info */}
-                            <div className="flex-1 min-w-0">
-                              <div className="font-medium text-gray-800 truncate">{media.title || media.filename}</div>
-                              <div className="text-xs text-gray-500 truncate">{media.type.toUpperCase()} • {media.uploaded_by_name} • {new Date(media.uploaded_at).toLocaleDateString()}</div>
-                            </div>
-                            {/* Download button */}
-                            <a
-                              href={media.url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="ml-2 text-blue-600 hover:text-blue-800"
-                              title="Download"
-                            >
-                              <RiDownloadLine className="w-5 h-5" />
-                            </a>
-                          </div>
-                        ))}
+                  {/* Project Media Section - Separated by type (Images, Videos, VR) */}
+                  {(() => {
+                    const media = project.media_files || [];
+                    const images = media.filter(m => m.type === 'image');
+                    const videos = media.filter(m => m.type === 'video');
+                    const vrs = media.filter(m => m.type === 'vr');
+
+                    const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
+                      <div className="bg-gray-100 rounded-xl p-4">
+                        <h4 className="font-semibold mb-2">{title}</h4>
+                        {children}
                       </div>
-                    ) : (
-                      <div className="text-center text-gray-400 py-4">No media files uploaded yet.</div>
-                    )}
-                  </div>
+                    );
+
+                    return (
+                      <>
+                        {/* Images grid - thumbnails only */}
+                        <Section title="Project Images">
+                          {images.length > 0 ? (
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                              {images.map((m) => (
+                                <img
+                                  key={m.id}
+                                  src={toAbsolute(m.url)}
+                                  alt={m.title || m.filename}
+                                  className="w-full h-28 object-cover rounded-lg border"
+                                />
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="text-center text-gray-400 py-2">No images uploaded yet.</div>
+                          )}
+                        </Section>
+
+                        {/* Videos list - small thumbnail button + title only */}
+                        <Section title="Project Videos">
+                          {videos.length > 0 ? (
+                            <div className="grid grid-cols-1 gap-3">
+                              {videos.map((m) => (
+                                <div key={m.id} className="flex items-center gap-3 border border-gray-200 rounded-lg bg-white p-2">
+                                  <button
+                                    onClick={() => window.open(toAbsolute(m.url), '_blank')}
+                                    className="w-16 h-12 flex items-center justify-center bg-gradient-to-br from-blue-100 to-purple-100 rounded-md border hover:from-blue-200 hover:to-purple-200"
+                                    title="Play Video"
+                                  >
+                                    <RiPlayLine className="text-lg text-purple-600" />
+                                  </button>
+                                  <div className="font-medium text-gray-800 truncate">{m.title || m.filename}</div>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="text-center text-gray-400 py-2">No videos uploaded yet.</div>
+                          )}
+                        </Section>
+
+                        {/* VR list - VR badge + title only */}
+                        <Section title="VR Videos">
+                          {vrs.length > 0 ? (
+                            <div className="grid grid-cols-1 gap-3">
+                              {vrs.map((m) => (
+                                <div key={m.id} className="flex items-center gap-3 border border-gray-200 rounded-lg bg-white p-2">
+                                  <button
+                                    onClick={() => window.open(toAbsolute(m.url), '_blank')}
+                                    className="w-10 h-10 flex items-center justify-center rounded-md border bg-purple-50 text-purple-700 text-xs font-bold"
+                                    title="Play VR"
+                                  >
+                                    VR
+                                  </button>
+                                  <div className="font-medium text-gray-800 truncate">{m.title || m.filename}</div>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="text-center text-gray-400 py-2">No VR videos uploaded yet.</div>
+                          )}
+                        </Section>
+                      </>
+                    );
+                  })()}
                 </div>
               </div>
             </div>
           )}
           {activeTab === "progress" && (
-            <ProgressLogs
-              project={{
-                ...project,
-                steps: project.steps.map((step) => ({
-                  ...step,
-                  logs: step.logs.map((log) => ({
-                    ...log,
-                    type:
-                      log.type === "TEXT" || log.type === "PHOTO" || log.type === "VIDEO"
-                        ? log.type
-                        : "TEXT",
-                    media: log.media.map((media) => ({
-                      ...media,
-                      type:
-                        media.type === "image" || media.type === "video" || media.type === "pdf"
-                          ? media.type
-                          : "image",
-                    })),
-                  })),
-                })),
-              }}
-              onMediaEdited={refetchProject}
-            />
+            <ProgressLogs project={project as any} onMediaEdited={refetchProject} />
           )}
           {activeTab === "timeline" && (
             <div>
               <h2 className="text-xl font-bold mb-4">Project Timeline</h2>
               {project.steps && project.steps.length > 0 ? (
                 <div className="space-y-4">
-                  {project.steps.sort((a, b) => a.order - b.order).map((step) => (
-                    <div key={step.id} className="border border-gray-200 rounded-lg p-4">
+                  {project.steps.sort((a, b) => a.order - b.order).map((step, index) => (
+                    <div
+                      key={step.id}
+                      className={`rounded-lg p-4 border ${
+                        step.status === 'COMPLETED' ? 'border-green-200' : 'border-gray-200'
+                      }`}
+                    >
                       <div className="flex items-center justify-between mb-2">
-                        <h3 className="font-semibold">{step.title}</h3>
+                        <div className="flex items-center gap-3">
+                          <div
+                            className={`${
+                              step.status === 'COMPLETED'
+                                ? 'bg-green-500 text-white'
+                                : step.status === 'IN_PROGRESS'
+                                ? 'bg-yellow-400 text-black'
+                                : 'bg-blue-600 text-white'
+                            } w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold`}
+                          >
+                            {index + 1}
+                          </div>
+                          <h3 className="font-semibold">{step.title}</h3>
+                        </div>
                         <span className={`px-2 py-1 rounded-full text-xs ${
                           step.status === 'COMPLETED' ? 'bg-green-100 text-green-800' :
                           step.status === 'IN_PROGRESS' ? 'bg-yellow-100 text-yellow-800' :
@@ -1213,12 +1370,24 @@ export default function ProjectDetailPage() {
                           {step.status}
                         </span>
                       </div>
-                      <p className="text-gray-600 mb-2">{step.description}</p>
-                      <div className="flex items-center gap-4 text-sm text-gray-500">
-                        <span>Progress: {step.progress}%</span>
-                        <span>Budget: ${step.expected_budget?.toLocaleString() || '0'}</span>
+                      <div className="flex items-center gap-6 text-sm">
+                        <div className="flex items-center gap-2">
+                          <span className="text-gray-600">Progress:</span>
+                          <span className={`font-semibold ${
+                            step.status === 'COMPLETED' ? 'text-green-600' : 
+                            step.status === 'IN_PROGRESS' ? 'text-yellow-600' : 
+                            'text-gray-600'
+                          }`}>
+                            {step.progress}%
+                          </span>
+                        </div>
                         {step.actual_completed && (
-                          <span>Completed: {new Date(step.actual_completed).toLocaleDateString()}</span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-gray-600">Completed:</span>
+                            <span className="font-semibold text-green-600">
+                              {new Date(step.actual_completed).toLocaleDateString()}
+                            </span>
+                          </div>
                         )}
                       </div>
                     </div>
@@ -1232,380 +1401,269 @@ export default function ProjectDetailPage() {
           {activeTab === "invoices" && (
             <div>
               <h2 className="text-xl font-bold mb-4">Invoices & Billing</h2>
-              
-              {/* Invoice Generation Section */}
-              <div className="mb-6 p-6 bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-xl">
-                <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-                  <div>
-                    <h3 className="text-xl font-bold text-purple-800 mb-2">Invoice Generation</h3>
-                    <p className="text-purple-600">
-                      Generate professional invoices for completed project steps. Each step can have its own invoice with detailed billing information.
-                    </p>
-                  </div>
-                  <div className="flex flex-col md:flex-row gap-3">
-                    <button
-                      onClick={() => {
-                        // Open invoice generation modal with step selection
-                        setShowInvoiceModal(true);
-                      }}
-                      className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition flex items-center gap-2 font-semibold"
-                    >
-                      <RiFileTextLine className="text-xl" />
-                      Generate New Invoice
-                    </button>
-                    <button
-                      onClick={() => {
-                        // Test button to manually test status changes
-                        console.log('🔍 Current project state:', project);
-                        console.log('🔍 Current invoices state:', invoices);
-                        console.log('🔍 Current progress logs:', progressLogs);
-                        
-                        // Check if any steps have invoices
-                        if (project?.steps) {
-                          project.steps.forEach((step, index) => {
-                            console.log(`🔍 Step ${index + 1}:`, step.title, 'Invoice:', step.invoice);
-                          });
-                        }
-                        
-                        displayToast('Debug: Check console for current state');
-                      }}
-                      className="px-4 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition flex items-center gap-2"
-                    >
-                      Debug State
-                    </button>
-                    <button
-                      onClick={async () => {
-                        try {
-                          displayToast('Refreshing data...', 'info');
-                          await refetchProject();
-                          
-                          // Also refresh invoices
-                          const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api';
-                          const invoicesResponse = await fetchWithAuth(`${apiBaseUrl}/projects/invoices/by_project/?project=${project.id}`);
-                          if (invoicesResponse.ok) {
-                            const invoicesData = await invoicesResponse.json();
-                            setInvoices(invoicesData);
-                            displayToast('Data refreshed successfully!', 'success');
-                          }
-                        } catch (error) {
-                          displayToast('Failed to refresh data', 'error');
-                        }
-                      }}
-                      className="px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center gap-2"
-                    >
-                      <RiTimeLine className="text-xl" />
-                      Refresh Data
-                    </button>
-                  </div>
-                </div>
-              </div>
-              
+
               <div className="overflow-x-auto">
-                <table className="min-w-full bg-white border rounded-xl">
-                  <thead>
-                    <tr>
-                      <th className="px-4 py-2 text-left">Step</th>
-                      <th className="px-4 py-2 text-left">Bill Total</th>
-                      <th className="px-4 py-2 text-left">Status</th>
-                      <th className="px-4 py-2 text-left">Date</th>
-                      <th className="px-4 py-2 text-left">Action</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {project.steps && project.steps.length > 0 ? (
-                      project.steps.map((step) => {
-                        // Debug log to see step data
-                        console.log(`Step ${step.title}:`, step);
-                        
-                        const invoice = invoices.find(inv => inv.step && (inv.step as any).id === step.id);
-                        // Also check if the step has its own invoice
-                        const stepInvoice = step.invoice || invoice;
-                        
-                        // Check if this step was recently submitted to prevent status from reverting
-                        const wasRecentlySubmitted = recentlySubmittedInvoices.has(step.id);
-                        
-                        console.log(`🔍 Step ${step.title} (ID: ${step.id}):`);
-                        console.log(`🔍   - step.invoice:`, step.invoice);
-                        console.log(`🔍   - found invoice:`, invoice);
-                        console.log(`🔍   - final stepInvoice:`, stepInvoice);
-                        console.log(`🔍   - invoices array:`, invoices);
-                        
-                        let status = '';
-                        let badgeClass = '';
-                        let amount = '';
-                        let date = '';
-                        if (stepInvoice) {
-                          // Handle both step.invoice and invoices array items
-                          const invoiceAmount = stepInvoice.data?.amount || stepInvoice.amount || step.expected_budget || 0;
-                          amount = invoiceAmount.toLocaleString();
-                          
-                          // Get dates from invoice - prioritize created date for saved invoices
-                          const submittedDate = stepInvoice.data?.submitted_at;
-                          const createdDate = stepInvoice.created;
-                          const invoiceDate = (stepInvoice.data as any)?.invoice_date;
-                          
-                          // Set date based on priority: created > submitted > invoice_date
-                          if (createdDate) {
-                            const createdTime = new Date(createdDate);
-                            date = createdTime.toLocaleDateString();
-                          } else if (submittedDate) {
-                            const submittedTime = new Date(submittedDate);
-                            const now = new Date();
-                            const timeDiff = now.getTime() - submittedTime.getTime();
-                            const minutesAgo = Math.floor(timeDiff / (1000 * 60));
-                            
-                            if (minutesAgo < 5) {
-                              date = 'Just Submitted';
-                            } else if (minutesAgo < 60) {
-                              date = `${minutesAgo} minutes ago`;
-                            } else {
-                              date = submittedTime.toLocaleDateString();
-                            }
-                          } else if (invoiceDate) {
-                            date = new Date(invoiceDate).toLocaleDateString();
-                          }
-                          
-                          // Debug log to see what's in the invoice
-                          console.log(`Invoice for ${step.title}:`, stepInvoice);
-                          
-                          // Determine status based on invoice data
-                          if (stepInvoice.is_approved) {
-                            status = 'Invoice Approved';
-                            badgeClass = 'bg-green-100 text-green-800';
-                          } else if (stepInvoice.data?.status === 'SUBMITTED' || wasRecentlySubmitted) {
-                            status = 'Invoice Submitted to Admin';
-                            badgeClass = 'bg-blue-100 text-blue-800 animate-bounce';
-                          } else if (stepInvoice.data?.status === 'REJECTED') {
-                            status = 'Invoice Rejected';
-                            badgeClass = 'bg-red-100 text-red-800';
-                          } else {
-                            // For DRAFT, undefined, or any other status, check if invoice has actual data
-                            const hasInvoiceData = stepInvoice.data && (
-                              stepInvoice.data.amount || 
-                              stepInvoice.data.invoice_number || 
-                              (stepInvoice.data as any).line_items ||
-                              Object.keys(stepInvoice.data).length > 0
-                            );
-                            
-                            if (hasInvoiceData) {
-                              status = 'Invoice Saved';
-                              badgeClass = 'bg-green-100 text-green-800';
-                            } else {
-                              status = 'Invoice Draft';
-                              badgeClass = 'bg-yellow-100 text-yellow-800';
-                            }
-                          }
-                        } else {
-                          amount = step.expected_budget?.toLocaleString() || '0';
-                          // Check if this step is currently being processed
-                          if (submittingInvoice && selectedStepForInvoice?.id === step.id) {
-                            status = 'Processing...';
-                            badgeClass = 'bg-purple-100 text-purple-800 animate-pulse';
-                          } else {
-                            status = 'No Invoice';
-                            badgeClass = 'bg-gray-100 text-gray-800';
-                          }
-                        }
-                        return (
-                          <tr key={step.id} className="border-b last:border-b-0">
-                            <td className="px-4 py-2 font-medium">{step.title}</td>
-                            <td className="px-4 py-2">{amount}</td>
-                            <td className="px-4 py-2">
-                              <span className={`px-2 py-1 rounded text-xs font-semibold ${badgeClass}`}>{status}</span>
-                            </td>
-                            <td className="px-4 py-2">{date}</td>
-                            <td className="px-4 py-2">
-                              {!stepInvoice && step.status === 'COMPLETED' && (
-                                <div className="flex gap-2">
-                                <button
-                                    className="px-3 py-1 bg-purple-600 text-white rounded hover:bg-purple-700 text-xs"
-                                    onClick={() => handleGenerateInvoice(step)}
-                                  >
-                                    Generate Invoice
-                                  </button>
-                                  <button
-                                    className="px-3 py-1 bg-green-700 text-white rounded hover:bg-green-800 text-xs disabled:opacity-50"
-                                  onClick={() => {
-                                      // Quick submit to admin - generate and submit in one step
-                                      handleGenerateInvoice(step);
-                                      setTimeout(() => {
-                                        if (generatedInvoice) {
-                                          handleSubmitInvoiceToAdmin();
-                                        }
-                                      }, 100);
-                                    }}
-                                    disabled={submittingInvoice}
-                                  >
-                                    {submittingInvoice ? 'Submitting...' : 'Submit to Admin'}
-                                </button>
-                                </div>
-                              )}
-                              {stepInvoice && (
-                                <div className="flex gap-2">
-                                  {status === 'Invoice Approved' ? (
-                                    <span className="text-green-600 font-semibold text-xs">✓ Approved</span>
-                                  ) : status === 'Invoice Submitted to Admin' ? (
-                                    <span className="text-blue-600 font-semibold text-xs">⏳ Pending Approval</span>
-                                  ) : status === 'Invoice Saved' ? (
-                                    <>
-                                      <button
-                                        className="px-2 py-1 bg-indigo-600 text-white rounded hover:bg-indigo-700 text-xs"
-                                        onClick={() => {
-                                          // For existing invoices, we need to load the invoice data first
-                                          if (stepInvoice) {
-                                            setGeneratedInvoice({
-                                              amount: (stepInvoice.data?.amount || stepInvoice.amount || step.expected_budget || 0),
-                                              description: `Invoice for ${step.title}`,
-                                              line_items: [],
-                                              invoice_number: stepInvoice.data?.invoice_number || `INV-${step.title}`,
-                                              invoice_date: (stepInvoice.created ? new Date(stepInvoice.created) : new Date()).toISOString().slice(0, 10),
-                                              due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
-                                              status: stepInvoice.data?.status || 'DRAFT',
-                                              step_id: step.id,
-                                              project_id: project?.id
-                                            });
-                                            setInvoiceGenerated(true);
-                                            handleViewInvoice();
-                                          }
-                                        }}
-                                      >
-                                        View
-                                      </button>
-                                      <button
-                                        className="px-2 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-xs"
-                                        onClick={() => {
-                                          // For existing invoices, we need to load the invoice data first
-                                          if (stepInvoice) {
-                                            setGeneratedInvoice({
-                                              amount: (stepInvoice.data?.amount || stepInvoice.amount || step.expected_budget || 0),
-                                              description: `Invoice for ${step.title}`,
-                                              line_items: [],
-                                              invoice_number: stepInvoice.data?.invoice_number || `INV-${step.title}`,
-                                              invoice_date: (stepInvoice.created ? new Date(stepInvoice.created) : new Date()).toISOString().slice(0, 10),
-                                              due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
-                                              status: stepInvoice.data?.status || 'DRAFT',
-                                              step_id: step.id,
-                                              project_id: project?.id
-                                            });
-                                            setInvoiceGenerated(true);
-                                            handleDownloadInvoice();
-                                          }
-                                        }}
-                                      >
-                                        Download
-                                      </button>
-                                      <button
-                                        className="px-2 py-1 bg-purple-600 text-white rounded hover:bg-purple-700 text-xs disabled:opacity-50"
-                                        onClick={() => {
-                                          // For existing invoices, we need to load the invoice data first
-                                          if (stepInvoice) {
-                                            setGeneratedInvoice({
-                                              amount: (stepInvoice.data?.amount || stepInvoice.amount || step.expected_budget || 0),
-                                              description: `Invoice for ${step.title}`,
-                                              line_items: [],
-                                              invoice_number: stepInvoice.data?.invoice_number || `INV-${step.title}`,
-                                              invoice_date: (stepInvoice.created ? new Date(stepInvoice.created) : new Date()).toISOString().slice(0, 10),
-                                              due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
-                                              status: stepInvoice.data?.status || 'DRAFT',
-                                              step_id: step.id,
-                                              project_id: project?.id
-                                            });
-                                            setInvoiceGenerated(true);
-                                            handleSubmitInvoiceToAdmin();
-                                          }
-                                        }}
-                                        disabled={submittingInvoice}
-                                      >
-                                        {submittingInvoice ? 'Submitting...' : 'Submit to Admin'}
-                                      </button>
-                                    </>
-                                  ) : (
-                                    <>
-                                      <button
-                                        className="px-2 py-1 bg-indigo-600 text-white rounded hover:bg-indigo-700 text-xs"
-                                        onClick={() => {
-                                          // For existing invoices, we need to load the invoice data first
-                                          if (stepInvoice) {
-                                            setGeneratedInvoice({
-                                              amount: (stepInvoice.data?.amount || stepInvoice.amount || step.expected_budget || 0),
-                                              description: `Invoice for ${step.title}`,
-                                              line_items: [],
-                                              invoice_number: stepInvoice.data?.invoice_number || `INV-${step.title}`,
-                                              invoice_date: (stepInvoice.created ? new Date(stepInvoice.created) : new Date()).toISOString().slice(0, 10),
-                                              due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
-                                              status: stepInvoice.data?.status || 'DRAFT',
-                                              step_id: step.id,
-                                              project_id: project?.id
-                                            });
-                                            setInvoiceGenerated(true);
-                                            handleViewInvoice();
-                                          }
-                                        }}
-                                      >
-                                        View
-                                      </button>
-                                      <button
-                                        className="px-2 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-xs"
-                                        onClick={() => {
-                                          // For existing invoices, we need to load the invoice data first
-                                          if (stepInvoice) {
-                                            setGeneratedInvoice({
-                                              amount: (stepInvoice.data?.amount || stepInvoice.amount || step.expected_budget || 0),
-                                              description: `Invoice for ${step.title}`,
-                                              line_items: [],
-                                              invoice_number: stepInvoice.data?.invoice_number || `INV-${step.title}`,
-                                              invoice_date: (stepInvoice.created ? new Date(stepInvoice.created) : new Date()).toISOString().slice(0, 10),
-                                              due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
-                                              status: stepInvoice.data?.status || 'DRAFT',
-                                              step_id: step.id,
-                                              project_id: project?.id
-                                            });
-                                            setInvoiceGenerated(true);
-                                            handleDownloadInvoice();
-                                          }
-                                        }}
-                                      >
-                                        Download
-                                      </button>
-                                      <button
-                                        className="px-2 py-1 bg-red-600 text-white rounded hover:bg-red-700 text-xs disabled:opacity-50"
-                                        onClick={() => {
-                                          // For existing invoices, we need to load the invoice data first
-                                          if (stepInvoice) {
-                                            setGeneratedInvoice({
-                                              amount: (stepInvoice.data?.amount || stepInvoice.amount || step.expected_budget || 0),
-                                              description: `Invoice for ${step.title}`,
-                                              line_items: [],
-                                              invoice_number: stepInvoice.data?.invoice_number || `INV-${step.title}`,
-                                              invoice_date: (stepInvoice.created ? new Date(stepInvoice.created) : new Date()).toISOString().slice(0, 10),
-                                              due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
-                                              status: stepInvoice.data?.status || 'DRAFT',
-                                              step_id: step.id,
-                                              project_id: project?.id
-                                            });
-                                            setInvoiceGenerated(true);
-                                            handleSubmitInvoiceToAdmin();
-                                          }
-                                        }}
-                                        disabled={submittingInvoice}
-                                      >
-                                        {submittingInvoice ? 'Submitting...' : 'Submit to Admin'}
-                                      </button>
-                                    </>
-                                  )}
-                                </div>
-                              )}
-                            </td>
-                          </tr>
-                        );
-                      })
-                    ) : (
+                <div className="bg-white/30 backdrop-blur-md shadow-2xl border border-white/40 rounded-2xl p-4 md:p-8 transition-all duration-300" style={{boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.18)'}}>
+                  <table className="min-w-full text-base font-sans text-gray-800">
+                    <thead>
                       <tr>
-                        <td colSpan={5} className="text-center text-gray-500 py-8">No steps found</td>
+                        <th className="px-6 py-4 text-left font-bold text-lg text-purple-800">Step</th>
+                        <th className="px-6 py-4 text-left font-bold text-lg text-blue-700">Bill Total</th>
+                        <th className="px-6 py-4 text-left font-bold text-lg text-cyan-700">Status</th>
+                        <th className="px-6 py-4 text-left font-bold text-lg text-indigo-700">Date</th>
+                        <th className="px-6 py-4 text-left font-bold text-lg text-pink-700">Action</th>
                       </tr>
-                    )}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {project.steps && project.steps.length > 0 ? (
+                        project.steps.map((step) => {
+                          // Debug log to see step data
+                          console.log(`Step ${step.title}:`, step);
+
+                          const invoice = invoices.find(inv => inv.step && (inv.step as any).id === step.id);
+                          // Also check if the step has its own invoice
+                          const stepInvoice = step.invoice || invoice;
+
+                          // Check if this step was recently submitted to prevent status from reverting
+                          const wasRecentlySubmitted = recentlySubmittedInvoices.has(step.id);
+
+                          console.log(`🔍 Step ${step.title} (ID: ${step.id}):`);
+                          console.log(`🔍   - step.invoice:`, step.invoice);
+                          console.log(`🔍   - found invoice:`, invoice);
+                          console.log(`🔍   - final stepInvoice:`, stepInvoice);
+                          console.log(`🔍   - invoices array:`, invoices);
+
+                          let status = '';
+                          let badgeClass = '';
+                          let amount = '';
+                          let date = '';
+                          if (stepInvoice) {
+                            // Handle both step.invoice and invoices array items
+                            const invoiceAmount = stepInvoice.data?.amount || stepInvoice.amount || step.expected_budget || 0;
+                            amount = invoiceAmount.toLocaleString();
+
+                            // Get dates from invoice - prioritize created date for saved invoices
+                            const submittedDate = stepInvoice.data?.submitted_at;
+                            const createdDate = stepInvoice.created;
+                            const invoiceDate = (stepInvoice.data as any)?.invoice_date;
+
+                            // Set date based on priority: created > submitted > invoice_date
+                            if (createdDate) {
+                              const createdTime = new Date(createdDate);
+                              date = createdTime.toLocaleDateString();
+                            } else if (submittedDate) {
+                              const submittedTime = new Date(submittedDate);
+                              const now = new Date();
+                              const timeDiff = now.getTime() - submittedTime.getTime();
+                              const minutesAgo = Math.floor(timeDiff / (1000 * 60));
+
+                              if (minutesAgo < 5) {
+                                date = 'Just Submitted';
+                              } else if (minutesAgo < 60) {
+                                date = `${minutesAgo} minutes ago`;
+                              } else {
+                                date = submittedTime.toLocaleDateString();
+                              }
+                            } else if (invoiceDate) {
+                              date = new Date(invoiceDate).toLocaleDateString();
+                            }
+
+                            // Debug log to see what's in the invoice
+                            console.log(`Invoice for ${step.title}:`, stepInvoice);
+
+                            // Determine status based on invoice data
+                            if (stepInvoice.is_approved) {
+                              status = 'Invoice Approved';
+                              badgeClass = 'bg-green-100 text-green-800';
+                            } else if (stepInvoice.data?.status === 'SUBMITTED' || wasRecentlySubmitted) {
+                              status = 'Invoice Submitted to Admin';
+                              badgeClass = 'bg-blue-100 text-blue-800 animate-bounce';
+                            } else if (stepInvoice.data?.status === 'REJECTED') {
+                              status = 'Invoice Rejected';
+                              badgeClass = 'bg-red-100 text-red-800';
+                            } else {
+                              // For DRAFT, undefined, or any other status, check if invoice has actual data
+                              const hasInvoiceData = stepInvoice.data && (
+                                stepInvoice.data.amount ||
+                                stepInvoice.data.invoice_number ||
+                                (stepInvoice.data as any).line_items ||
+                                Object.keys(stepInvoice.data).length > 0
+                              );
+
+                              if (hasInvoiceData) {
+                                status = 'Invoice Saved';
+                                badgeClass = 'bg-green-100 text-green-800';
+                              } else {
+                                status = 'Invoice Draft';
+                                badgeClass = 'bg-yellow-100 text-yellow-800';
+                              }
+                            }
+                          } else {
+                            amount = step.expected_budget?.toLocaleString() || '0';
+                            // Check if this step is currently being processed
+                            if (submittingInvoice && selectedStepForInvoice?.id === step.id) {
+                              status = 'Processing...';
+                              badgeClass = 'bg-purple-100 text-purple-800 animate-pulse';
+                            } else {
+                              status = 'No Invoice';
+                              badgeClass = 'bg-gray-100 text-gray-800';
+                            }
+                          }
+                          return (
+                            <tr key={step.id} className="border-b last:border-b-0 hover:bg-purple-50/40 transition-all duration-200">
+                              <td className="px-6 py-4 font-semibold">{step.title}</td>
+                              <td className="px-6 py-4">{amount}</td>
+                              <td className="px-6 py-4">
+                                <span className={`px-3 py-1 rounded-full text-sm font-semibold shadow-sm ${badgeClass}`}>{status}</span>
+                              </td>
+                              <td className="px-6 py-4">{date}</td>
+                              <td className="px-6 py-4">
+                                {!stepInvoice && step.status === 'COMPLETED' && (
+                                  <div className="flex gap-2">
+                                    <button
+                                      className="p-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-full shadow hover:scale-110 hover:from-purple-600 hover:to-pink-600 transition-all duration-150"
+                                      onClick={() => handleGenerateInvoice(step)}
+                                      title="Generate Invoice"
+                                    >
+                                      <HiOutlineEye className="text-xl" />
+                                    </button>
+                                    <button
+                                      className="p-2 bg-gradient-to-r from-green-600 to-emerald-500 text-white rounded-full shadow hover:scale-110 hover:from-green-700 hover:to-emerald-600 transition-all duration-150 disabled:opacity-50"
+                                      onClick={() => {
+                                        handleGenerateInvoice(step);
+                                        setTimeout(() => {
+                                          if (generatedInvoice) {
+                                            handleSubmitInvoiceToAdmin();
+                                          }
+                                        }, 100);
+                                      }}
+                                      disabled={submittingInvoice}
+                                      title="Submit to Admin"
+                                    >
+                                      <HiOutlineUpload className="text-xl" />
+                                    </button>
+                                  </div>
+                                )}
+                                {stepInvoice && (
+                                  <div className="flex gap-2">
+                                    {status === 'Invoice Approved' ? (
+                                      <span className="text-green-600 font-semibold text-xl" title="Approved"><RiCheckLine /></span>
+                                    ) : status === 'Invoice Submitted to Admin' ? (
+                                      <span className="text-blue-600 font-semibold text-xl" title="Pending Approval"><HiOutlineUpload /></span>
+                                    ) : status === 'Invoice Saved' ? (
+                                      <>
+                                        <button
+                                          className="p-2 bg-indigo-600 text-white rounded-full shadow hover:bg-indigo-700 transition-all duration-150"
+                                          onClick={() => {
+                                            if (stepInvoice) {
+                                              setGeneratedInvoice({
+                                                amount: (stepInvoice.data?.amount || stepInvoice.amount || step.expected_budget || 0),
+                                                description: `Invoice for ${step.title}`,
+                                                line_items: [],
+                                                invoice_number: stepInvoice.data?.invoice_number || `INV-${step.title}`,
+                                                invoice_date: (stepInvoice.created ? new Date(stepInvoice.created) : new Date()).toISOString().slice(0, 10),
+                                                due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
+                                                status: stepInvoice.data?.status || 'DRAFT',
+                                                step_id: step.id,
+                                                project_id: project?.id
+                                              });
+                                              setInvoiceGenerated(true);
+                                              handleViewInvoice();
+                                            }
+                                          }}
+                                          title="View Invoice"
+                                        >
+                                          <HiOutlineEye className="text-xl" />
+                                        </button>
+                                        <button
+                                          className="p-2 bg-blue-600 text-white rounded-full shadow hover:bg-blue-700 transition-all duration-150"
+                                          onClick={() => {
+                                            if (stepInvoice) {
+                                              setGeneratedInvoice({
+                                                amount: (stepInvoice.data?.amount || stepInvoice.amount || step.expected_budget || 0),
+                                                description: `Invoice for ${step.title}`,
+                                                line_items: [],
+                                                invoice_number: stepInvoice.data?.invoice_number || `INV-${step.title}`,
+                                                invoice_date: (stepInvoice.created ? new Date(stepInvoice.created) : new Date()).toISOString().slice(0, 10),
+                                                due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
+                                                status: stepInvoice.data?.status || 'DRAFT',
+                                                step_id: step.id,
+                                                project_id: project?.id
+                                              });
+                                              setInvoiceGenerated(true);
+                                              handleDownloadInvoice();
+                                            }
+                                          }}
+                                          title="Download Invoice"
+                                        >
+                                          <HiOutlineDownload className="text-xl" />
+                                        </button>
+                                        <button
+                                          className="p-2 bg-green-600 text-white rounded-full shadow hover:bg-green-700 transition-all duration-150 disabled:opacity-50"
+                                          onClick={() => {
+                                            if (stepInvoice) {
+                                              setGeneratedInvoice({
+                                                amount: (stepInvoice.data?.amount || stepInvoice.amount || step.expected_budget || 0),
+                                                description: `Invoice for ${step.title}`,
+                                                line_items: [],
+                                                invoice_number: stepInvoice.data?.invoice_number || `INV-${step.title}`,
+                                                invoice_date: (stepInvoice.created ? new Date(stepInvoice.created) : new Date()).toISOString().slice(0, 10),
+                                                due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
+                                                status: stepInvoice.data?.status || 'DRAFT',
+                                                step_id: step.id,
+                                                project_id: project?.id
+                                              });
+                                              setInvoiceGenerated(true);
+                                              handleSubmitInvoiceToAdmin();
+                                            }
+                                          }}
+                                          disabled={submittingInvoice}
+                                          title="Submit to Admin"
+                                        >
+                                          <HiOutlineUpload className="text-xl" />
+                                        </button>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <button
+                                          className="p-2 bg-indigo-600 text-white rounded-full shadow hover:bg-indigo-700 transition-all duration-150"
+                                          onClick={() => {
+                                            if (stepInvoice) {
+                                              setGeneratedInvoice({
+                                                amount: (stepInvoice.data?.amount || stepInvoice.amount || step.expected_budget || 0),
+                                                description: `Invoice for ${step.title}`,
+                                                line_items: [],
+                                                invoice_number: stepInvoice.data?.invoice_number || `INV-${step.title}`,
+                                                invoice_date: (stepInvoice.created ? new Date(stepInvoice.created) : new Date()).toISOString().slice(0, 10),
+                                                due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
+                                                status: stepInvoice.data?.status || 'DRAFT',
+                                                step_id: step.id,
+                                                project_id: project?.id
+                                              });
+                                              setInvoiceGenerated(true);
+                                              handleViewInvoice();
+                                            }
+                                          }}
+                                          title="View Invoice"
+                                        >
+                                          <HiOutlineEye className="text-xl" />
+                                        </button>
+                                      </>
+                                    )}
+                                  </div>
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })
+                      ) : (
+                        <tr>
+                          <td colSpan={5} className="text-center py-8 text-gray-400 text-lg">No project steps found</td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           )}
@@ -1621,7 +1679,7 @@ export default function ProjectDetailPage() {
                   Upload Media
                 </button>
               </div>
-              
+
               {project.media_files && project.media_files.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {project.media_files.map((media) => (
@@ -1631,11 +1689,11 @@ export default function ProjectDetailPage() {
                           {media.type === 'image' && <RiCameraLine className="w-5 h-5 text-blue-500" />}
                           {media.type === 'video' && <RiVideoLine className="w-5 h-5 text-red-500" />}
                           {media.type === 'vr' && <RiPlayLine className="w-5 h-5 text-purple-500" />}
-                          <span className="text-sm text-gray-500">{media.type.toUpperCase()}</span>
+                          <span className="text-sm text-gray-500 uppercase">{media.type}</span>
                         </div>
                         <div className="flex items-center gap-2">
                           <a
-                            href={`${process.env.NEXT_PUBLIC_API_BASE_URL}${media.url}`}
+                            href={toAbsolute(media.url)}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="text-blue-600 hover:text-blue-800"
@@ -1657,12 +1715,24 @@ export default function ProjectDetailPage() {
                           >
                             <RiCloseLine className="w-5 h-5" />
                           </button>
+                          {/* Submit to Admin button */}
+                          <button
+                            onClick={() => handleSubmitMediaToAdmin(media.id)}
+                            className={`text-indigo-600 hover:text-indigo-800 ${((media as any).is_submitted_to_admin || submittedMediaIds.has(String(media.id))) ? 'text-green-600 cursor-default' : ''}`}
+                            title={((media as any).is_submitted_to_admin || submittedMediaIds.has(String(media.id))) ? 'Submitted to Admin' : 'Submit to Admin'}
+                            disabled={((media as any).is_submitted_to_admin || submittedMediaIds.has(String(media.id)))}
+                          >
+                            <RiCheckLine className="w-5 h-5" />
+                          </button>
                         </div>
                       </div>
                       <h3 className="font-semibold text-gray-800 mb-1 break-words">{media.title || media.filename}</h3>
-                      {media.step_title && (
-                        <div className="text-xs text-indigo-700 font-semibold mb-1">Step: {media.step_title}</div>
-                      )}
+                      {(() => {
+                        const stepTitle = media.step_title || project.steps.find(s => String(s.id) === String(media.step_id))?.title;
+                        return stepTitle ? (
+                          <div className="text-xs text-indigo-700 font-semibold mb-1">Step: {stepTitle}</div>
+                        ) : null;
+                      })()}
                       {media.description && (
                         <p className="text-sm text-gray-600 mb-2 break-words">{media.description}</p>
                       )}
@@ -1671,13 +1741,28 @@ export default function ProjectDetailPage() {
                         <div><span className="font-semibold">Size:</span> {(media.file_size / 1024 / 1024).toFixed(2)} MB</div>
                         <div><span className="font-semibold">Uploaded by:</span> {media.uploaded_by_name}</div>
                         <div><span className="font-semibold">Date:</span> {new Date(media.uploaded_at).toLocaleDateString()}</div>
+                        {/* Submission Status */}
+                        <div className="flex items-center gap-2 mt-2">
+                          <span className="font-semibold">Status:</span>
+                          {((media as any).is_submitted_to_admin || submittedMediaIds.has(String(media.id))) ? (
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-800 border border-green-200">
+                              <RiCheckLine className="w-3 h-3 mr-1" />
+                              Submitted to Admin
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-yellow-100 text-yellow-800 border border-yellow-200">
+                              <RiTimeLine className="w-3 h-3 mr-1" />
+                              Not Submitted
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
                   ))}
                 </div>
               ) : (
                 <div className="text-center text-gray-500 py-8">
-                  <RiCameraLine className="w-12 h-12 mx-auto mb-2 text-gray-300" />
+                  <RiCameraLine className="mx-auto h-12 w-12 text-gray-300 mb-4" />
                   <p>No media files uploaded yet</p>
                   <p className="text-sm">Click "Upload Media" to add images, videos, or VR content</p>
                 </div>
@@ -1689,8 +1774,8 @@ export default function ProjectDetailPage() {
 
       {/* Media Upload Modal */}
       {showMediaUpload && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-md mx-4">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md max-h-[90vh] flex flex-col">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold">Upload Project Media</h3>
               <button
@@ -1700,125 +1785,138 @@ export default function ProjectDetailPage() {
                 <RiCloseLine className="w-5 h-5" />
               </button>
             </div>
-            <form onSubmit={handleMediaUpload} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Step *
-                </label>
-                <select
-                  value={mediaUploadData.step}
-                  onChange={e => setMediaUploadData(prev => ({ ...prev, step: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                  required
-                >
-                  <option value="">Select Step</option>
-                  {project.steps.map(step => (
-                    <option key={step.id} value={step.id}>{step.title}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Description (Optional)
-                </label>
-                <textarea
-                  value={mediaUploadData.description}
-                  onChange={(e) => setMediaUploadData(prev => ({ ...prev, description: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1b4965]"
-                  rows={3}
-                  placeholder="Enter media description"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Select Files</label>
-                <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center">
-                  <RiUploadLine className="text-4xl text-gray-400 mx-auto mb-2" />
-                  <p className="text-gray-600 mb-2">Drag and drop files here or click to browse</p>
-                  <p className="text-sm text-gray-500 mb-4">Supports: Images, Videos, VR Content</p>
-                  <input 
-                    type="file" 
-                    multiple 
-                    accept="image/*,video/*"
-                    onChange={handleMediaFileChange}
-                    className="hidden" 
-                    id="media-upload"
+            <div className="overflow-y-auto flex-1 pr-2 -mr-2">
+              <form onSubmit={handleMediaUpload} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Step *</label>
+                  <select
+                    value={mediaUploadData.step}
+                    onChange={e => setMediaUploadData(prev => ({ ...prev, step: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                     required
-                  />
-                  <label 
-                    htmlFor="media-upload"
-                    className="inline-block bg-blue-600 text-white px-4 py-2 rounded-lg cursor-pointer hover:bg-blue-700"
                   >
-                    Choose Files
-                  </label>
+                    <option value="">Select Step</option>
+                    {project.steps.map(step => (
+                      <option key={step.id} value={step.id}>{step.title}</option>
+                    ))}
+                  </select>
                 </div>
-                
-                {/* Selected Files */}
-                {mediaUploadData.files.length > 0 && (
-                  <div className="mt-4 grid grid-cols-1 gap-2">
-                    {mediaUploadData.files.map((file, index) => {
-                      let fileType = 'file';
-                      if (file.type) {
-                        if (file.type.startsWith('image')) fileType = 'image';
-                        else if (file.type.startsWith('video')) fileType = 'video';
-                      } else {
-                        // fallback by extension
-                        const ext = (file.name.split('.').pop() || '').toLowerCase();
-                        if (["jpg","jpeg","png","gif","bmp","webp"].includes(ext)) fileType = 'image';
-                        else if (["mp4","avi","mov","wmv","flv","webm"].includes(ext)) fileType = 'video';
-                      }
-                      return (
-                        <div key={index} className="border border-gray-200 rounded-lg p-4 bg-white shadow flex flex-col h-full">
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center gap-2">
-                              {fileType === 'image' && <RiCameraLine className="w-5 h-5 text-blue-500" />}
-                              {fileType === 'video' && <RiVideoLine className="w-5 h-5 text-red-500" />}
-                              {fileType === 'file' && <RiFileTextLine className="w-5 h-5 text-gray-500" />}
-                              <span className="text-sm text-gray-500 uppercase">{fileType}</span>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => removeMediaFile(index)}
-                              className="text-red-500 hover:text-red-700 ml-2"
-                              title="Remove"
-                            >
-                              <RiCloseLine />
-                            </button>
-                          </div>
-                          <div className="font-medium text-gray-800 mb-1 break-words">{file.name}</div>
-                          {mediaUploadData.description && (
-                            <div className="text-sm text-gray-600 mb-2 break-words">{mediaUploadData.description}</div>
-                          )}
-                          <div className="text-xs text-gray-500 space-y-1 mt-auto">
-                            <div><span className="font-semibold">File:</span> {file.name}</div>
-                            <div><span className="font-semibold">Size:</span> {(file.size / 1024 / 1024).toFixed(2)} MB</div>
-                            {mediaUploadData.step && (
-                              <div><span className="font-semibold">Step:</span> {project.steps.find(s => s.id === mediaUploadData.step)?.title || mediaUploadData.step}</div>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Media Type *</label>
+                  <select
+                    value={mediaUploadData.mediaType}
+                    onChange={e => setMediaUploadData(prev => ({ ...prev, mediaType: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                    required
+                  >
+                    <option value="IMAGE">Image</option>
+                    <option value="VIDEO">Video</option>
+                    <option value="VR">VR Video</option>
+                    <option value="DOCUMENT">Document</option>
+                    <option value="OTHER">Other</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Description (Optional)</label>
+                  <textarea
+                    value={mediaUploadData.description}
+                    onChange={(e) => setMediaUploadData(prev => ({ ...prev, description: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                    rows={3}
+                    placeholder="Enter media description"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Select Files</label>
+                  <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center">
+                    <RiUploadLine className="text-4xl text-gray-400 mx-auto mb-2" />
+                    <p className="text-gray-600 mb-2">Drag and drop files here or click to browse</p>
+                    <p className="text-sm text-gray-500 mb-4">Supports: Images, Videos, VR Content</p>
+                    <input 
+                      type="file" 
+                      multiple 
+                      accept="image/*,video/*"
+                      onChange={handleMediaFileChange}
+                      className="hidden" 
+                      id="media-upload"
+                      required
+                    />
+                    <label 
+                      htmlFor="media-upload"
+                      className="inline-block bg-blue-600 text-white px-4 py-2 rounded-lg cursor-pointer hover:bg-blue-700"
+                    >
+                      Choose Files
+                    </label>
                   </div>
-                )}
-              </div>
-              
-              <div className="flex gap-4">
-                <button
-                  type="button"
-                  onClick={() => setShowMediaUpload(false)}
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={uploading || mediaUploadData.files.length === 0 || !mediaUploadData.step}
-                  className="flex-1 px-4 py-2 bg-[#1b4965] text-white rounded-lg hover:bg-[#1b4965]/90 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {uploading ? 'Uploading...' : 'Upload Media'}
-                </button>
-              </div>
-            </form>
+
+                  {/* Selected Files */}
+                  {mediaUploadData.files.length > 0 && (
+                    <div className="mt-4 grid grid-cols-1 gap-2">
+                      {mediaUploadData.files.map((file, index) => {
+                        let fileType = 'file';
+                        if (file.type) {
+                          if (file.type.startsWith('image')) fileType = 'image';
+                          else if (file.type.startsWith('video')) fileType = 'video';
+                        } else {
+                          // fallback by extension
+                          const ext = (file.name.split('.').pop() || '').toLowerCase();
+                          if (["jpg","jpeg","png","gif","bmp","webp"].includes(ext)) fileType = 'image';
+                          else if (["mp4","avi","mov","wmv","flv","webm"].includes(ext)) fileType = 'video';
+                        }
+                        return (
+                          <div key={index} className="border border-gray-200 rounded-lg p-4 bg-white shadow flex flex-col h-full">
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="flex items-center gap-2">
+                                {fileType === 'image' && <RiCameraLine className="w-5 h-5 text-blue-500" />}
+                                {fileType === 'video' && <RiVideoLine className="w-5 h-5 text-red-500" />}
+                                {fileType === 'file' && <RiFileTextLine className="w-5 h-5 text-gray-500" />}
+                                <span className="text-sm text-gray-500 uppercase">{fileType}</span>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => removeMediaFile(index)}
+                                className="text-red-500 hover:text-red-700 ml-2"
+                                title="Remove"
+                              >
+                                <RiCloseLine />
+                              </button>
+                            </div>
+                            <div className="font-medium text-gray-800 mb-1 break-words">{file.name}</div>
+                            {mediaUploadData.description && (
+                              <div className="text-sm text-gray-600 mb-2 break-words">{mediaUploadData.description}</div>
+                            )}
+                            <div className="text-xs text-gray-500 space-y-1 mt-auto">
+                              <div><span className="font-semibold">File:</span> {file.name}</div>
+                              <div><span className="font-semibold">Size:</span> {(file.size / 1024 / 1024).toFixed(2)} MB</div>
+                              {mediaUploadData.step && (
+                                <div><span className="font-semibold">Step:</span> {project.steps.find(s => s.id === mediaUploadData.step)?.title || mediaUploadData.step}</div>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex gap-4">
+                  <button
+                    type="button"
+                    onClick={() => setShowMediaUpload(false)}
+                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={uploading || mediaUploadData.files.length === 0 || !mediaUploadData.step}
+                    className="flex-1 px-4 py-2 bg-[#1b4965] text-white rounded-lg hover:bg-[#1b4965]/90 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {uploading ? 'Uploading...' : 'Upload Media'}
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         </div>
       )}
@@ -1901,8 +1999,28 @@ export default function ProjectDetailPage() {
         </div>
       )}
       {showToast && (
-        <div className="fixed top-6 right-6 z-50 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg animate-fade-in">
-          {toast}
+        <div
+          className={`fixed top-4 right-4 z-50 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg animate-fade-in`}
+          style={{ minWidth: '350px' }}
+        >
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              {toastType === 'success' ? (
+                <RiCheckLine className="text-xl" />
+              ) : toastType === 'error' ? (
+                <RiCloseLine className="text-xl" />
+              ) : (
+                <RiFileTextLine className="text-xl" />
+              )}
+              <span className="font-medium">{toast}</span>
+            </div>
+            <button
+              onClick={() => setShowToast(false)}
+              className="text-white hover:text-gray-200 transition-colors"
+            >
+              <RiCloseLine className="w-5 h-5" />
+            </button>
+          </div>
         </div>
       )}
 
@@ -1919,7 +2037,7 @@ export default function ProjectDetailPage() {
                 <RiCloseLine size={24} />
               </button>
             </div>
-            
+
             <div className="p-6 space-y-6">
               {/* Invoice Header */}
               <div className="bg-purple-50 p-4 rounded-lg">
@@ -2017,7 +2135,7 @@ export default function ProjectDetailPage() {
                 <RiCloseLine size={24} />
               </button>
             </div>
-            
+
             <div className="p-6">
               <div className="mb-6">
                 <h3 className="text-lg font-semibold mb-4">Choose a completed step to generate invoice:</h3>
@@ -2072,21 +2190,21 @@ export default function ProjectDetailPage() {
           project={project}
           onClose={async () => {
             setSelectedStepForInvoice(null);
-            
+
             // Refresh both project and invoices data
             try {
               await refetchProject();
-              
+
               // Also refresh invoices data with a slight delay to ensure backend has processed the changes
               setTimeout(async () => {
                 try {
-              const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api';
-              const invoicesResponse = await fetchWithAuth(`${apiBaseUrl}/projects/invoices/by_project/?project=${project.id}`);
-              if (invoicesResponse.ok) {
-                const invoicesData = await invoicesResponse.json();
+                  const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api';
+                  const invoicesResponse = await fetchWithAuth(`${apiBaseUrl}/projects/invoices/by_project/?project=${project.id}`);
+                  if (invoicesResponse.ok) {
+                    const invoicesData = await invoicesResponse.json();
                     console.log('✅ Refreshed invoices after generation:', invoicesData);
-                setInvoices(invoicesData);
-              }
+                    setInvoices(invoicesData);
+                  }
                 } catch (error) {
                   console.error("Error refreshing invoices:", error);
                 }
@@ -2097,12 +2215,12 @@ export default function ProjectDetailPage() {
           }}
           onInvoiceGenerated={async (savedInvoice) => {
             console.log('✅ Invoice generated successfully:', savedInvoice);
-            
+
             // Add to recently submitted invoices to prevent status from reverting
             if (savedInvoice.data?.status === 'SUBMITTED') {
               setRecentlySubmittedInvoices(prev => new Set([...prev, savedInvoice.step]));
             }
-            
+
             // Update the invoices state immediately with the new invoice
             setInvoices(prevInvoices => {
               const existingIndex = prevInvoices.findIndex(inv => inv.id === savedInvoice.id);
@@ -2116,16 +2234,16 @@ export default function ProjectDetailPage() {
                 return [...prevInvoices, savedInvoice];
               }
             });
-            
+
             // Also refresh the project data to ensure step.invoice is updated
             setTimeout(async () => {
               try {
                 await refetchProject();
-            } catch (error) {
+              } catch (error) {
                 console.error("Error refreshing project after invoice generation:", error);
-            }
+              }
             }, 500);
-            
+
             displayToast("Invoice generated successfully!", "success");
           }}
         />
@@ -2134,11 +2252,7 @@ export default function ProjectDetailPage() {
       {/* Persistent Toast Notifications */}
       {showToast && (
         <div
-          className={`fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg transition-all duration-300 transform translate-x-0 ${
-            toastType === 'success' ? 'bg-green-600 text-white' :
-            toastType === 'error' ? 'bg-red-600 text-white' :
-            'bg-blue-600 text-white'
-          }`}
+          className={`fixed top-4 right-4 z-50 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg animate-fade-in`}
           style={{ minWidth: '350px' }}
         >
           <div className="flex items-center justify-between gap-3">

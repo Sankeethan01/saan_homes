@@ -1,5 +1,6 @@
 "use client";
 
+import type React from "react";
 import { useState, useEffect, useRef } from "react";
 import {
   RiFileTextLine,
@@ -10,6 +11,7 @@ import {
   RiTimeLine,
   RiMoneyDollarCircleLine,
   RiCalendarLine,
+  RiSendPlaneLine,
 } from "react-icons/ri";
 import { fetchWithAuth } from "@/app/utils/auth";
 import SupervisorInvoiceModal from "./SupervisorInvoiceModal";
@@ -18,48 +20,101 @@ import InvoiceGenerationModal from "./InvoiceGenerationModal";
 // PDF processing utilities
 const extractBillDataFromPDF = async (file: File): Promise<any[]> => {
   try {
-    // TODO: Implement real PDF extraction using pdfplumber or similar library
-    // For production, you would:
-    // 1. Install pdfplumber: npm install pdfplumber
-    // 2. Use pdfplumber.open() to read the PDF
-    // 3. Extract tables and text using pdf.pages[].extract_tables()
-    // 4. Parse the extracted data to identify items, quantities, prices, etc.
-    
     console.log('Processing PDF file:', file.name);
     
-    // Simulate extracted data structure
-    const extractedData = [
-      {
-        itemName: "Concrete Mix",
-        description: "High-strength concrete mix for foundation",
-        quantity: 50,
-        unit: "bags",
-        unitPrice: 15.50,
-        total: 775.00
-      },
-      {
-        itemName: "Steel Rebar",
-        description: "Reinforcement steel bars",
-        quantity: 200,
-        unit: "pieces",
-        unitPrice: 8.75,
-        total: 1750.00
-      },
-      {
-        itemName: "Labor",
-        description: "Skilled labor for construction",
-        quantity: 40,
-        unit: "hours",
-        unitPrice: 25.00,
-        total: 1000.00
-      }
-    ];
+    // Create a FormData object to send the PDF to our backend for OCR processing
+    const formData = new FormData();
+    formData.append('pdf', file);
     
-    return extractedData;
+    // Send PDF to backend for OCR processing
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/projects/process-pdf/`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+      },
+      body: formData,
+    });
+    
+    if (response.ok) {
+      const result = await response.json();
+      console.log('OCR processing result:', result);
+      
+      // Extract line items from OCR result
+      const extractedData = result.items || [];
+      
+      // If no items found, try to extract from raw text
+      if (extractedData.length === 0 && result.raw_text) {
+        const parsedItems = parseTextToItems(result.raw_text);
+        return parsedItems;
+      }
+      
+      return extractedData;
+    } else {
+      throw new Error(`OCR processing failed: ${response.status}`);
+    }
   } catch (error) {
     console.error('Error extracting PDF data:', error);
     throw new Error('Failed to extract data from PDF');
   }
+};
+
+// Parse raw text to extract bill items
+const parseTextToItems = (rawText: string): any[] => {
+  const items: any[] = [];
+  const lines = rawText.split('\n').map(line => line.trim()).filter(line => line.length > 0);
+  
+  // Patterns to match bill items
+  const patterns = [
+    // Pattern: Description Quantity Rate Amount
+    /^(.+?)\s+(\d+(?:\.\d+)?)\s+(\d+(?:\.\d+)?)\s+(\d+(?:\.\d+)?)$/,
+    // Pattern: Description Qty x Rate = Amount
+    /^(.+?)\s+(\d+(?:\.\d+)?)\s*[x×]\s*(\d+(?:\.\d+)?)\s*=\s*(\d+(?:\.\d+)?)$/,
+    // Pattern: Description, Quantity, Rate, Amount
+    /^(.+?),\s*(\d+(?:\.\d+)?),\s*(\d+(?:\.\d+)?),\s*(\d+(?:\.\d+)?)$/,
+  ];
+  
+  for (const line of lines) {
+    for (const pattern of patterns) {
+      const match = line.match(pattern);
+      if (match) {
+        const description = match[1].trim();
+        const quantity = parseFloat(match[2]);
+        const rate = parseFloat(match[3]);
+        const amount = parseFloat(match[4]);
+        
+        // Validate the extracted data
+        if (description && description.length > 2 && quantity > 0 && rate > 0 && amount > 0) {
+          items.push({
+            itemName: description,
+            description: description,
+            quantity: quantity,
+            unit: "pcs", // Default unit
+            unitPrice: rate,
+            total: amount
+          });
+          break; // Found a match, move to next line
+        }
+      }
+    }
+  }
+  
+  // If no structured items found, try to find total amount
+  if (items.length === 0) {
+    const totalMatch = rawText.match(/(?:total|amount|sum)[:\s]*(\d+(?:\.\d+)?)/i);
+    if (totalMatch) {
+      const total = parseFloat(totalMatch[1]);
+      items.push({
+        itemName: "Bill Total",
+        description: "Total amount from bill",
+        quantity: 1,
+        unit: "bill",
+        unitPrice: total,
+        total: total
+      });
+    }
+  }
+  
+  return items;
 };
 
 const generateInvoicePDF = (billData: any[], projectName: string, supervisorName: string, stepName: string): string => {
@@ -132,6 +187,36 @@ const generateInvoicePDF = (billData: any[], projectName: string, supervisorName
   }
 };
 
+// Define StepLog type
+interface StepLog {
+  id: number | string;               // media id
+  stepId: number | string;           // step id
+  title: string;                     // usually media description or title
+  description: string;
+  media: MediaFile[];             // array of ProjectMedia
+  timestamp: string;                 // uploaded_at ISO string
+  type: "PHOTO" | "VIDEO" | "DOCUMENT";
+}
+
+// Align the ProjectMedia interface with actual usage in the component
+interface ProjectMedia {
+  id: string | number;
+  // API may return a path string; during uploads we may hold a File object
+  file: string | File | null;
+  filename?: string;
+  file_size?: number;
+  description?: string;
+  // Backend uses these values; keep as a string literal union if known, else string
+  media_type: "IMAGE" | "VIDEO" | "VR" | "DOCUMENT" | string;
+  uploaded_at?: string;
+  url?: string;
+  // Some places reference media.type in the UI; make it optional to avoid TS errors
+  type?: "image" | "video" | "pdf";
+  // Used when filtering media by step association
+  step?: string | number;
+  step_id?: string | number;
+}
+
 interface ProjectStep {
   id: string;
   title: string;
@@ -142,7 +227,7 @@ interface ProjectStep {
   expected_budget: number;
   progress: number; // Supervisor can adjust this
   status: string;
-  logs: ProgressLog[];
+  logs: StepLog[];
   bills?: {
     id: string;
     ocr_data?: {
@@ -165,6 +250,7 @@ interface ProjectStep {
       description?: string;
     };
   };
+  media_files?: ProjectMedia[]; 
 }
 
 interface ProgressLog {
@@ -190,6 +276,12 @@ interface Project {
   steps: ProjectStep[];
   media_files?: any[];
 }
+interface Step {
+  id: string | number;
+  title: string;
+  logs?: StepLog[];
+  // other fields...
+}
 
 export default function ProgressLogs({
   project,
@@ -209,6 +301,9 @@ export default function ProgressLogs({
   const originalProgressRef = useRef<Map<string, number>>(new Map());
   const modifiedProgressRef = useRef<Map<string, number>>(new Map());
   
+  // Add local project state to manage media files
+  const [localProject, setLocalProject] = useState<Project>(project);
+  
   // PDF and Invoice states
   const [selectedPDF, setSelectedPDF] = useState<File | null>(null);
   const [extractedBillData, setExtractedBillData] = useState<any[]>([]);
@@ -220,8 +315,23 @@ export default function ProgressLogs({
   const [showNewInvoiceModal, setShowNewInvoiceModal] = useState(false);
   const [selectedStepForInvoice, setSelectedStepForInvoice] = useState<any>(null);
 
+  const [showMediaUpload, setShowMediaUpload] = useState(false);
+  const [currentStepForMedia, setCurrentStepForMedia] = useState<ProjectStep | null>(null);
+  const [mediaUploadData, setMediaUploadData] = useState({
+    description: '',
+    mediaType: 'IMAGE',
+    files: [] as File[],
+    isUploading: false
+  });
+  const [submittedMediaIds, setSubmittedMediaIds] = useState<Set<string>>(new Set());
+
   const apiBaseUrl =
     process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000/api";
+
+  // Update local project when project prop changes
+  useEffect(() => {
+    setLocalProject(project);
+  }, [project]);
 
   // Initialize local steps state when project changes
   useEffect(() => {
@@ -525,18 +635,239 @@ export default function ProgressLogs({
     setLoadingInvoice(false);
   };
 
-  const sortedSteps = [...localSteps].sort((a, b) => a.order - b.order);
+  const sortedSteps = [...(localProject.steps || [])].sort((a, b) => a.order - b.order);
 
   // Calculate overall project progress
-  const overallProgress = localSteps.length > 0 
-    ? Math.round(localSteps.reduce((sum, step) => sum + step.progress, 0) / localSteps.length)
+  const overallProgress = localProject.steps && localProject.steps.length > 0 
+    ? Math.round(localProject.steps.reduce((sum, step) => sum + step.progress, 0) / localProject.steps.length)
     : 0;
 
-  const targetProjectName = "My Project"; // <-- Set your project name here
-  const targetStepTitle = "Step 1";       // <-- Set your step title here
-  const targetProjectId = "YOUR_PROJECT_ID"; // <-- Set your project id here
-  const targetStepId = "YOUR_STEP_ID";       // <-- Set your step id here
-  const targetBillId = "YOUR_BILL_ID";       // <-- Set your bill id here
+  // Handle media file selection
+  const handleMediaFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const files = Array.from(e.target.files);
+      setMediaUploadData(prev => ({
+        ...prev,
+        files: [...prev.files, ...files]
+      }));
+    }
+  };
+
+  // 🔹 Add this right after
+const removeFile = (index: number) => {
+  setMediaUploadData(prev => ({
+    ...prev,
+    files: prev.files.filter((_, i) => i !== index),
+  }));
+};
+
+ 
+
+
+ // Handle media upload submission
+const handleMediaUpload = async (e: React.FormEvent) => {
+  e.preventDefault();
+  if (!currentStepForMedia || mediaUploadData.files.length === 0) return;
+
+  setMediaUploadData(prev => ({ ...prev, isUploading: true }));
+
+  try {
+    const uploadedProjectMedia: ProjectMedia[] = [];
+    const uploadedStepMedia: ProjectMedia[] = [];
+
+    // Create a progress log first (required by backend to attach media)
+    const logRes = await fetchWithAuth(`${apiBaseUrl}/projects/logs/`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        stepId: String(currentStepForMedia.id),
+        description: mediaUploadData.description || "",
+        timestamp: new Date().toISOString(),
+      }),
+    });
+
+    if (!logRes.ok) {
+      let errText: string;
+      try {
+        const errJson = await logRes.json();
+        errText = JSON.stringify(errJson);
+      } catch {
+        errText = await logRes.text();
+      }
+      throw new Error(`Failed to create progress log: ${errText}`);
+    }
+    const createdLog = await logRes.json();
+    const progressLogId: string = createdLog.id;
+
+    for (const file of mediaUploadData.files) {
+      // ---- ProjectMedia upload ----
+      const projectFormData = new FormData();
+      projectFormData.append("project", String(localProject.id));
+      projectFormData.append("step", String(currentStepForMedia.id));
+      projectFormData.append("media_type", mediaUploadData.mediaType);
+      projectFormData.append("description", mediaUploadData.description);
+      projectFormData.append("file", file);
+
+      const projectRes = await fetchWithAuth(`${apiBaseUrl}/projects/project-media/`, {
+        method: "POST",
+        body: projectFormData,
+      });
+
+      if (!projectRes.ok) {
+        const errData = await projectRes.json();
+        throw new Error(errData.detail || "Failed to upload project media");
+      }
+      const projectMediaData: ProjectMedia = await projectRes.json();
+      uploadedProjectMedia.push(projectMediaData);
+
+      // ---- ProgressLogMedia upload ----
+      const logFormData = new FormData();
+      logFormData.append("progress_log", String(progressLogId));
+      logFormData.append("description", mediaUploadData.description);
+      logFormData.append("file", file);
+      logFormData.append("filename", file.name);
+      logFormData.append("file_size", String(file.size));
+
+      const stepRes = await fetchWithAuth(`${apiBaseUrl}/projects/progress-media/`, {
+        method: "POST",
+        body: logFormData,
+      });
+
+      if (!stepRes.ok) {
+        const errData = await stepRes.json();
+        throw new Error(errData.detail || "Failed to upload step media");
+      }
+      const stepMediaData: ProjectMedia = await stepRes.json();
+      uploadedStepMedia.push(stepMediaData);
+    }
+
+    // ---- Update local project media ----
+    setLocalProject(prev => ({
+      ...prev,
+      media_files: [...(prev.media_files || []), ...uploadedProjectMedia],
+    }));
+
+    // ---- Update local step logs ----
+    setLocalSteps(prevSteps =>
+      prevSteps.map(step => {
+        if (!currentStepForMedia || step.id !== currentStepForMedia.id) return step;
+
+        const newLogs: StepLog[] = uploadedStepMedia.map(pm => {
+          // Convert uploaded progress-media response to MediaFile[] expected by StepLog
+          const mf: MediaFile = {
+            id: String(pm.id),
+            url: (pm as any).url || (pm as any).file ? `${apiBaseUrl}${(pm as any).file}` : "",
+            type: ((pm as any).type || ((pm as any).media_type ? String((pm as any).media_type).toLowerCase() : "image")) as "image" | "video" | "pdf",
+            filename: (pm as any).filename || ""
+          };
+
+          return {
+            id: String(pm.id),
+            stepId: String(step.id),
+            title: (pm as any).description || "",
+            description: (pm as any).description || "",
+            media: [mf],
+            timestamp: (pm as any).uploaded_at || new Date().toISOString(),
+            type: (String((pm as any).media_type || ((pm as any).type || "PHOTO")).toUpperCase() as "PHOTO" | "VIDEO" | "DOCUMENT"),
+          } as StepLog;
+        });
+        
+        return { ...step, logs: [...(step.logs || []), ...newLogs] };
+      })
+    );
+
+    // ---- Reset form ----
+    setMediaUploadData({ description: "", mediaType: "IMAGE", files: [], isUploading: false });
+    setShowMediaUpload(false);
+    setCurrentStepForMedia(null);
+    if (onMediaEdited) onMediaEdited();
+  } catch (error: any) {
+    console.error("Error uploading media:", error);
+    alert(error.message || "Failed to upload media. Please try again.");
+  } finally {
+    setMediaUploadData(prev => ({ ...prev, isUploading: false }));
+  }
+};
+
+// Handle submit media to admin
+const handleSubmitMediaToAdmin = async (mediaId: string) => {
+  try {
+    // Optimistically update the UI first
+    setSubmittedMediaIds(prev => new Set([...prev, String(mediaId)]));
+    setLocalProject(prev => {
+      if (!prev) return prev;
+      const updatedList = prev.media_files?.map((m: any) =>
+        String(m.id) === String(mediaId) ? { ...m, is_submitted_to_admin: true } : m
+      ) || [];
+      return { ...prev, media_files: updatedList } as any;
+    });
+
+    const res = await fetchWithAuth(`${apiBaseUrl}/projects/project-media/${mediaId}/submit_to_admin/`, {
+      method: 'POST'
+    });
+
+    if (!res.ok) {
+      const t = await res.text();
+      console.error('Media submit_to_admin failed:', t);
+      
+      // Revert the optimistic update on failure
+      setSubmittedMediaIds(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(String(mediaId));
+        return newSet;
+      });
+      setLocalProject(prev => {
+        if (!prev) return prev;
+        const updatedList = prev.media_files?.map((m: any) =>
+          String(m.id) === String(mediaId) ? { ...m, is_submitted_to_admin: false } : m
+        ) || [];
+        return { ...prev, media_files: updatedList } as any;
+      });
+      
+      alert('Failed to submit media to admin');
+      return;
+    }
+
+    // Get updated media from server and update local project state
+    const updatedMedia = await res.json();
+    setLocalProject(prev => {
+      if (!prev) return prev;
+      const updatedList = prev.media_files?.map((m: any) =>
+        String(m.id) === String(mediaId) ? { ...m, ...updatedMedia, is_submitted_to_admin: true } : m
+      ) || [];
+      return { ...prev, media_files: updatedList } as any;
+    });
+
+    alert('Media submitted to admin');
+  } catch (e) {
+    console.error('Error submitting media:', e);
+    
+    // Revert the optimistic update on error
+    setSubmittedMediaIds(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(String(mediaId));
+      return newSet;
+    });
+    setLocalProject(prev => {
+      if (!prev) return prev;
+      const updatedList = prev.media_files?.map((m: any) =>
+        String(m.id) === String(mediaId) ? { ...m, is_submitted_to_admin: false } : m
+      ) || [];
+      return { ...prev, media_files: updatedList } as any;
+    });
+    
+    alert('Error submitting media');
+  }
+};
+
+  // Compute a usable media URL from API response
+  const getMediaSrc = (m: any) => {
+    const u = m?.url || m?.file;
+    if (!u) return '';
+    const us = String(u);
+    if (us.startsWith('http') || us.startsWith('blob:') || us.startsWith('data:')) return us;
+    return `${apiBaseUrl}${us.startsWith('/') ? us : `/${us}`}`;
+  };
 
   return (
     <div className="space-y-8">
@@ -562,10 +893,10 @@ export default function ProgressLogs({
         </div>
         
         <div className="flex items-center justify-between mt-2 text-sm text-gray-600">
-          <span>{localSteps.filter(s => s.status === "COMPLETED").length} of {localSteps.length} steps completed</span>
+          <span>{(localProject.steps || []).filter(s => s.status === "COMPLETED").length} of {(localProject.steps || []).length} steps completed</span>
           <span className="flex items-center gap-1">
             <RiTimeLine className="w-4 h-4" />
-            {localSteps.filter(s => s.status === "IN_PROGRESS").length} in progress
+            {(localProject.steps || []).filter(s => s.status === "IN_PROGRESS").length} in progress
           </span>
         </div>
       </div>
@@ -577,9 +908,26 @@ export default function ProgressLogs({
         {sortedSteps.map((step, index) => {
           const isCurrent = step.status === "IN_PROGRESS";
           const isCompleted = step.status === "COMPLETED";
-          const stepMedia = (project.media_files || []).filter(
-            (m) => m.step_id && String(m.step_id) === String(step.id)
+          const stepMedia = (localProject.media_files || []).filter(
+            (m: any) =>
+              (m.step && String(m.step) === String(step.id)) ||
+              (m.step_id && String(m.step_id) === String(step.id))
           );
+
+          // Fallback: if no direct ProjectMedia linked to this step, use media from Progress Logs
+          const fallbackLogMedia: any[] =
+            (!stepMedia || stepMedia.length === 0)
+              ? (step.logs || []).flatMap((log) => (log.media || []).map((mf) => ({
+                  id: mf.id,
+                  // normalize to ProjectMedia-like shape used by renderer
+                  url: mf.url,
+                  filename: mf.filename,
+                  type: mf.type,
+                  media_type: (mf.type || 'image').toString().toUpperCase(),
+                  step_id: step.id,
+                 })))
+              : [];
+          const combinedStepMedia = (stepMedia && stepMedia.length > 0) ? stepMedia : fallbackLogMedia;
 
           // Find the latest bill for this step
           const latestBill = step.bills && step.bills.length > 0
@@ -592,18 +940,17 @@ export default function ProgressLogs({
 
           return (
             <div key={step.id} className="mb-8 relative">
-              {/* Timeline marker */}
+              {/* Timeline marker with step number inside */}
               <div className="absolute left-4 -translate-x-1/2 top-6">
-                <div className={`w-4 h-4 rounded-full border-4 shadow-lg transition-all duration-300 ${
-                  isCurrent
-                    ? "border-yellow-400 bg-yellow-100 animate-pulse shadow-yellow-200"
-                    : isCompleted
-                    ? "border-green-500 bg-green-100 shadow-green-200"
-                    : "border-gray-300 bg-white shadow-gray-200"
-                }`}></div>
-                
-                {/* Step number */}
-                <div className="absolute -top-2 -right-2 w-6 h-6 bg-gradient-to-br from-blue-600 to-blue-700 text-white text-xs rounded-full flex items-center justify-center font-bold shadow-lg">
+                <div
+                  className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shadow-lg transition-all duration-300 ${
+                    isCompleted
+                      ? "bg-green-500 text-white shadow-green-200"
+                      : isCurrent
+                      ? "bg-yellow-400 text-black shadow-yellow-200"
+                      : "bg-blue-600 text-white shadow-blue-200"
+                  }`}
+                >
                   {index + 1}
                 </div>
               </div>
@@ -654,117 +1001,58 @@ export default function ProgressLogs({
                     </div>
                   </div>
                   
-                  {/* Progress bar */}
-                  <div className="w-full bg-gray-200 rounded-full h-3 mb-3 relative overflow-hidden">
-                    <div
-                      className={`h-3 rounded-full transition-all duration-500 ease-out relative ${
-                        isCompleted 
-                          ? "bg-gradient-to-r from-green-500 to-emerald-500" 
-                          : "bg-gradient-to-r from-blue-500 to-indigo-600"
-                      }`}
-                      style={{ width: `${step.progress}%` }}
-                    >
-                      {/* Progress bar shine effect */}
-                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-pulse"></div>
-                    </div>
+                  {/* Progress slider with better visual feedback */}
+                  <div className="relative">
+                    <input
+                      type="range"
+                      min={0}
+                      max={100}
+                      step={5}
+                      value={step.progress}
+                      disabled={updatingProgress === step.id}
+                      onChange={(e) => {
+                        const newValue = parseInt(e.target.value);
+                        console.log(`Slider changed to: ${newValue}%`);
+                        handleProgressChange(step.id, newValue);
+                      }}
+                      onInput={(e) => {
+                        // Show immediate visual feedback
+                        const target = e.target as HTMLInputElement;
+                        const value = parseInt(target.value);
+                        console.log(`Slider input: ${value}%`);
+                      }}
+                      className="w-full h-4 rounded-lg appearance-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
+                    />
                     
-                    {/* Loading indicator overlay */}
-                    {updatingProgress === step.id && (
-                      <div className="absolute inset-0 bg-blue-200 opacity-50 animate-pulse rounded-full"></div>
-                    )}
-                  </div>
-                  
-                  {/* Debug info - remove in production */}
-                  {process.env.NODE_ENV === 'development' && (
-                    <div className="text-xs text-gray-500 bg-gray-100 p-2 rounded mb-3">
-                      <div>Step ID: {step.id}</div>
-                      <div>Current Progress: {step.progress}%</div>
-                      <div>Status: {step.status}</div>
-                      <div>Updating: {updatingProgress === step.id ? 'Yes' : 'No'}</div>
-                      <div>Modified Locally: {modifiedSteps.has(step.id) ? 'Yes' : 'No'}</div>
-                      <div>Original Progress: {originalProgressRef.current.get(step.id) || 'N/A'}%</div>
-                      <div>Modified Progress: {modifiedProgressRef.current.get(step.id) || 'N/A'}%</div>
-                      <div className="mt-2 space-y-1">
-                        <button
-                          onClick={() => testLocalProgressUpdate(step.id, 10)}
-                          className="px-2 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600"
-                        >
-                          +10%
-                        </button>
-                        <button
-                          onClick={() => testLocalProgressUpdate(step.id, -10)}
-                          className="px-2 py-1 bg-red-500 text-white text-xs rounded hover:bg-red-600 ml-1"
-                        >
-                          -10%
-                        </button>
-                      </div>
+                    {/* Current value indicator */}
+                    <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-blue-600 text-white text-xs px-2 py-1 rounded pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                      {step.progress}%
                     </div>
-                  )}
-                  
-                  {/* Progress slider - only show for non-completed steps */}
-                  {!isCompleted && (
-                    <div className="space-y-3 group">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs text-gray-500 font-medium">Adjust Progress</span>
-                        {updatingProgress === step.id && (
-                          <span className="text-xs text-blue-600 animate-pulse font-medium">Updating...</span>
-                        )}
                   </div>
-                      
-                      {/* Progress slider with better visual feedback */}
-                      <div className="relative">
-                  <input
-                    type="range"
-                    min={0}
-                    max={100}
-                          step={10}
-                    value={step.progress}
-                          disabled={updatingProgress === step.id}
-                          onChange={(e) => {
-                            const newValue = parseInt(e.target.value);
-                            console.log(`Slider changed to: ${newValue}%`);
-                            handleProgressChange(step.id, newValue);
-                          }}
-                          onInput={(e) => {
-                            // Show immediate visual feedback
-                            const target = e.target as HTMLInputElement;
-                            const value = parseInt(target.value);
-                            console.log(`Slider input: ${value}%`);
-                          }}
-                                                     className="w-full h-3 bg-gray-200 rounded-lg appearance-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
-                        />
-                        
-                        {/* Current value indicator */}
-                        <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-blue-600 text-white text-xs px-2 py-1 rounded pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                          {step.progress}%
-                  </div>
-                </div>
 
-                      {/* Progress markers */}
-                      <div className="flex justify-between text-xs text-gray-500">
-                        <span className="flex flex-col items-center">
-                          <span className="w-1 h-1 bg-gray-400 rounded-full mb-1"></span>
-                          <span>0%</span>
-                        </span>
-                        <span className="flex flex-col items-center">
-                          <span className="w-1 h-1 bg-gray-400 rounded-full mb-1"></span>
-                          <span>25%</span>
-                        </span>
-                        <span className="flex flex-col items-center">
-                          <span className="w-1 h-1 bg-gray-400 rounded-full mb-1"></span>
-                          <span>50%</span>
-                        </span>
-                        <span className="flex flex-col items-center">
-                          <span className="w-1 h-1 bg-gray-400 rounded-full mb-1"></span>
-                          <span>75%</span>
-                        </span>
-                        <span className="flex flex-col items-center">
-                          <span className="w-1 h-1 bg-gray-400 rounded-full mb-1"></span>
-                          <span>100%</span>
-                        </span>
-                      </div>
-                    </div>
-                  )}
+                  {/* Progress markers */}
+                  <div className="flex justify-between text-xs text-gray-500">
+                    <span className="flex flex-col items-center">
+                      <span className="w-1 h-1 bg-gray-400 rounded-full mb-1"></span>
+                      <span>0%</span>
+                    </span>
+                    <span className="flex flex-col items-center">
+                      <span className="w-1 h-1 bg-gray-400 rounded-full mb-1"></span>
+                      <span>25%</span>
+                    </span>
+                    <span className="flex flex-col items-center">
+                      <span className="w-1 h-1 bg-gray-400 rounded-full mb-1"></span>
+                      <span>50%</span>
+                    </span>
+                    <span className="flex flex-col items-center">
+                      <span className="w-1 h-1 bg-gray-400 rounded-full mb-1"></span>
+                      <span>75%</span>
+                    </span>
+                    <span className="flex flex-col items-center">
+                      <span className="w-1 h-1 bg-gray-400 rounded-full mb-1"></span>
+                      <span>100%</span>
+                    </span>
+                  </div>
                 </div>
 
                 {/* Budget and Actions */}
@@ -792,7 +1080,7 @@ export default function ProgressLogs({
                         );
                       }
                     })()}
-                </div>
+                  </div>
 
                   <div className="flex gap-2">
                     {/* Mark Completed Button */}
@@ -862,39 +1150,47 @@ export default function ProgressLogs({
                 )}
 
                 {/* Step Media */}
-                {stepMedia.length > 0 && (
+                {combinedStepMedia.length > 0 && (
                   <div className="bg-gradient-to-br from-gray-50 to-blue-50 rounded-lg p-4 border border-blue-100">
                     <h6 className="font-semibold text-gray-700 flex items-center gap-2 mb-3">
                       <RiCameraLine className="text-blue-500" />
-                      Media Files ({stepMedia.length})
+                      Media Files ({combinedStepMedia.length})
                     </h6>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                      {stepMedia.map((media) => (
-                        <div
-                          key={media.id}
-                          className="group/media relative overflow-hidden w-full aspect-square bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg flex items-center justify-center hover:from-blue-100 hover:to-purple-100 transition-all duration-300 shadow-md hover:shadow-lg border border-gray-200 transform hover:scale-105"
-                        >
-                          {media.type === "image" && (
-                            <RiCameraLine className="text-blue-600 text-2xl" />
-                          )}
-                          {media.type === "video" && (
-                            <RiVideoLine className="text-red-600 text-2xl" />
-                          )}
-                          {media.type === "pdf" && (
-                            <RiFileTextLine className="text-orange-600 text-2xl" />
-                          )}
-                          <a
-                            href={`${apiBaseUrl}${media.url}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/media:opacity-100 transition-opacity duration-300 bg-black/30 hover:bg-black/40"
-                          >
-                            <RiDownloadLine className="text-white text-xl" />
-                          </a>
+                    {(() => {
+                      const counts = combinedStepMedia.reduce(
+                        (acc: { images: number; videos: number; vr: number; other: number }, m: any) => {
+                          const t = (m?.type || m?.media_type || '').toString().toLowerCase();
+                          if (t === 'image') acc.images += 1;
+                          else if (t === 'video') acc.videos += 1;
+                          else if (t === 'vr') acc.vr += 1;
+                          else acc.other += 1;
+                          return acc;
+                        },
+                        { images: 0, videos: 0, vr: 0, other: 0 }
+                      );
+                      return (
+                        <div className="grid grid-flow-col auto-cols-[minmax(180px,1fr)] gap-2 overflow-x-auto sm:overflow-visible sm:grid-flow-row sm:grid-cols-3">
+                          <div className="flex items-center justify-between bg-white rounded-lg border border-blue-100 p-3 min-w-[180px] shrink-0 sm:min-w-0">
+                            <span className="text-sm font-medium text-gray-700">Images</span>
+                            <span className="px-2 py-1 text-xs rounded-full bg-blue-50 text-blue-700 border border-blue-200">{counts.images}</span>
+                          </div>
+                          <div className="flex items-center justify-between bg-white rounded-lg border border-purple-100 p-3 min-w-[180px] shrink-0 sm:min-w-0">
+                            <span className="text-sm font-medium text-gray-700">Videos</span>
+                            <span className="px-2 py-1 text-xs rounded-full bg-purple-50 text-purple-700 border border-purple-200">{counts.videos}</span>
+                          </div>
+                          <div className="flex items-center justify-between bg-white rounded-lg border border-pink-100 p-3 min-w-[180px] shrink-0 sm:min-w-0">
+                            <span className="text-sm font-medium text-gray-700">VR</span>
+                            <span className="px-2 py-1 text-xs rounded-full bg-pink-50 text-pink-700 border border-pink-200">{counts.vr}</span>
+                          </div>
                         </div>
-                      ))}
-                    </div>
-                  </div>
+                      );
+                    })()}
+                     {process.env.NODE_ENV === 'development' && (
+                       <div className="mt-2 text-xs text-gray-500">
+                         <div>Debug: stepMedia={stepMedia.length}, fallbackLogMedia={fallbackLogMedia.length}</div>
+                       </div>
+                     )}
+                   </div>
                 )}
                 {/* Only show the latest bill for this step */}
                 {latestBill && (
@@ -908,6 +1204,96 @@ export default function ProgressLogs({
                     </div>
                   </div>
                 )}
+                {/* Media Upload */}
+                <div className="mt-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <h5 className="font-medium text-gray-700 flex items-center gap-2">
+                      <RiCameraLine className="text-blue-500" />
+                      Media ({combinedStepMedia.length})
+                    </h5>
+                    <button
+                      onClick={() => {
+                        setCurrentStepForMedia(step);
+                        setShowMediaUpload(true);
+                      }}
+                      className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                      </svg>
+                      Add Media
+                    </button>
+                  </div>
+                  
+                  {combinedStepMedia.length > 0 ? (
+                    <ul className="space-y-3">
+                      {combinedStepMedia.map((m: any) => {
+                        const src = getMediaSrc(m);
+                        const type = (m?.type || m?.media_type || '').toString().toLowerCase();
+                        const isSubmitted = (m as any).is_submitted_to_admin || submittedMediaIds.has(String(m.id));
+                        return (
+                          <li key={m.id} className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-200 shadow-sm">
+                            {/* Thumbnail */}
+                            <div className="w-12 h-12 rounded-lg overflow-hidden bg-gray-100 flex items-center justify-center flex-shrink-0">
+                              {type === 'image' && src ? (
+                                <img src={src} alt={m.filename || 'Media'} className="w-full h-full object-cover" />
+                              ) : type === 'video' ? (
+                                <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                                  <RiVideoLine className="w-6 h-6 text-gray-500" />
+                                </div>
+                              ) : (
+                                <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                                  <RiFileTextLine className="w-6 h-6 text-gray-500" />
+                                </div>
+                              )}
+                            </div>
+                            
+                            {/* File Info */}
+                            <div className="min-w-0 flex-1">
+                              <div className="text-sm font-semibold text-gray-900 truncate">{m.filename || m.title || 'Media file'}</div>
+                              <div className="text-xs text-gray-500 uppercase font-medium">{(m.media_type || m.type || 'image').toString()}</div>
+                            </div>
+                            
+                            {/* Action Buttons */}
+                            <div className="flex items-center gap-2">
+                              {/* Download button */}
+                              {src && (
+                                <a 
+                                  href={src} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer" 
+                                  download 
+                                  className="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors"
+                                  title="Download"
+                                >
+                                  <RiDownloadLine className="w-5 h-5" />
+                                </a>
+                              )}
+                              
+                              {/* Submit to Admin button */}
+                              <button
+                                onClick={() => handleSubmitMediaToAdmin(m.id)}
+                                className={`p-2 rounded-lg transition-colors ${
+                                  isSubmitted 
+                                    ? 'text-green-600 bg-green-50 cursor-default' 
+                                    : 'text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50'
+                                }`}
+                                title={isSubmitted ? 'Submitted to Admin' : 'Submit to Admin'}
+                                disabled={isSubmitted}
+                              >
+                                <RiSendPlaneLine className="w-5 h-5" />
+                              </button>
+                            </div>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  ) : (
+                    <div className="text-center py-4 text-gray-500 text-sm border-2 border-dashed border-gray-200 rounded-lg">
+                      No media files uploaded for this step yet.
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           );
@@ -1078,7 +1464,189 @@ export default function ProgressLogs({
         />
       )}
 
-      {/* Note: Add custom slider styles to globals.css if needed */}
+      {/* Media Upload Modal */}
+      {showMediaUpload && currentStepForMedia && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-bold text-gray-900">Upload Media</h3>
+              <button 
+                onClick={() => {
+                  setShowMediaUpload(false);
+                  setCurrentStepForMedia(null);
+                  setMediaUploadData({
+                    description: '',
+                    mediaType: 'IMAGE',
+                    files: [],
+                    isUploading: false
+                  });
+                }}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            <div className="overflow-y-auto flex-1 pr-2 -mr-2">
+              <form onSubmit={handleMediaUpload} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Description
+                  </label>
+                  <textarea
+                    value={mediaUploadData.description}
+                    onChange={(e) =>
+                      setMediaUploadData(prev => ({ ...prev, description: e.target.value }))
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    rows={3}
+                    placeholder="Add a description for this media"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Media Type
+                  </label>
+                  <select
+                    value={mediaUploadData.mediaType}
+                    onChange={(e) =>
+                      setMediaUploadData(prev => ({ ...prev, mediaType: e.target.value }))
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="IMAGE">Image</option>
+                    <option value="VIDEO">Video</option>
+                    <option value="VR">VR</option>
+                    <option value="DOCUMENT">Document</option>
+                  </select>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Upload Files
+                  </label>
+                  <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg">
+                    <div className="space-y-1 text-center">
+                      <svg
+                        className="mx-auto h-12 w-12 text-gray-400"
+                        stroke="currentColor"
+                        fill="none"
+                        viewBox="0 0 48 48"
+                        aria-hidden="true"
+                      >
+                        <path
+                          d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 015.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
+                          strokeWidth={2}
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                      <div className="flex text-sm text-gray-600">
+                        <label
+                          htmlFor="file-upload"
+                          className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500"
+                        >
+                          <span>Upload files</span>
+                          <input
+                            id="file-upload"
+                            name="file-upload"
+                            type="file"
+                            className="sr-only"
+                            multiple
+                            onChange={handleMediaFileChange}
+                            accept={mediaUploadData.mediaType === 'IMAGE' 
+                              ? 'image/*' 
+                              : mediaUploadData.mediaType === 'VIDEO' 
+                                ? 'video/*' 
+                                : mediaUploadData.mediaType === 'DOCUMENT'
+                                  ? '.pdf,.doc,.docx,.xls,.xlsx'
+                                  : '*'}
+                          />
+                        </label>
+                        <p className="pl-1">or drag and drop</p>
+                      </div>
+                      <p className="text-xs text-gray-500">
+                        {mediaUploadData.mediaType === 'IMAGE' 
+                          ? 'PNG, JPG, GIF up to 10MB' 
+                          : mediaUploadData.mediaType === 'VIDEO' 
+                            ? 'MP4, MOV up to 50MB' 
+                            : mediaUploadData.mediaType === 'DOCUMENT'
+                              ? 'PDF, DOC, XLS up to 20MB'
+                              : 'Any file type up to 50MB'}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  {/* Selected files */}
+                  {mediaUploadData.files.length > 0 && (
+                    <div className="mt-2 space-y-2">
+                      <p className="text-sm font-medium text-gray-700">Selected files:</p>
+                      <ul className="space-y-2">
+                        {mediaUploadData.files.map((file, index) => (
+                          <li key={index} className="flex items-center justify-between bg-gray-50 p-2 rounded">
+                            <span className="text-sm text-gray-600 truncate max-w-xs">
+                              {file.name}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => removeFile(index)}
+                              className="text-red-500 hover:text-red-700"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+                
+                <div className="flex justify-end space-x-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowMediaUpload(false);
+                      setCurrentStepForMedia(null);
+                      setMediaUploadData({
+                        description: '',
+                        mediaType: 'IMAGE',
+                        files: [],
+                        isUploading: false
+                      });
+                    }}
+                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                    disabled={mediaUploadData.isUploading}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={mediaUploadData.files.length === 0 || mediaUploadData.isUploading}
+                  >
+                    {mediaUploadData.isUploading ? (
+                      <div className="flex items-center space-x-2">
+                        <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <span>Uploading...</span>
+                      </div>
+                    ) : (
+                      'Upload Media'
+                    )}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

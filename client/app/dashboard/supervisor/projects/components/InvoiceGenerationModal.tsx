@@ -474,19 +474,139 @@ export default function InvoiceGenerationModal({
     setTimeout(() => setToast(""), 3000);
   };
 
+  // Generate invoice preview from selected bills
+  const generateInvoicePreview = async (selectedBillIds: string[]) => {
+    if (selectedBillIds.length === 0) {
+      setGeneratedInvoice(null);
+      setInvoiceGenerated(false);
+      return;
+    }
+
+    try {
+      const selectedBills = bills.filter(bill => selectedBillIds.includes(bill.id));
+      if (selectedBills.length === 0) return;
+
+      // Process bills into line items (similar to existing logic)
+      const items: GeneratedInvoice["line_items"] = [];
+      
+      for (let billIdx = 0; billIdx < selectedBills.length; billIdx++) {
+        const bill = selectedBills[billIdx];
+        const billTotal = billComputedTotals[bill.id] || computeBillTotal(bill);
+        
+        // Process OCR data from bills
+        const ocrItems = bill?.ocr_data?.items || [];
+        if (Array.isArray(ocrItems) && ocrItems.length > 0) {
+          const validOcr = ocrItems.map((it: any, itemIdx: number) => {
+            const qty = Number(it.quantity ?? it.qty ?? 1) || 1;
+            const rate = Number(it.unitPrice ?? it.rate ?? 0) || 0;
+            const amount = Number(it.amount ?? qty * rate) || (qty * rate);
+            let description = (it.description || it.itemName || `Item ${itemIdx + 1}`).toString();
+            if (!description || description.length < 3) {
+              description = `Construction Material ${itemIdx + 1}`;
+            }
+            description = cleanDescription(description);
+            if (!isMeaningfulDescription(description)) return null;
+            if (qty <= 0 || (rate <= 0 && amount <= 0)) return null;
+            const finalRate = rate > 0 ? rate : amount / Math.max(1, qty);
+            const finalAmount = amount > 0 ? amount : finalRate * qty;
+            return { description, quantity: qty, rate: finalRate, amount: finalAmount, bill_id: bill.id } as const;
+          }).filter(Boolean) as GeneratedInvoice["line_items"];
+
+          if (validOcr.length > 0) {
+            validOcr.forEach((vi) => items.push({ ...vi }));
+          } else {
+            // Fallback to bill summary
+            const billName = bill.pdf ? bill.pdf.split("/").pop()?.replace('.pdf', '') || `Bill ${billIdx + 1}` : `Bill ${billIdx + 1}`;
+            items.push({
+              description: `${billName} - Construction Materials`,
+              quantity: 1,
+              rate: billTotal,
+              amount: billTotal,
+              bill_id: bill.id,
+            });
+          }
+        } else {
+          // No OCR items, use bill total as single line item
+          const billName = bill.pdf ? bill.pdf.split("/").pop()?.replace('.pdf', '') || `Bill ${billIdx + 1}` : `Bill ${billIdx + 1}`;
+          items.push({
+            description: `${billName} - Construction Materials`,
+            quantity: 1,
+            rate: billTotal,
+            amount: billTotal,
+            bill_id: bill.id,
+          });
+        }
+      }
+      
+      // Consolidate duplicate items
+      const consolidated = new Map<string, GeneratedInvoice["line_items"][0]>();
+      items.forEach((item) => {
+        const key = item.description.toLowerCase().trim();
+        if (consolidated.has(key)) {
+          const existing = consolidated.get(key)!;
+          existing.quantity += item.quantity;
+          existing.amount += item.amount;
+          existing.rate = existing.amount / existing.quantity;
+          existing.bill_id += `,${item.bill_id}`;
+        } else {
+          consolidated.set(key, { ...item });
+        }
+      });
+      
+      const finalItems = Array.from(consolidated.values());
+      const total = finalItems.reduce((s, it) => s + it.amount, 0);
+      
+      const invoiceData: GeneratedInvoice = {
+        amount: Math.round(total + (total * 10) / 100),
+        description: `Invoice for ${step?.title || 'Project Step'}`,
+        line_items: finalItems,
+        invoice_number: `INV-${step?.title?.slice(0, 3)?.toUpperCase() || "STEP"}-${new Date().toISOString().slice(0,10).replace(/-/g,"")}`,
+        invoice_date: new Date().toISOString().slice(0, 10),
+        due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
+        status: "DRAFT",
+        subtotal: Math.round(total),
+        tax_percent: 10,
+        tax_amount: Math.round((total * 10) / 100),
+        grand_total: Math.round(total + (total * 10) / 100),
+      };
+      
+      setGeneratedInvoice(invoiceData);
+      setInvoiceGenerated(true);
+    } catch (error) {
+      console.error('Error generating invoice preview:', error);
+      showToast('Error generating invoice preview', 'error');
+    }
+  };
+
   const handleBillSelection = (billId: string) => {
-    setSelectedBills(prev => 
-      prev.includes(billId) 
+    setSelectedBills(prev => {
+      const newSelection = prev.includes(billId) 
         ? prev.filter(id => id !== billId)
-        : [...prev, billId]
-    );
+        : [...prev, billId];
+      
+      // Regenerate invoice preview when bills are selected/deselected
+      if (newSelection.length > 0) {
+        generateInvoicePreview(newSelection);
+      } else {
+        setGeneratedInvoice(null);
+        setInvoiceGenerated(false);
+      }
+      
+      return newSelection;
+    });
   };
 
   const handleSelectAll = () => {
     if (selectedBills.length === bills.length) {
       setSelectedBills([]);
+      setGeneratedInvoice(null);
+      setInvoiceGenerated(false);
     } else {
-      setSelectedBills(bills.map(bill => bill.id));
+      const allBillIds = bills.map(bill => bill.id);
+      setSelectedBills(allBillIds);
+      if (allBillIds.length > 0) {
+        generateInvoicePreview(allBillIds);
+      }
     }
   };
 
@@ -974,7 +1094,7 @@ export default function InvoiceGenerationModal({
             <h3 className="font-semibold text-blue-800 mb-2">Step Information</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                              <div>
-                 <p className="text-sm text-blue-600"><span className="font-medium">Project:</span> {project?.name || 'N/A'}</p>
+                 <p className="text-sm text-blue-600"><span className="font-medium">Project:</span> {project?.name || project?.title || 'Loading...'}</p>
                  <p className="text-sm text-blue-600"><span className="font-medium">Step:</span> {step?.title || 'N/A'}</p>
                </div>
               <div>

@@ -187,6 +187,7 @@ class ProjectMedia(models.Model):
     file_size = models.PositiveIntegerField()  # Size in bytes
     uploaded_by = models.ForeignKey(User, on_delete=models.CASCADE, limit_choices_to={"role": "SUPERVISOR"})
     uploaded_at = models.DateTimeField(auto_now_add=True)
+    is_submitted_to_admin = models.BooleanField(default=False)
     # Soft delete
     is_deleted = models.BooleanField(default=False)
     deleted_at = models.DateTimeField(null=True, blank=True)
