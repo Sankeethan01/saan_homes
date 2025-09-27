@@ -117,20 +117,14 @@ WSGI_APPLICATION = 'backend.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
+# Database configuration - use dj_database_url for flexibility
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': env('DB_NAME'),
-        'USER': env('DB_USER'),
-        'PASSWORD': env('DB_PASSWORD'),
-        'HOST': env('DB_HOST'),
-        'PORT': env('DB_PORT'),
-        "OPTIONS": {"sslmode": env("DB_SSL", default="require")},
-    }
-}
-
-DATABASES = {
-    "default": dj_database_url.config(env="DATABASE_URL", conn_max_age=600, ssl_require=True)
+    "default": dj_database_url.config(
+        env="DATABASE_URL", 
+        default="sqlite:///db.sqlite3",
+        conn_max_age=600, 
+        ssl_require=False
+    )
 }
 
 # DRF & JWT

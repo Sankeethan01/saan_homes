@@ -4,6 +4,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.filters import OrderingFilter, SearchFilter
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
+from django.http import FileResponse
 import json
 import os
 import pandas as pd
@@ -419,7 +420,7 @@ def create_steps_from_boq(project, boq_data):
     room_groups = {}
     
     # Common room types to look for
-    room_types = ["bedroom", "living", "dining", "kitchen", "bathroom", "toilet", "hall", "master"]
+    room_types = ["bedroom", "living", "dining", "kitchen", "bathroom", "toilet", "hall", "room", "master"]
     
     # Group finishing items by room type
     for item in finishing_items:
@@ -546,7 +547,11 @@ class IsAdminOrSupervisorOrReadOnly(permissions.BasePermission):
 # ViewSets
 # ──────────────────────────────────────────────
 class ProjectViewSet(viewsets.ModelViewSet):
-    queryset = Project.objects.select_related('supervisor').prefetch_related('steps').all()
+    queryset = Project.objects.select_related('supervisor').prefetch_related(
+        'steps', 
+        'steps__logs', 
+        'steps__invoice'
+    ).all()  # Optimize with prefetch_related
     serializer_class = ProjectSerializer
     permission_classes = [IsAdminOrSupervisorOrReadOnly]
     filter_backends = [SearchFilter, OrderingFilter]
@@ -563,48 +568,11 @@ class ProjectViewSet(viewsets.ModelViewSet):
     
     def get_queryset(self):
         # By default, exclude deleted projects with optimized queries
-        try:
-            # For list view, use a more efficient query
-            if self.action == 'list':
-                return Project.objects.select_related('supervisor').prefetch_related(
-                    'steps'
-                ).filter(is_deleted=False)
-            # For detail view, include more relationships
-            return Project.objects.select_related('supervisor').prefetch_related(
-                'steps', 
-                'steps__logs',
-                'media_files'
-            ).filter(is_deleted=False)
-        except Exception as e:
-            print(f"Error in ProjectViewSet.get_queryset: {str(e)}")
-            # Return a simple queryset if there's an error
-            return Project.objects.filter(is_deleted=False)
-            
-    def list(self, request, *args, **kwargs):
-        """Optimized list method with pagination and error handling"""
-        try:
-            # Use pagination for better performance
-            page_size = 10
-            paginator = self.paginator
-            
-            if paginator is None:
-                # If no paginator is set, use PageNumberPagination
-                from rest_framework.pagination import PageNumberPagination
-                paginator = PageNumberPagination()
-                paginator.page_size = page_size
-            
-            queryset = self.filter_queryset(self.get_queryset())
-            page = paginator.paginate_queryset(queryset, request)
-            
-            if page is not None:
-                serializer = self.get_serializer(page, many=True)
-                return paginator.get_paginated_response(serializer.data)
-            
-            serializer = self.get_serializer(queryset, many=True)
-            return Response(serializer.data)
-        except Exception as e:
-            print(f"Error in ProjectViewSet.list: {str(e)}")
-            return Response({"error": "An error occurred while fetching projects"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return Project.objects.select_related('supervisor').prefetch_related(
+            'steps', 
+            'steps__logs', 
+            'steps__invoice'
+        ).filter(is_deleted=False)
     
     @action(detail=False, methods=['get'], url_path='recycle-bin')
     def recycle_bin(self, request):
@@ -891,7 +859,13 @@ class ProjectViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_403_FORBIDDEN
             )
         
-        projects = Project.objects.filter(supervisor=request.user)
+        # Use optimized queryset with prefetch_related to avoid N+1 queries
+        projects = Project.objects.select_related('supervisor').prefetch_related(
+            'steps', 
+            'steps__logs', 
+            'steps__invoice'
+        ).filter(supervisor=request.user, is_deleted=False)
+        
         serializer = self.get_serializer(projects, many=True)
         return Response(serializer.data)
 
@@ -976,8 +950,8 @@ class ProjectViewSet(viewsets.ModelViewSet):
         
         return Response(stats)
 
-    @action(detail=True, methods=['get'])
-    def steps(self, request, pk=None):
+    @action(detail=False, methods=['get'])
+    def steps(self, request):
         project = self.get_object()
         steps = project.steps.all()
         from .serializers import StepSerializer
@@ -995,51 +969,24 @@ class StepViewSet(viewsets.ModelViewSet):
     
     @action(detail=True, methods=['post'])
     def approve(self, request, pk=None):
-        """
-        Mark a step as approved by admin
-        """
         step = self.get_object()
-        
-        # Set approval status
         step.is_approved = True
-        
-        # Set actual completion date if not already set
-        if not step.actual_completed and 'actual_completed' in request.data:
-            step.actual_completed = request.data['actual_completed']
-        elif not step.actual_completed:
-            step.actual_completed = timezone.now().date()
-            
+        step.actual_completed = timezone.now().date()  # Set actual completion date
+        step.status = 'APPROVED'
         step.save()
-        
         # Update project progress
         project = step.project
-        total_steps = project.steps.count()
+        total_steps = project.steps.count() or 1
         completed_steps = project.steps.filter(is_approved=True).count()
-        
-        if total_steps > 0:
-            project.progress = int((completed_steps / total_steps) * 100)
-            
-            # If all steps are completed, mark project as completed
-            if completed_steps == total_steps:
-                project.is_completed = True
-                
-            project.save()
-        
-        # --- Auto-generate invoice if not exists ---
-        from .models import Invoice
-        if not hasattr(step, 'invoice'):
-            Invoice.objects.create(
-                step=step,
-                data={
-                    'amount': float(step.expected_budget) if step.expected_budget else 0,
-                    'description': f'Invoice for {step.title}'
-                },
-                is_approved=False
-            )
-        # --- End auto-generate invoice ---
-        
-        serializer = self.get_serializer(step)
-        return Response(serializer.data)
+        # Note: Project model does not have a persisted 'progress' field; compute on the fly in serializers
+        progress_percent = int((completed_steps / total_steps) * 100)
+        # Return updated step payload to simplify client updates
+        from .serializers import StepSerializer
+        return Response({
+            "status": "Step approved",
+            "progress": progress_percent,
+            "step": StepSerializer(step).data,
+        })
 
 
 class ProgressLogViewSet(viewsets.ModelViewSet):
@@ -1127,124 +1074,379 @@ class ProjectMediaViewSet(viewsets.ModelViewSet):
     queryset = ProjectMedia.objects.select_related("project", "uploaded_by").all()
     serializer_class = ProjectMediaSerializer
     permission_classes = [IsAdminOrSupervisorOrReadOnly]
-    filter_backends = [OrderingFilter]
+    filter_backends = [SearchFilter, OrderingFilter]
+    search_fields = ["title", "description", "filename", "project__name"]
     ordering = ["-uploaded_at"]
-    parser_classes = (MultiPartParser, FormParser)  # ✅ remove JSONParser here
-
-    def create(self, request, *args, **kwargs):
-        print("📥 create() called")  # ✅ Confirm it's running
-
-        file = request.FILES.get('file')
-        project_id = request.data.get('project')
-        title = request.data.get('title', '')
-        description = request.data.get('description', '')
-        step_id = request.data.get('step')
-
-        if not file or not project_id:
-            return Response({'error': 'File and project are required.'}, status=400)
-
-        try:
-            project = Project.objects.get(id=project_id)
-        except Project.DoesNotExist:
-            return Response({'error': 'Project not found.'}, status=404)
-
-        step = None
+    parser_classes = (MultiPartParser, FormParser, JSONParser)
+    
+    def get_queryset(self):
+        qs = super().get_queryset()
+        # Include deleted for detail actions that must operate on deleted items
+        if getattr(self, "action", None) in ("restore", "purge", "destroy"):
+            return qs
+        only_deleted = self.request.query_params.get("only_deleted") in ("1", "true", "True")
+        include_deleted = self.request.query_params.get("include_deleted") in ("1", "true", "True")
+        if only_deleted:
+            return qs.filter(is_deleted=True)
+        if include_deleted:
+            base = qs
+        else:
+            base = qs.filter(is_deleted=False)
+        
+        # Extra filters: by project and step when provided
+        project_id = self.request.query_params.get("project")
+        step_id = self.request.query_params.get("step")
+        if project_id:
+            base = base.filter(project_id=project_id)
         if step_id:
-            try:
-                step = Step.objects.get(id=step_id, project=project)
-            except Step.DoesNotExist:
-                return Response({'error': 'Step not found for this project.'}, status=404)
-
-        file_ext = os.path.splitext(file.name)[1].lower()
-        media_type = 'DOCUMENT'
-        if file_ext in ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp']:
-            media_type = 'IMAGE'
-        elif file_ext in ['.mp4', '.avi', '.mov', '.wmv', '.flv', '.webm']:
-            media_type = 'VIDEO'
-        if file_ext in ['.mp4', '.avi', '.mov'] and 'vr' in file.name.lower():
-            media_type = 'VR'
-
-        data = {
-            'project': project.id,
-            'file': file,
-            'media_type': media_type,
-            'title': title,
-            'description': description,
-            'filename': file.name,
-            'file_size': file.size,
-            'step': step.id if step else None,
-        }
-
-        serializer = self.get_serializer(data=data)
-        if not serializer.is_valid():
-            print("🔥 Serializer errors:", serializer.errors)
-            return Response(serializer.errors, status=400)
-
-        media_instance = serializer.save(uploaded_by=request.user, step=step)
-
-        if step:
-            progress_log = ProgressLog.objects.create(
-                step=step,
-                supervisor=request.user,
-                message=description or f"Media uploaded: {file.name}",
-            )
-            ProgressLogMedia.objects.create(
-                progress_log=progress_log,
-                file=file,
-                media_type=media_type,
-                filename=file.name,
-                file_size=file.size,
-            )
-
-        return Response(serializer.data, status=201)
-
-
-    @action(detail=False, methods=['get'])
-    def by_project(self, request):
+            base = base.filter(step_id=step_id)
+        return base
+    
+    def perform_create(self, serializer):
         """
-        Get all media files for a specific project
+        Save ProjectMedia and, if a step is provided, also create a ProgressLog and
+        attach the same file as a ProgressLogMedia so it shows up step-wise.
         """
-        project_id = request.query_params.get('project')
-        if not project_id:
-            return Response(
-                {"error": "Project ID is required"}, 
-                status=status.HTTP_400_BAD_REQUEST
-            )
+        instance: ProjectMedia = serializer.save(uploaded_by=self.request.user)
         
+        # If this media is tied to a specific step, mirror it into Progress Logs
+        step = getattr(instance, "step", None)
         try:
-            project = Project.objects.get(id=project_id)
-        except Project.DoesNotExist:
-            return Response(
-                {"error": "Project not found"}, 
-                status=status.HTTP_404_NOT_FOUND
-            )
-        
-        media_files = ProjectMedia.objects.filter(project=project)
-        serializer = self.get_serializer(media_files, many=True)
+            if step:
+                # Create a concise log message
+                msg = instance.description or instance.title or f"Media uploaded: {instance.filename}"
+                log = ProgressLog.objects.create(step=step, message=msg)
+                
+                # Determine media type from the ProjectMedia instance
+                media_type = instance.media_type or 'DOCUMENT'
+                
+                # Create a ProgressLogMedia entry reusing the same stored file
+                ProgressLogMedia.objects.create(
+                    progress_log=log,
+                    file=instance.file,
+                    media_type=media_type,
+                    filename=instance.filename or (instance.file.name if instance.file else ''),
+                    file_size=instance.file_size or (instance.file.size if instance.file else 0),
+                )
+        except Exception:
+            # If any mirroring error occurs, we still keep ProjectMedia; avoid breaking the upload.
+            pass
+    
+    def get_queryset(self):
+        qs = super().get_queryset()
+        # Include deleted for detail actions that must operate on deleted items
+        if getattr(self, "action", None) in ("restore", "purge", "destroy"):
+            return qs
+        only_deleted = self.request.query_params.get("only_deleted") in ("1", "true", "True")
+        include_deleted = self.request.query_params.get("include_deleted") in ("1", "true", "True")
+        if only_deleted:
+            return qs.filter(is_deleted=True)
+        if include_deleted:
+            return qs
+        return qs.filter(is_deleted=False)
+    
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        instance.delete()  # soft-delete via model
+        return Response(status=status.HTTP_204_NO_CONTENT)
+    
+    @action(detail=True, methods=["POST"], url_path="restore")
+    def restore(self, request, pk=None):
+        instance = self.get_object()
+        if instance.is_deleted:
+            instance.is_deleted = False
+            instance.deleted_at = None
+            instance.save(update_fields=["is_deleted", "deleted_at"])
+        serializer = self.get_serializer(instance)
         return Response(serializer.data)
+    
+    @action(detail=True, methods=["DELETE"], url_path="purge")
+    def purge(self, request, pk=None):
+        instance = self.get_object()
+        instance.hard_delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+    
+    @action(detail=False, methods=['get'], url_path='recycle-bin')
+    def recycle_bin(self, request):
+        """
+        List all deleted project media (recycle bin)
+        """
+        # Only admins should be able to access recycle bin
+        if request.user.role != 'ADMIN':
+            return Response(
+                {"error": "Only administrators can access the recycle bin"}, 
+                status=status.HTTP_403_FORBIDDEN
+            )
+            
+        deleted_media = ProjectMedia.objects.select_related("project", "uploaded_by").filter(is_deleted=True)
+        page = self.paginate_queryset(deleted_media)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+        
+        serializer = self.get_serializer(deleted_media, many=True)
+        return Response(serializer.data)
+    
+    @action(detail=True, methods=['post'])
+    def submit_to_admin(self, request, pk=None):
+        """Mark a project media item as submitted to admin and return updated object."""
+        instance = self.get_object()
+        if not getattr(instance, 'is_submitted_to_admin', False):
+            instance.is_submitted_to_admin = True
+            instance.save(update_fields=["is_submitted_to_admin"])
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class BillViewSet(viewsets.ModelViewSet):
     queryset = Bill.objects.select_related("step").all()
     serializer_class = BillSerializer
     permission_classes = [IsAdminOrSupervisorOrReadOnly]
-    filter_backends = [OrderingFilter]
+    filter_backends = [SearchFilter, OrderingFilter]
+    search_fields = ["step__title", "pdf"]
     ordering = ["-uploaded_at"]
+    
+    @action(detail=False, methods=['post'], url_path='process-pdf')
+    def process_pdf(self, request):
+        """
+        Process PDF file to extract text and parse bill data
+        """
+        try:
+            pdf_file = request.FILES.get('pdf')
+            if not pdf_file:
+                return Response({"error": "No PDF file provided"}, status=400)
+            
+            # For now, we'll implement a basic text extraction
+            # In production, you would use libraries like PyPDF2, pdfplumber, or OCR services
+            
+            import PyPDF2
+            import io
+            
+            # Read PDF content
+            pdf_content = pdf_file.read()
+            pdf_reader = PyPDF2.PdfReader(io.BytesIO(pdf_content))
+            
+            # Extract text from all pages
+            full_text = ""
+            for page_num in range(len(pdf_reader.pages)):
+                page = pdf_reader.pages[page_num]
+                full_text += page.extract_text() + "\n"
+            
+            # Parse the text to extract bill items
+            items = self.parse_bill_text(full_text)
+            
+            # Calculate total
+            total = sum(item.get('total', 0) for item in items)
+            
+            return Response({
+                "raw_text": full_text,
+                "items": items,
+                "total": total,
+                "status": "success"
+            })
+            
+        except Exception as e:
+            return Response({
+                "error": f"Failed to process PDF: {str(e)}",
+                "status": "error"
+            }, status=500)
+    
+    def parse_bill_text(self, text):
+        """
+        Parse bill text to extract line items
+        """
+        items = []
+        lines = [line.strip() for line in text.split('\n') if line.strip()]
+        
+        # Patterns to match bill items
+        patterns = [
+            # Pattern: Description Quantity Rate Amount
+            r'^(.+?)\s+(\d+(?:\.\d+)?)\s+(\d+(?:\.\d+)?)\s+(\d+(?:\.\d+)?)$',
+            # Pattern: Description Qty x Rate = Amount  
+            r'^(.+?)\s+(\d+(?:\.\d+)?)\s*[x×]\s*(\d+(?:\.\d+)?)\s*=\s*(\d+(?:\.\d+)?)$',
+            # Pattern: Description, Quantity, Rate, Amount
+            r'^(.+?),\s*(\d+(?:\.\d+)?),\s*(\d+(?:\.\d+)?),\s*(\d+(?:\.\d+)?)$',
+        ]
+        
+        for line in lines:
+            for pattern in patterns:
+                import re
+                match = re.match(pattern, line)
+                if match:
+                    description = match.group(1).strip()
+                    quantity = float(match.group(2))
+                    rate = float(match.group(3))
+                    amount = float(match.group(4))
+                    
+                    # Validate the extracted data
+                    if (description and len(description) > 2 and 
+                        quantity > 0 and rate > 0 and amount > 0):
+                        items.append({
+                            "itemName": description,
+                            "description": description,
+                            "quantity": quantity,
+                            "unit": "pcs",
+                            "unitPrice": rate,
+                            "total": amount
+                        })
+                        break
+        
+        # If no structured items found, try to find total amount
+        if not items:
+            import re
+            total_match = re.search(r'(?:total|amount|sum)[:\s]*(\d+(?:\.\d+)?)', text, re.IGNORECASE)
+            if total_match:
+                total = float(total_match.group(1))
+                items.append({
+                    "itemName": "Bill Total",
+                    "description": "Total amount from bill",
+                    "quantity": 1,
+                    "unit": "bill",
+                    "unitPrice": total,
+                    "total": total
+                })
+        
+        return items
+    
+    def get_queryset(self):
+        qs = super().get_queryset()
+        # Include deleted for detail actions that must operate on deleted items
+        if getattr(self, "action", None) in ("restore", "purge", "destroy"):
+            return qs
+        only_deleted = self.request.query_params.get("only_deleted") in ("1", "true", "True")
+        include_deleted = self.request.query_params.get("include_deleted") in ("1", "true", "True")
+        if only_deleted:
+            return qs.filter(is_deleted=True)
+        if include_deleted:
+            return qs
+        return qs.filter(is_deleted=False)
+    
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        instance.delete()  # soft-delete via model
+        return Response(status=status.HTTP_204_NO_CONTENT)
+    
+    @action(detail=True, methods=["POST"], url_path="restore")
+    def restore(self, request, pk=None):
+        instance = self.get_object()
+        if instance.is_deleted:
+            instance.is_deleted = False
+            instance.deleted_at = None
+            instance.save(update_fields=["is_deleted", "deleted_at"])
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
+    
+    @action(detail=True, methods=["DELETE"], url_path="purge")
+    def purge(self, request, pk=None):
+        instance = self.get_object()
+        instance.hard_delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+    
+    @action(detail=False, methods=['get'], url_path='recycle-bin')
+    def recycle_bin(self, request):
+        """
+        List all deleted bills (recycle bin)
+        """
+        # Only admins should be able to access recycle bin
+        if request.user.role != 'ADMIN':
+            return Response(
+                {"error": "Only administrators can access the recycle bin"}, 
+                status=status.HTTP_403_FORBIDDEN
+            )
+            
+        deleted_bills = Bill.objects.select_related("step").filter(is_deleted=True)
+        page = self.paginate_queryset(deleted_bills)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+        
+        serializer = self.get_serializer(deleted_bills, many=True)
+        return Response(serializer.data)
 
     def perform_create(self, serializer):
         bill = serializer.save(uploaded_by=self.request.user)
+        
+        # Process PDF to extract OCR data if not already provided
+        if not bill.ocr_data or not bill.ocr_data.get('items'):
+            try:
+                # Extract text from PDF
+                import PyPDF2
+                import io
+                
+                pdf_content = bill.pdf.read()
+                pdf_reader = PyPDF2.PdfReader(io.BytesIO(pdf_content))
+                
+                # Extract text from all pages
+                full_text = ""
+                for page_num in range(len(pdf_reader.pages)):
+                    page = pdf_reader.pages[page_num]
+                    full_text += page.extract_text() + "\n"
+                
+                # Parse the text to extract bill items
+                items = self.parse_bill_text(full_text)
+                total = sum(item.get('total', 0) for item in items)
+                
+                # Update bill with extracted OCR data
+                bill.ocr_data = {
+                    'items': items,
+                    'total': total,
+                    'raw_text': full_text
+                }
+                bill.save(update_fields=['ocr_data'])
+                
+            except Exception as e:
+                print(f"Error processing PDF OCR: {e}")
+                # Keep original ocr_data if processing fails
+        
         # Auto-generate invoice if not already exists for this step
         if not hasattr(bill.step, 'invoice'):
             from .models import Invoice
+            # Extract line items from OCR data if available
+            line_items = []
+            if bill.ocr_data and 'items' in bill.ocr_data:
+                for item in bill.ocr_data['items']:
+                    # Normalize fields from various OCR shapes
+                    description = item.get('description') or item.get('itemName') or 'Item'
+                    qty = item.get('quantity') or item.get('qty') or 1
+                    rate = item.get('rate') or item.get('unitPrice') or 0
+                    amount = item.get('amount') or (rate or 0) * (qty or 0)
+                    line_items.append({
+                        'description': description,
+                        'quantity': qty,
+                        'rate': rate,
+                        'amount': amount,
+                    })
+            else:
+                # Create a default line item from the bill
+                total_val = bill.ocr_data.get('total', 0) if bill.ocr_data else 0
+                line_items.append({
+                    'description': f'Bill for {bill.step.title}',
+                    'quantity': 1,
+                    'rate': total_val,
+                    'amount': total_val,
+                })
+            
             Invoice.objects.create(
                 step=bill.step,
                 data={
                     'amount': bill.ocr_data.get('total', 0) if bill.ocr_data else 0,
                     'description': f'Invoice for {bill.step.title}',
                     'bill_id': str(bill.id),
+                    'line_items': line_items,
+                    'invoice_number': f"INV-{bill.step.project.name[:3].upper()}-{bill.step.order:03d}-{timezone.now().strftime('%Y%m%d')}",
+                    'invoice_date': timezone.now().date(),
+                    'due_date': (timezone.now() + timezone.timedelta(days=30)).date(),
+                    'status': 'DRAFT'
                 },
                 is_approved=False
             )
+        else:
+            # Update existing invoice with new bill data
+            invoice = bill.step.invoice
+            if bill.ocr_data and 'total' in bill.ocr_data:
+                invoice.data['amount'] = bill.ocr_data['total']
+                invoice.data['bill_id'] = str(bill.id)
+                invoice.save()
 
     @action(detail=True, methods=['post'])
     def submit_to_admin(self, request, pk=None):
@@ -1252,16 +1454,363 @@ class BillViewSet(viewsets.ModelViewSet):
         bill.is_submitted_to_admin = True
         bill.save()
 
+        # Update invoice status if it exists
+        if hasattr(bill.step, 'invoice'):
+            invoice = bill.step.invoice
+            invoice.data['status'] = 'SUBMITTED'
+            invoice.save()
+
         # (Optional: notification code here)
         return Response({'status': 'submitted'})
 
+    @action(detail=True, methods=['post'])
+    def reprocess_ocr(self, request, pk=None):
+        """Re-process OCR for a bill on the server side"""
+        bill = self.get_object()
+        
+        if not bill.pdf:
+            return Response(
+                {"error": "No PDF file found for this bill"}, 
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        try:
+            # Import basic text processing
+            import re
+            
+            file_path = os.path.join(settings.MEDIA_ROOT, str(bill.pdf))
+            
+            if not os.path.exists(file_path):
+                return Response(
+                    {"error": "PDF file not found on server"}, 
+                    status=status.HTTP_404_NOT_FOUND
+                )
+            
+            # For now, we'll use a simple approach - read the file as text
+            # This works for text-based PDFs
+            try:
+                with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                    full_text = f.read()
+            except UnicodeDecodeError:
+                # If it's a binary PDF, we'll need to use a different approach
+                # For now, return an error suggesting to use the client-side OCR
+                return Response({
+                    'status': 'error',
+                    'message': 'Binary PDF detected. Please use client-side OCR processing.'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Parse the text to find totals
+            lines = full_text.split('\n')
+            total = 0
+            strict_total = 0
+            
+            # Look for total patterns - improved patterns
+            total_patterns = [
+                r'\b(grand\s*total|total\s*amount|total|net\s*total|final\s*total|balance\s*due|amount\s*due)\b\s*:?\s*([-₹$€]?[\d,]+(?:\.[\d]{2})?)\s*$',
+                r'\b(grand\s*total|total\s*amount|total|net\s*total|final\s*total|balance\s*due|amount\s*due)\b\s*:?\s*([-₹$€]?[\d,]+(?:\.[\d]{2})?)\s*(?:LKR|Rs|₹)?\s*$',
+                r'^[-₹$€]?\s*([\d,]+(?:\.[\d]{2})?)\s*(?:LKR|Rs|₹)?\s*$',  # Line with just amount
+                r'\b(grand\s*total|total\s*amount|total|net\s*total|final\s*total|balance\s*due|amount\s*due)\b.*?([-₹$€]?[\d,]+(?:\.[\d]{2})?)\s*$',
+                r'([-₹$€]?[\d,]+(?:\.[\d]{2})?)\s*(?:LKR|Rs|₹)?\s*$'
+            ]
+            
+            # Strict parser for labeled totals (Grand Total / Subtotal / Tax)
+            try:
+                joined = "\n".join(lines)
+                # Grand Total
+                m_gt = re.search(r"grand\s*total\s*:\s*(?:rs\.?|inr|₹)?\s*([\d,]+(?:\.\d{1,2})?)", joined, re.IGNORECASE)
+                if m_gt:
+                    strict_total = float(re.sub(r"[\s,]", "", m_gt.group(1)))
+                else:
+                    # Compute from subtotal + tax
+                    m_sub = re.search(r"sub\s*total\s*:\s*(?:rs\.?|inr|₹)?\s*([\d,]+(?:\.\d{1,2})?)", joined, re.IGNORECASE)
+                    m_tax = re.search(r"tax\s*\(?\s*(\d{1,3})%?\s*\)?\s*:\s*(?:rs\.?|inr|₹)?\s*([\d,]+(?:\.\d{1,2})?)", joined, re.IGNORECASE)
+                    if m_sub and m_tax:
+                        sub_v = float(re.sub(r"[\s,]", "", m_sub.group(1)))
+                        tax_v = float(re.sub(r"[\s,]", "", m_tax.group(2)))
+                        strict_total = sub_v + tax_v
+            except Exception:
+                strict_total = 0
+
+            # Search from bottom to top for total (most likely to be at the end)
+            for line in reversed(lines):
+                clean_line = line.strip()
+                for pattern in total_patterns:
+                    match = re.search(pattern, clean_line, re.IGNORECASE)
+                    if match:
+                        amount_str = match.group(2) if len(match.groups()) > 1 else match.group(1)
+                        # Clean the amount string - remove commas and spaces
+                        amount_str = re.sub(r'[,\s]', '', amount_str)
+                        try:
+                            amount = float(amount_str)
+                            if amount > total:
+                                total = amount
+                                # If we found a good match, break early
+                                if amount > 0:
+                                    break
+                        except ValueError:
+                            continue
+                if total > 0:
+                    break
+            
+            # Infer tax from text if present
+            inferred_tax = 0.0
+            try:
+                tax_line = next((ln for ln in reversed(lines) if re.search(r'\btax\b', ln, re.IGNORECASE)), None)
+                if tax_line:
+                    amt_match = re.search(r'([\d,]+(?:\.[\d]{2})?)\s*(?:LKR|Rs|₹)?\s*$', tax_line)
+                    pct_match = re.search(r'(\d{1,3})%\s*', tax_line)
+                    if amt_match:
+                        inferred_tax = float(re.sub(r'[,\s]', '', amt_match.group(1)))
+                    elif pct_match:
+                        # store as percentage marker; client can recompute
+                        inferred_tax = float(pct_match.group(1)) / 100.0
+            except Exception:
+                inferred_tax = 0.0
+
+            # Sanitize raw text to remove control characters that break JSON/DB (e.g., \u0000)
+            try:
+                import re as _re_sanitize
+                clean_text = _re_sanitize.sub(r'[\x00-\x08\x0B-\x0C\x0E-\x1F\x7F]', '', full_text or '')
+            except Exception:
+                clean_text = full_text or ''
+
+            # Prefer strict_total when available
+            if strict_total > 0:
+                total = strict_total
+
+            # Update the bill with new OCR data
+            if total > 0:
+                bill.ocr_data = {
+                    'total': total,
+                    'raw_text': clean_text,
+                    'items': [],
+                    'confidence': 0.8,
+                    'issues': [],
+                    'meta': {'pages': 1, 'fileName': os.path.basename(str(bill.pdf)), 'inferred_tax': inferred_tax}
+                }
+                bill.save()
+                
+                return Response({
+                    'status': 'success',
+                    'total': total,
+                    'message': f'OCR re-processed successfully. Total: {total}'
+                })
+            else:
+                return Response({
+                    'status': 'warning',
+                    'message': 'OCR completed but no total amount found'
+                }, status=status.HTTP_200_OK)
+                
+        except Exception as e:
+            return Response(
+                {"error": f"Error re-processing OCR: {str(e)}"}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+    @action(detail=False, methods=['get'])
+    def by_step(self, request):
+        """Get all bills for a specific step"""
+        step_id = request.query_params.get('step')
+        if not step_id:
+            return Response(
+                {"error": "Step ID is required"}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        bills = Bill.objects.filter(step_id=step_id).order_by('-uploaded_at')
+        serializer = self.get_serializer(bills, many=True)
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['get'])
+    def download(self, request, pk=None):
+        """Download the PDF file for a specific bill"""
+        bill = self.get_object()
+        
+        if not bill.pdf:
+            return Response(
+                {"error": "No PDF file found for this bill"}, 
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        try:
+            file_path = os.path.join(settings.MEDIA_ROOT, str(bill.pdf))
+            print(f"Attempting to download file: {file_path}")
+            
+            if not os.path.exists(file_path):
+                print(f"File not found: {file_path}")
+                return Response(
+                    {"error": "PDF file not found on server"}, 
+                    status=status.HTTP_404_NOT_FOUND
+                )
+            
+            # Return the file as a response
+            response = FileResponse(open(file_path, 'rb'), content_type='application/pdf')
+            response['Content-Disposition'] = f'attachment; filename="{os.path.basename(str(bill.pdf))}"'
+            response['Access-Control-Allow-Origin'] = '*'
+            response['Access-Control-Allow-Methods'] = 'GET, OPTIONS'
+            response['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
+            print(f"Successfully serving file: {file_path}")
+            return response
+            
+        except Exception as e:
+            print(f"Error downloading file: {str(e)}")
+            return Response(
+                {"error": f"Error downloading file: {str(e)}"}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
 
 class InvoiceViewSet(viewsets.ModelViewSet):
-    queryset = Invoice.objects.select_related("step").all()
+    queryset = Invoice.objects.select_related("step", "step__project").prefetch_related("step__bills").all()
     serializer_class = InvoiceSerializer
     permission_classes = [IsAdminOrSupervisorOrReadOnly]
     filter_backends = [OrderingFilter]
     ordering = ["-created"]
+
+    def get_queryset(self):
+        """Filter invoices based on user role"""
+        queryset = super().get_queryset()
+        user = self.request.user
+        
+        if user.role == 'SUPERVISOR':
+            # Supervisors can only see invoices for their projects
+            queryset = queryset.filter(step__project__supervisor=user)
+        elif user.role == 'ADMIN':
+            # Admins can see all invoices
+            pass
+        else:
+            # Other users see no invoices
+            queryset = queryset.none()
+            
+        return queryset
+
+    @action(detail=True, methods=['post'])
+    def set_items(self, request, pk=None):
+        """Replace invoice line items and recompute total amount from items."""
+        invoice = self.get_object()
+        items = request.data.get('items')
+        if not isinstance(items, list):
+            return Response({"error": "'items' must be a list"}, status=status.HTTP_400_BAD_REQUEST)
+        # sanitize and coerce numeric fields
+        clean_items = []
+        total = 0.0
+        for item in items:
+            description = str(item.get('description', '') or '').strip() or 'Item'
+            try:
+                quantity = float(item.get('quantity', 1) or 1)
+            except (TypeError, ValueError):
+                quantity = 1.0
+            try:
+                rate = float(item.get('rate', 0) or 0)
+            except (TypeError, ValueError):
+                rate = 0.0
+            amount = item.get('amount')
+            try:
+                amount = float(amount) if amount is not None else quantity * rate
+            except (TypeError, ValueError):
+                amount = quantity * rate
+            total += amount
+            clean_items.append({
+                'description': description,
+                'quantity': quantity,
+                'rate': rate,
+                'amount': amount,
+            })
+        # update invoice data
+        data = invoice.data or {}
+        data['line_items'] = clean_items
+        data['amount'] = round(total, 2)
+        # preserve other fields (invoice_number, status, etc.)
+        invoice.data = data
+        invoice.save()
+        return Response(self.get_serializer(invoice).data)
+
+    @action(detail=True, methods=['get'])
+    def verify(self, request, pk=None):
+        """Return computed totals, OCR totals, and difference for this invoice without mutating state."""
+        invoice = self.get_object()
+        serializer = self.get_serializer(invoice)
+        return Response({
+            'invoice_id': str(invoice.id),
+            'items': serializer.data.get('items'),
+            'computed_total': serializer.data.get('computed_total'),
+            'ocr_total': serializer.data.get('ocr_total'),
+            'difference': serializer.data.get('difference'),
+            'is_consistent': serializer.data.get('is_consistent'),
+            'status': serializer.data.get('status_display'),
+        })
+
+    @action(detail=True, methods=['post'])
+    def submit_to_admin(self, request, pk=None):
+        """Submit invoice to admin for approval"""
+        invoice = self.get_object()
+        invoice.data['status'] = 'SUBMITTED'
+        invoice.save()
+        return Response({'status': 'submitted'})
+
+    @action(detail=True, methods=['post'])
+    def approve(self, request, pk=None):
+        """Approve invoice (admin only)"""
+        if request.user.role != 'ADMIN':
+            return Response(
+                {"error": "Only admins can approve invoices"}, 
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        invoice = self.get_object()
+        invoice.data['status'] = 'APPROVED'
+        invoice.is_approved = True
+        invoice.save()
+        return Response({'status': 'approved'})
+
+    @action(detail=True, methods=['post'])
+    def reject(self, request, pk=None):
+        """Reject invoice (admin only)"""
+        if request.user.role != 'ADMIN':
+            return Response(
+                {"error": "Only admins can reject invoices"}, 
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        invoice = self.get_object()
+        invoice.data['status'] = 'REJECTED'
+        invoice.is_approved = False
+        invoice.save()
+        return Response({'status': 'rejected'})
+
+    @action(detail=False, methods=['get'])
+    def by_step(self, request):
+        """Get invoice for a specific step"""
+        step_id = request.query_params.get('step')
+        if not step_id:
+            return Response(
+                {"error": "Step ID is required"}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            invoice = Invoice.objects.get(step_id=step_id)
+            serializer = self.get_serializer(invoice)
+            return Response(serializer.data)
+        except Invoice.DoesNotExist:
+            return Response(
+                {"error": "Invoice not found"}, 
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+    @action(detail=False, methods=['get'])
+    def by_project(self, request):
+        """Get all invoices for a specific project"""
+        project_id = request.query_params.get('project')
+        if not project_id:
+            return Response(
+                {"error": "Project ID is required"}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        invoices = Invoice.objects.filter(step__project_id=project_id).order_by('-created')
+        serializer = self.get_serializer(invoices, many=True)
+        return Response(serializer.data)
 
 
 class VRVideoViewSet(viewsets.ModelViewSet):

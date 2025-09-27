@@ -511,10 +511,10 @@ export default function StepDetailsPage({ params }: { params: Promise<{ projectI
                       {material.unit}
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-500 text-right">
-                      {material.rate ? `LKR ${material.rate.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}` : '-'}
+                      {material.rate ? `Rs. ${material.rate.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}` : '-'}
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-500 text-right">
-                      {material.amount ? `LKR ${material.amount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}` : '-'}
+                      {material.amount ? `Rs. ${material.amount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}` : '-'}
                     </td>
                   </tr>
                 ))}
@@ -525,7 +525,7 @@ export default function StepDetailsPage({ params }: { params: Promise<{ projectI
                     Total
                   </td>
                   <td className="px-4 py-3 text-sm font-bold text-gray-900 text-right">
-                    LKR {totalMaterialCost.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                    Rs. {totalMaterialCost.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
                   </td>
                 </tr>
               </tbody>
@@ -558,14 +558,14 @@ export default function StepDetailsPage({ params }: { params: Promise<{ projectI
               <div className="bg-gradient-to-r from-blue-50 to-blue-100 p-4 rounded-xl border border-blue-200">
                 <div className="text-sm font-medium text-blue-700">Expected Budget</div>
                 <div className="text-2xl font-bold text-blue-900 mt-1">
-                  LKR {step.expected_budget?.toLocaleString() || '0'}
+                  Rs. {step.expected_budget?.toLocaleString('en-IN') || '0'}
                 </div>
               </div>
               
               <div className="bg-gradient-to-r from-purple-50 to-purple-100 p-4 rounded-xl border border-purple-200">
                 <div className="text-sm font-medium text-purple-700">Actual Cost (Materials)</div>
                 <div className="text-2xl font-bold text-purple-900 mt-1">
-                  LKR {totalMaterialCost.toLocaleString()}
+                  Rs. {totalMaterialCost.toLocaleString('en-IN')}
                 </div>
               </div>
               
@@ -578,7 +578,7 @@ export default function StepDetailsPage({ params }: { params: Promise<{ projectI
                   Budget Variance
                 </div>
                 <div className={`text-2xl font-bold mt-1 ${budgetVariance > 0 ? 'text-red-900' : 'text-green-900'}`}>
-                  {budgetVariance > 0 ? '+' : ''}LKR {Math.abs(budgetVariance).toLocaleString()} 
+                  {budgetVariance > 0 ? '+' : ''}Rs. {Math.abs(budgetVariance).toLocaleString('en-IN')} 
                   <span className="text-lg">({Math.abs(budgetVariancePercent).toFixed(1)}%)</span>
                 </div>
                 <div className={`text-xs mt-1 ${budgetVariance > 0 ? 'text-red-600' : 'text-green-600'}`}>
@@ -977,7 +977,7 @@ export default function StepDetailsPage({ params }: { params: Promise<{ projectI
                 </div>
                 <div className="text-sm font-medium text-orange-700">Materials</div>
                 <div className="text-xs text-orange-600 mt-2">
-                  LKR {totalMaterialCost.toLocaleString()} total
+                  Rs. {totalMaterialCost.toLocaleString()} total
                 </div>
                 <div className="mt-2 h-2 bg-orange-200 rounded-full">
                   <div 
@@ -1125,12 +1125,12 @@ export default function StepDetailsPage({ params }: { params: Promise<{ projectI
                               {material.name}
                             </div>
                             <div className="text-sm font-bold text-gray-900">
-                              LKR {material.amount?.toFixed(2)}
+                              Rs. {material.amount?.toFixed(2)}
                             </div>
                           </div>
                           <div className="flex items-center justify-between text-xs text-gray-500">
                             <span>{material.quantity} {material.unit}</span>
-                            <span>LKR {material.rate?.toFixed(2)}/unit</span>
+                            <span>Rs. {material.rate?.toFixed(2)}/unit</span>
                           </div>
                           <div className="mt-2 h-1.5 bg-gray-200 rounded-full">
                             <div 
