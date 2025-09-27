@@ -11,8 +11,10 @@ import numpy as np
 from django.conf import settings
 from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
+from django.http import FileResponse
 import uuid
 from django.utils import timezone
+from .boq_template_generator import generate_boq_template
 
 from .models import (
     Project,
@@ -555,6 +557,66 @@ class ProjectViewSet(viewsets.ModelViewSet):
     ordering = ["-created"]
     parser_classes = (MultiPartParser, FormParser, JSONParser)
     
+    @action(detail=False, methods=['get'], url_path='boq-template', permission_classes=[permissions.AllowAny])
+    def boq_template(self, request):
+        """
+        Generate and serve a standardized BOQ template for download
+        Public endpoint - no authentication required
+        """
+        template_path = None
+        template_file = None
+        
+        try:
+            # Generate the template
+            template_path = generate_boq_template()
+            
+            # Open the file
+            template_file = open(template_path, 'rb')
+            
+            # Serve the file for download
+            response = FileResponse(
+                template_file,
+                content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+            )
+            response['Content-Disposition'] = f'attachment; filename="SAAN_HOMES_BOQ_TEMPLATE.xlsx"'
+            
+            # Use FileResponse's streaming to handle the file, then delete it after sending
+            response._resource_closers.append(lambda: self._cleanup_template(template_path, template_file))
+            
+            return response
+        except Exception as e:
+            # Clean up in case of error
+            if template_file:
+                try:
+                    template_file.close()
+                except:
+                    pass
+                    
+            if template_path and os.path.exists(template_path):
+                try:
+                    os.remove(template_path)
+                except:
+                    pass
+                    
+            return Response(
+                {"error": f"Failed to generate BOQ template: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
+    def _cleanup_template(self, file_path, file_obj):
+        """Helper method to clean up template files after they've been served"""
+        try:
+            # Close the file if it's still open
+            if file_obj and not file_obj.closed:
+                file_obj.close()
+                
+            # Delete the file from disk
+            if file_path and os.path.exists(file_path):
+                os.remove(file_path)
+                print(f"Template file deleted: {file_path}")
+        except Exception as e:
+            print(f"Error cleaning up template file: {str(e)}")
+    
     def get_serializer_class(self):
         """Use a lightweight serializer for list views"""
         if self.action == 'list':
@@ -707,7 +769,10 @@ class ProjectViewSet(viewsets.ModelViewSet):
         file_ext = os.path.splitext(boq_file.name)[1].lower()
         if file_ext not in ['.xlsx', '.xls']:
             return Response(
-                {"error": "Invalid file format. Only Excel files (.xlsx, .xls) are supported."}, 
+                {
+                    "error": "Invalid file format. Only Excel files (.xlsx, .xls) are supported.",
+                    "template_url": f"{request.build_absolute_uri('/')[:-1]}/api/projects/boq-template/"
+                }, 
                 status=status.HTTP_400_BAD_REQUEST
             )
         
@@ -717,15 +782,31 @@ class ProjectViewSet(viewsets.ModelViewSet):
         full_temp_path = os.path.join(settings.MEDIA_ROOT, temp_path)
         
         try:
+            # Check if this is our standardized template
+            is_standard_template = False
+            try:
+                xls = pd.ExcelFile(full_temp_path)
+                if "BOQ" in xls.sheet_names and "Units Reference" in xls.sheet_names:
+                    is_standard_template = True
+            except:
+                pass
+                
             # Parse the BOQ file
             boq_data = parse_boq_file(full_temp_path)
             
             # Check for parsing errors
             if "error" in boq_data:
                 return Response(
-                    {"error": boq_data["error"]}, 
+                    {
+                        "error": boq_data["error"],
+                        "template_url": f"{request.build_absolute_uri('/')[:-1]}/api/projects/boq-template/",
+                        "message": "Please use our standardized BOQ template for better results."
+                    }, 
                     status=status.HTTP_400_BAD_REQUEST
                 )
+                
+            # Add flag indicating if this was our standard template
+            boq_data["is_standard_template"] = is_standard_template
             
             # Prepare response with summary data
             response_data = {
@@ -803,7 +884,10 @@ class ProjectViewSet(viewsets.ModelViewSet):
         # Validate BOQ file
         if 'boq_file' not in request.FILES:
             return Response(
-                {"error": "BOQ file is required"}, 
+                {
+                    "error": "BOQ file is required",
+                    "template_url": f"{request.build_absolute_uri('/')[:-1]}/api/projects/boq-template/"
+                }, 
                 status=status.HTTP_400_BAD_REQUEST
             )
             
@@ -811,7 +895,10 @@ class ProjectViewSet(viewsets.ModelViewSet):
         file_ext = os.path.splitext(boq_file.name)[1].lower()
         if file_ext not in ['.xlsx', '.xls']:
             return Response(
-                {"error": "Invalid BOQ file format. Only Excel files (.xlsx, .xls) are supported."}, 
+                {
+                    "error": "Invalid BOQ file format. Only Excel files (.xlsx, .xls) are supported.",
+                    "template_url": f"{request.build_absolute_uri('/')[:-1]}/api/projects/boq-template/"
+                }, 
                 status=status.HTTP_400_BAD_REQUEST
             )
         
@@ -856,11 +943,24 @@ class ProjectViewSet(viewsets.ModelViewSet):
             full_temp_path = os.path.join(settings.MEDIA_ROOT, temp_path)
             
             try:
+                # Check if this is our standardized template for optimized parsing
+                is_standard_template = False
+                try:
+                    xls = pd.ExcelFile(full_temp_path)
+                    if "BOQ" in xls.sheet_names and "Units Reference" in xls.sheet_names:
+                        is_standard_template = True
+                        print(f"Using optimized parsing for standardized template: {boq_file.name}")
+                except Exception as e:
+                    print(f"Error checking if file is standard template: {str(e)}")
+                
                 # Parse the BOQ file
                 boq_data = parse_boq_file(full_temp_path)
                 
                 # Create steps based on BOQ data
                 create_steps_from_boq(project, boq_data)
+                
+                # No need to store the BOQ file after successful parsing
+                # The steps and materials are now in the database
                 
             except Exception as e:
                 print(f"Error processing BOQ: {e}")
@@ -870,8 +970,22 @@ class ProjectViewSet(viewsets.ModelViewSet):
                     if os.path.exists(full_temp_path):
                         os.close(os.open(full_temp_path, os.O_RDONLY))  # Ensure file is closed
                         os.remove(full_temp_path)
+                        print(f"Temporary BOQ file deleted: {full_temp_path}")
                 except Exception as e:
                     print(f"Warning: Could not delete temporary file {full_temp_path}: {e}")
+                    
+                # Also clean up the stored BOQ file since we don't need it anymore
+                # (The data has been extracted and stored in the database)
+                try:
+                    boq_file_path = project.boq_file.path
+                    project.boq_file = None  # Clear the reference in the model
+                    project.save()
+                    
+                    if os.path.exists(boq_file_path):
+                        os.remove(boq_file_path)
+                        print(f"Stored BOQ file deleted after successful processing: {boq_file_path}")
+                except Exception as e:
+                    print(f"Warning: Could not delete stored BOQ file: {e}")
         
         headers = self.get_success_headers(serializer.data)
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
