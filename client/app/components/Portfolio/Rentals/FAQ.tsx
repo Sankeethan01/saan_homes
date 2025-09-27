@@ -84,7 +84,7 @@ const FAQRentalsPortfolio = () => {
         className="absolute right-[-6rem] bottom-0 w-[36rem] md:w-[60rem] pointer-events-none select-none opacity-60"
         style={{ zIndex: 0 }}
       />
-      <div className="container mx-auto px-32 md:px-64">
+      <div className="container mx-auto px-32 md:px-4">
         <motion.h2
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -92,7 +92,7 @@ const FAQRentalsPortfolio = () => {
         >
           Frequently Asked Questions
         </motion.h2>
-        <div className="flex items-center justify-center gap-4 max-w-xl mx-auto">
+        <div className="flex items-center justify-center gap-4 max-w-xl md:max-w-full mx-auto">
           {/* Left Arrow */}
           <button
             aria-label="Previous question"
@@ -102,7 +102,7 @@ const FAQRentalsPortfolio = () => {
             <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7"/></svg>
           </button>
           {/* FAQ Card with animation */}
-          <div className="relative w-full max-w-lg min-h-[180px] flex items-center justify-center">
+          <div className="relative w-full max-w-lg md:max-w-75% min-h-[180px] !items-center !justify-center">
             <AnimatePresence custom={direction} mode="wait">
               <motion.div
                 key={current}
@@ -111,11 +111,11 @@ const FAQRentalsPortfolio = () => {
                 initial="enter"
                 animate="center"
                 exit="exit"
-                className="absolute w-full bg-gray-50 p-8 rounded-2xl shadow-xl border border-gray-200"
+                className="absolute w-full bg-gray-50 p-8 md:p-6 rounded-2xl shadow-xl border border-gray-200"
                 style={{ minHeight: 180 }}
               >
-                <h3 className="text-xl font-semibold mb-3">{faqs[current].question}</h3>
-                <p className="text-gray-600">{faqs[current].answer}</p>
+                <h3 className="text-xl font-semibold !items-center mb-3">{faqs[current].question}</h3>
+                <p className="text-gray-600 !items-center">{faqs[current].answer}</p>
               </motion.div>
             </AnimatePresence>
           </div>

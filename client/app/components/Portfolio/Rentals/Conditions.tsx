@@ -13,12 +13,12 @@ const ConditionsRentalsPortfolio = () => {
             <motion.h2
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 10 }}
-              className="text-3xl font-bold mb-0 mt-8 lg:mt-12 lg:col-start-3 lg:row-start-1 lg:text-center text-[#1b4965]"
+              className="text-3xl font-bold mb-0 mt-8 lg:mt-12 lg:col-start-3 md:col-span-2 md:text-center md:order-first lg:row-start-1 lg:text-center text-[#1b4965]"
             >
               Rental Conditions
             </motion.h2>
-            <div className="lg:col-start-3 lg:row-start-1 text-center mt-26 mb-4">
-              <span className="text-lg text-gray-500 font-medium"> &quot;Know the terms before you rent&quot; </span>
+            <div className="lg:col-start-3 lg:row-start-1 md:col-span-2 md:order-2 text-center mt-0 mb-4">
+              <span className="text-lg md:text-center text-gray-500 font-medium"> &quot;Know the terms before you rent&quot; </span>
             </div>
             {[
               {
@@ -66,7 +66,7 @@ const ConditionsRentalsPortfolio = () => {
                   whileInView={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.1 }}
                   whileHover={{ scale: 1.07 }}
-                  className={`p-6 rounded-xl shadow-lg transition-all duration-300 hover:shadow-[#1b4965] ${colorClass} ${gridClass}`}
+                  className={`p-6 rounded-xl shadow-lg transition-all duration-300 hover:shadow-[#1b4965] ${colorClass} ${gridClass} md:order-3`}
                 >
                   <div className="text-4xl mb-4">{condition.icon}</div>
                   <h3 className="text-xl font-semibold mb-2">{condition.title}</h3>
