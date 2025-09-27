@@ -59,9 +59,9 @@ const ClientTestimonialsPortfolio = () => {
   const [selected, setSelected] = useState(0);
 
   return (
-    <section id="testimonials" className="py-2" style={{ background: 'radial-gradient(ellipse at 20% 40%, #f3f8ff 60%, #f8fafc 100%)' }}>
+    <section id="testimonials" className="pt-12 py-8 mt-8 md:py-2" style={{ background: 'radial-gradient(ellipse at 20% 40%, #f3f8ff 60%, #f8fafc 100%)' }}>
       {/* Heading/Tagline Section */}
-      <motion.div className="text-center max-w-3xl mx-auto mb-2">
+      <motion.div className="text-center max-w-3xl mx-auto mb-6 md:mb-2 px-4">
         <motion.h2 
           {...fadeInUp}
           className="text-2xl md:text-3xl font-bold mb-2 bg-clip-text text-transparent bg-[#1b4965]"
@@ -78,37 +78,47 @@ const ClientTestimonialsPortfolio = () => {
       </motion.div>
       <div className="max-w-3xl mx-auto flex flex-col items-center px-4">
         
-        <div className="text-center text-[8rem] text-[#1b4965] mb-20"><FaQuoteRight size={35} /></div>
-        <div className="flex flex-col items-center justify-center h-36 md:h-40 min-h-[144px] max-h-[160px]">
+        {/* Quote Icon - Responsive sizing */}
+        <div className="text-center text-[#1b4965] mb-4 md:mb-12">
+          <FaQuoteRight className="w-8 h-8 md:w-9 md:h-9" />
+        </div>
+        
+        {/* Testimonial Content - Mobile optimized */}
+        <div className="flex flex-col items-center justify-center min-h-[200px] md:h-36 lg:h-40 w-full">
           <AnimatePresence mode="wait">
             <motion.p
               key={selected}
               {...fadeInUp}
-              className="text-gray-600 text-lg md:text-xl mb-10 text-justify flex items-center justify-center h-full min-h-[70px]"
+              className="text-gray-600 text-base md:text-lg lg:text-xl mb-6 md:mb-10 text-justify flex items-center justify-center w-full px-2 md:px-0"
             >
               {testimonials[selected].feedback.split(' ').slice(0, 50).join(' ')}
               {testimonials[selected].feedback.split(' ').length > 50 ? '...' : ''}
             </motion.p>
           </AnimatePresence>
-          <motion.div
-            key={testimonials[selected].name}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="font-semibold text-[#1b4965] text-lg mt-5"
-          >
-            {testimonials[selected].name}
-          </motion.div>
-          <div className="text-gray-400 text-sm mb-2">{testimonials[selected].location}</div>
+          
+          {/* Client Info - Mobile optimized */}
+          <div className="text-center">
+            <motion.div
+              key={testimonials[selected].name}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="font-semibold text-[#1b4965] text-base md:text-lg"
+            >
+              {testimonials[selected].name}
+            </motion.div>
+            <div className="text-gray-400 text-xs md:text-sm mt-1">{testimonials[selected].location}</div>
+          </div>
         </div>
-        {/* Avatars row */}
-        <div className="flex items-center justify-center gap-4 mt-8">
+        
+        {/* Avatars row - Mobile responsive */}
+        <div className="flex items-center justify-center gap-2 md:gap-4 mt-6 md:mt-8 overflow-x-auto w-full px-4 md:px-0">
           {testimonials.map((t, idx) => (
             <button
               key={t.name}
               onMouseEnter={() => setSelected(idx)}
               onFocus={() => setSelected(idx)}
-              className={`rounded-full border-2 transition-all duration-300 focus:outline-none w-[72px] h-[72px] ${selected === idx ? 'border-[#1b4965] shadow-lg' : 'border-transparent opacity-70 hover:opacity-100'}`}
+              className={`rounded-full border-2 transition-all duration-300 focus:outline-none w-8 h-8 md:w-[72px] md:h-[72px] flex-shrink-0 ${selected === idx ? 'border-[#1b4965] shadow-lg' : 'border-transparent opacity-70 hover:opacity-100'}`}
               tabIndex={0}
               aria-label={`Show testimonial from ${t.name}`}
             >

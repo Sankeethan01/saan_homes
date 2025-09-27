@@ -212,7 +212,7 @@ export default function ProjectsPage() {
       initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
       whileHover={{ y: -10 }}
-      className="bg-white/80 backdrop-blur-md border border-white/40 rounded-xl overflow-hidden shadow-lg hover:shadow-[0_4px_10px_0_#1b4965] transition-all duration-300"
+      className="bg-white/80 backdrop-blur-md border border-white/40 rounded-xl overflow-hidden shadow-lg hover:shadow-[0_4px_10px_0_#1b4965] transition-all duration-300 md:h-145 lg:h-auto"
     >
       <div className="relative !h-64 !w-full">
         <Image
