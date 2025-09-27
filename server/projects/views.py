@@ -28,6 +28,7 @@ from .models import (
 )
 from .serializers import (
     ProjectSerializer,
+    ProjectListSerializer,
     StepSerializer,
     ProgressLogSerializer,
     BillSerializer,
@@ -558,6 +559,12 @@ class ProjectViewSet(viewsets.ModelViewSet):
     ordering_fields = ["start_date", "estimated_end_date", "created"]
     ordering = ["-created"]
     parser_classes = (MultiPartParser, FormParser, JSONParser)
+    
+    def get_serializer_class(self):
+        """Use a lightweight serializer for list views"""
+        if self.action == 'list':
+            return ProjectListSerializer
+        return ProjectSerializer
     
     def get_queryset(self):
         # By default, exclude deleted projects with optimized queries

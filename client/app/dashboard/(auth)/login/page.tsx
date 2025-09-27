@@ -6,7 +6,7 @@ import Link from "next/link";
 import Image from "next/image";
 import toast, { Toaster } from "react-hot-toast";
 import { useAuthStore } from "@/app/stores/useAuthStore";
-import { setAuthCookies } from "@/app/utils/auth";
+import { setAuthCookies, setRefreshToken, setupTokenRefreshTimer } from "@/app/utils/auth";
 import { RiLockLine, RiLoginBoxLine, RiEyeLine, RiEyeOffLine, RiUser3Line, RiArrowLeftLine } from "react-icons/ri";
 import { Routes } from "@/app/constants/Routes/Routes";
 import { UserRoles } from "@/app/constants/UserRoles/UserRols";
@@ -77,10 +77,14 @@ export default function Login() {
 
       const loginData = await loginRes.json();
       const access = loginData.access;
+      const refresh = loginData.refresh;
 
-      if (!access) {
-        throw new Error("No access token received");
+      if (!access || !refresh) {
+        throw new Error("No access or refresh token received");
       }
+      
+      // Store refresh token
+      setRefreshToken(refresh, rememberMe);
 
       // 2) Verify role by fetching the profile
       const profileRes = await fetch(
@@ -123,6 +127,9 @@ export default function Login() {
 
       // 5) Set cookies with proper expiration
       setAuthCookies(access, userRole, rememberMe);
+      
+      // 6) Set up token refresh timer
+      setupTokenRefreshTimer();
 
       // 6) Show success message and redirect based on role or return URL
       toast.success(`Welcome back, ${profile.username}!`);

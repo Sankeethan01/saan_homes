@@ -29,7 +29,39 @@ module.exports = {
       backgroundImage: {
         'gradient-radial': 'radial-gradient(ellipse at 20% 40%, #f3f8ff 60%, #f8fafc 100%)',
       },
+      animation: {
+        'loading-bar': 'loading 2.5s ease-in-out infinite',
+        'shimmer': 'shimmer 2s ease-in-out infinite',
+        'pulse-fast': 'pulse-opacity 1.5s ease-in-out infinite',
+      },
+      keyframes: {
+        loading: {
+          '0%': { width: '30%', transform: 'translateX(-80%)' },
+          '50%': { width: '70%', transform: 'translateX(0%)' },
+          '100%': { width: '100%', transform: 'translateX(0%)' },
+        },
+        shimmer: {
+          '0%': { transform: 'translateX(-100%)' },
+          '100%': { transform: 'translateX(100%)' },
+        },
+        'pulse-opacity': {
+          '0%, 100%': { opacity: 0 },
+          '50%': { opacity: 1 },
+        }
+      },
     },
   },
-  plugins: [],
+  plugins: [
+    function({ addUtilities }) {
+      const newUtilities = {
+        '.animation-delay-300': {
+          'animation-delay': '300ms',
+        },
+        '.animation-delay-600': {
+          'animation-delay': '600ms',
+        },
+      }
+      addUtilities(newUtilities)
+    },
+  ],
 } 
