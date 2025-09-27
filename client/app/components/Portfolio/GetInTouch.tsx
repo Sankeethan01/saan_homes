@@ -95,8 +95,8 @@ const GetInTouchPortfolio = () => {
                 Discover our journey and commitment to excellence
               </p>
               
-              {/* Contact Information - Visible on tablet and mobile */}
-              <div className="mt-6 space-y-4 text-gray-700 md:block hidden">
+              {/* Contact Information - Visible on tablet only */}
+              <div className="mt-6 space-y-4 text-gray-700 hidden md:block lg:hidden">
                 <div className="flex items-center gap-3">
                   <svg className="w-6 h-6 text-[#1b4965]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><FaMailBulk size={23} /></svg>
                   <span>saanexeng@gmail.com</span>
@@ -130,6 +130,26 @@ const GetInTouchPortfolio = () => {
               <p className="text-gray-700 text-justify mb-6">
                 In our Contact section, you can easily reach out to us with any inquiries, feedback, or support needs. Whether you have questions about using QuickMatch, need assistance with your account, or want to provide feedback to help us improve, we&apos;re here to help. Fill out the contact form with your details and message, and our dedicated support team will respond promptly. Your satisfaction is our priority, and we strive to provide excellent customer service. Thank you for choosing QuickMatch! We look forward to assisting you.
               </p>
+              
+              {/* Contact Information - Visible on desktop only */}
+              <div className="space-y-4 text-gray-700 hidden lg:block">
+                <div className="flex items-center gap-3">
+                  <svg className="w-6 h-6 text-[#1b4965]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><FaMailBulk size={23} /></svg>
+                  <span>saanexeng@gmail.com</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <svg className="w-5 h-5 text-[#1b4965]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><FaPhone size={23} /></svg>
+                  <span>+94 77 727 6391</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <svg className="w-5 h-5 text-[#1b4965]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><FaLandmark size={23} /></svg>
+                  <span>No.47, Courts Road, Point Pedo, Jaffna.</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <svg className="w-5 h-5 text-[#1b4965]" fill="currentColor" viewBox="0 0 24 24"><FaFacebookF size={23} /></svg>
+                  <span>SAAN Homes</span>
+                </div>
+              </div>
             </motion.div>
           </div>
 
