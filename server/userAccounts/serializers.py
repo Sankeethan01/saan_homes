@@ -6,8 +6,9 @@ User = get_user_model()
 
 
 class UserSerializer(serializers.ModelSerializer):
-    password = serializers.CharField(write_only=True, required=True, validators=[validate_password])
-    password2 = serializers.CharField(write_only=True, required=True)   # confirm pwd
+
+    password = serializers.CharField(write_only=True, required=False, validators=[validate_password])
+    password2 = serializers.CharField(write_only=True, required=False)   # confirm pwd
 
      # Profile fields flattened with source
     phone = serializers.CharField(source='profile.phone', required=False, allow_blank=True)
@@ -34,8 +35,12 @@ class UserSerializer(serializers.ModelSerializer):
         read_only_fields = ("id",)
 
     def validate(self, attrs):
-        if attrs["password"] != attrs["password2"]:
-            raise serializers.ValidationError({"password": "Passwords do not match."})
+        # If password is provided, password2 must also be provided
+        if "password" in attrs and attrs["password"]:
+            if "password2" not in attrs or not attrs["password2"]:
+                raise serializers.ValidationError({"password2": "Password confirmation is required when changing password."})
+            if attrs["password"] != attrs["password2"]:
+                raise serializers.ValidationError({"password": "Passwords do not match."})
         return attrs
 
     def create(self, validated_data):
@@ -58,20 +63,28 @@ class UserSerializer(serializers.ModelSerializer):
         return user
 
     def update(self, instance, validated_data):
+        # Remove password2 from validated_data
         validated_data.pop("password2", None)
         password = validated_data.pop("password", None)
         profile_data = validated_data.pop("profile", {})
+        
+        # Update user fields
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
+        
+        # Update password if provided
         if password:
             instance.set_password(password)
+        
         instance.save()
+        
         # Update profile fields
         if profile_data:
             profile = instance.profile
             for attr, value in profile_data.items():
                 setattr(profile, attr, value)
             profile.save()
+        
         return instance
 
 class RegistrationSerializer(serializers.ModelSerializer):

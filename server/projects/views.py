@@ -1230,6 +1230,16 @@ class StepViewSet(viewsets.ModelViewSet):
     ordering_fields = ["order", "is_approved", "actual_completed"]
     ordering = ["order"]
     
+    def get_queryset(self):
+        """
+        Filter steps by project if project_id is provided in query parameters
+        """
+        qs = super().get_queryset()
+        project_id = self.request.query_params.get('project')
+        if project_id:
+            qs = qs.filter(project_id=project_id)
+        return qs
+    
     @action(detail=True, methods=['post'])
     def approve(self, request, pk=None):
         step = self.get_object()
