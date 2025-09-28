@@ -14,7 +14,8 @@ import {
   RiMenuUnfoldLine,
   RiLogoutBoxRLine,
   RiFileTextLine,
-  RiDeleteBin6Line
+  RiDeleteBin6Line,
+  RiBillLine
 } from 'react-icons/ri';
 import { useAuthStore } from '@/app/stores/useAuthStore';
 import { getUserRole, getAccessToken, setAuthCookies, fetchWithAuth } from '@/app/utils/auth';
@@ -44,6 +45,11 @@ const navItems: NavItem[] = [
     path: '/dashboard/supervisor/bills',
     icon: <RiFileTextLine className="text-xl" />,
     
+  },
+  {
+    title: 'Bill Management',
+    path: '/dashboard/supervisor/bill-management',
+    icon: <RiBillLine className="text-xl" />
   },
   {
     title: 'Notifications',
