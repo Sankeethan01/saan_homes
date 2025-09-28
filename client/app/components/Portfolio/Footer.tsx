@@ -7,6 +7,7 @@ import { FaFacebookF, FaInstagram, FaYoutube } from 'react-icons/fa';
 export default function Footer() {
   return (
     <footer
+      id="footer"
       className="relative w-100% min-h-[60vh] md:h-[60vh] bg-[#353535] text-gray-300 py-8 md:py-16 md:bg-[url('/assets/images/footer.jpg')] md:bg-no-repeat md:bg-cover md:bg-center"
     >
       {/* Dark blue overlay */}
