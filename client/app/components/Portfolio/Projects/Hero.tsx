@@ -7,7 +7,7 @@ import Image from 'next/image';
 const HeroProjectsPortfolio = () => {
    
   return (
-    <section className="relative h-[100vh] md:h-[45vh] lg:h-[100vh] pt-0 m-0">
+    <section className="relative h-[100vh] md:h-[45vh] lg:h-[100vh] pt-35  m-0">
         <div className="absolute inset-0">
           <Image
             src="/assets/images/hero_project.png"

@@ -2,10 +2,11 @@
 
 import { motion } from 'framer-motion';
 import Image from 'next/image';
+import { useLanguage } from '../../../context/LanguageContext';
 
 
 const TestimonialsRentalsPortfolio = () => {
-
+  const { t } = useLanguage();
   return (
     <section className="py-16 bg-gray-50">
         <div className="container mx-auto px-4">
@@ -14,7 +15,7 @@ const TestimonialsRentalsPortfolio = () => {
             whileInView={{ opacity: 1, y: 0 }}
             className="text-3xl font-bold text-center mb-12 text-[#1b4965]"
           >
-            What Our Clients Say
+            {t.rentalsPage.testimonials.title}
           </motion.h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {[

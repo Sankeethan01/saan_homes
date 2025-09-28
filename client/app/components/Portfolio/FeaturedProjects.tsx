@@ -2,6 +2,7 @@ import { motion } from 'framer-motion';
 import Link from 'next/link';
 import React, { useState } from 'react';
 import Image from 'next/image';
+import { useLanguage } from '../../context/LanguageContext';
 
 const fadeInUp = {
   initial: { opacity: 0, y: 40 },
@@ -9,6 +10,7 @@ const fadeInUp = {
   transition: { duration: 0.6, ease: 'easeOut' }
 };
 
+// Keep original English project data since it comes from admin and is changeable
 const projects = [
   {
     title: 'Modern Villa',
@@ -57,6 +59,7 @@ const projects = [
 const animationDuration = 18; // seconds, medium speed
 
 const FeaturedProjectsPortfolio = () => {
+  const { t } = useLanguage();
   // Duplicate projects for seamless loop
   const scrollingProjects = [...projects, ...projects];
   const [isHovered, setIsHovered] = useState(false);
@@ -78,14 +81,14 @@ const FeaturedProjectsPortfolio = () => {
             {...fadeInUp}
             className="text-2xl sm:text-3xl md:text-3xl font-bold mb-2 bg-clip-text text-transparent bg-[#1b4965]"
           >
-            Featured Projects
+            {t.projects.title}
           </motion.h2>
           <motion.p
             initial={{ opacity: 0 }}
             whileInView={{ opacity: 1 }}
             className="text-gray-600 text-lg sm:text-xl md:text-2xl"
           >
-            From Concept to Concrete – Our Finest Work !!!
+            {t.projects.subtitle}
           </motion.p>
         </motion.div>
 

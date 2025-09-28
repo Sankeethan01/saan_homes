@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import Image from 'next/image';
+import { useLanguage } from '../../../context/LanguageContext';
 import { useState, useEffect } from 'react';
 
 // Interface for service data from backend
@@ -27,6 +28,7 @@ const defaultFeatures = [
 ];
 
 const ServiceListServicesPortfolio = () => {
+  const { t } = useLanguage();
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);

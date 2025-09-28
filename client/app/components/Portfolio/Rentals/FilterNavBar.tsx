@@ -90,23 +90,23 @@ const FilterSectionRentalsPortfolio = ({
 
   return (
     <section className="py-3 px-2 bg-white shadow-md sticky top-0 z-60">
-      <div className="container mx-auto px-4 pt-2">
-        <div className="flex items-center justify-between w-full mb-4">
+      <div className="container mx-auto px-4 md:px-2 pt-2">
+        <div className="flex items-center justify-between w-full mb-4 md:mb-2">
           {/* All in one row: logo, filter, search, login */}
-          <div className="flex items-center w-full gap-6">
+          <div className="flex items-center w-full gap-6 md:gap-2">
             {/* Logo only, actual shape */}
             <Link href="/" className="flex items-center">
-              <Image src="/assets/logo.jpg" alt="Logo" width={100} height={100} />
+              <Image src="/assets/logo.jpg" alt="Logo" width={100} height={100} className="md:w-[80px] md:h-[80px]" />
             </Link>
             
             {/* Filter and search options */}
-            <div className="flex flex-1 gap-4 items-center">
+            <div className="flex flex-1 gap-4 md:gap-2 items-center">
               {/* Category Filter Dropdown */}
-              <div className="relative w-48">
+              <div className="relative w-48 md:w-38">
                 <select
                   value={selectedCategory}
                   onChange={(e) => onCategoryChange(e.target.value)}
-                  className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none bg-white cursor-pointer"
+                  className="w-full px-4 md:px-2 py-3 md:py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none bg-white cursor-pointer md:text-sm"
                   disabled={loading}
                   aria-label="Filter equipment by category"
                 >
@@ -120,20 +120,20 @@ const FilterSectionRentalsPortfolio = ({
                     ))
                   )}
                 </select>
-                <div className="absolute right-4 top-1/2 transform -translate-y-1/2 pointer-events-none">
-                  <RiFilter3Line className="text-gray-400 text-xl" />
+                <div className="absolute right-4 md:right-2 top-1/2 transform -translate-y-1/2 pointer-events-none">
+                  <RiFilter3Line className="text-gray-400 text-xl md:text-lg" />
                 </div>
               </div>
 
               {/* Search Bar */}
-              <div className="relative w-72">
-                <RiSearchLine className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 text-xl" />
+              <div className="relative w-72 md:w-52">
+                <RiSearchLine className="absolute left-4 md:left-2 top-1/2 transform -translate-y-1/2 text-gray-400 text-xl md:text-lg" />
                 <input
                   type="text"
                   placeholder="Search equipment..."
                   value={searchQuery}
                   onChange={(e) => onSearchChange(e.target.value)}
-                  className="w-full pl-12 pr-4 py-3 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full pl-12 md:pl-8 pr-4 md:pr-2 py-3 md:py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 md:text-sm"
                 />
               </div>
             </div>
@@ -144,12 +144,12 @@ const FilterSectionRentalsPortfolio = ({
               <div className="relative profile-dropdown">
                 <button 
                   onClick={() => setShowDropdown(!showDropdown)}
-                  className="w-12 h-12 flex items-center justify-center rounded-full bg-[#1b4965] hover:bg-[#1b4965]-700 text-white transition-all duration-200 relative"
+                  className="w-12 h-12 md:w-10 md:h-10 flex items-center justify-center rounded-full bg-[#1b4965] hover:bg-[#1b4965]-700 text-white transition-all duration-200 relative"
                   aria-label="Profile menu"
                   title="Profile menu"
                 >
-                  <RiUser3Line className="text-2xl" />
-                  <RiArrowDownSLine className="text-sm absolute -bottom-1 -right-1 bg-[#1b4965] rounded-full" />
+                  <RiUser3Line className="text-2xl md:text-xl" />
+                  <RiArrowDownSLine className="text-sm md:text-xs absolute -bottom-1 -right-1 bg-[#1b4965] rounded-full" />
                 </button>
                 
                 {showDropdown && (
@@ -173,11 +173,11 @@ const FilterSectionRentalsPortfolio = ({
             ) : (
               <Link href="/dashboard/login">
                 <button 
-                  className="w-12 h-12 flex items-center justify-center rounded-full bg-[#1b4965] hover:bg-[#1b4965]-700 text-white transition-all duration-200"
+                  className="w-12 h-12 md:w-10 md:h-10 flex items-center justify-center rounded-full bg-[#1b4965] hover:bg-[#1b4965]-700 text-white transition-all duration-200"
                   aria-label="Login"
                   title="Login"
                 >
-                  <RiUser3Line className="text-2xl" />
+                  <RiUser3Line className="text-2xl md:text-xl" />
                 </button>
               </Link>
             )}
@@ -185,11 +185,11 @@ const FilterSectionRentalsPortfolio = ({
             {/* Home Button */}
             <Link href="/">
               <button 
-                className="w-12 h-12 flex items-center justify-center rounded-full bg-[#1b4965] hover:bg-[#1b4965]-700 text-white transition-all duration-200"
+                className="w-12 h-12 md:w-10 md:h-10 flex items-center justify-center rounded-full bg-[#1b4965] hover:bg-[#1b4965]-700 text-white transition-all duration-200"
                 aria-label="Home"
                 title="Home"
               >
-                <RiHome5Line className="text-2xl" />
+                <RiHome5Line className="text-2xl md:text-xl" />
               </button>
             </Link>
           </div>

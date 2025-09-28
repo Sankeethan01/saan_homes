@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import { FaFacebookF, FaLandmark, FaMailBulk, FaPhone} from 'react-icons/fa';
 import { useState, useRef, useEffect } from 'react';
+import { useLanguage } from '../../context/LanguageContext';
 
 // Optimized Video Component with Intersection Observer
 const LazyVideo = ({ src, poster, className }: { src: string; poster: string; className: string }) => {
@@ -71,6 +72,8 @@ const LazyVideo = ({ src, poster, className }: { src: string; poster: string; cl
 };
 
 const GetInTouchPortfolio = () => {
+  const { t } = useLanguage();
+  
   return (
      <section id="contact" className="py-20 min-h-[600px]" style={{ background: 'radial-gradient(ellipse at 20% 40%, #f3f8ff 60%, #f8fafc 100%)' }}>
         <div className="container mx-auto px-4">
@@ -85,14 +88,14 @@ const GetInTouchPortfolio = () => {
               viewport={{ once: true }}
               className="relative"
             >
-              <h3 className="text-xl font-semibold text-[#1b4965] mb-4 text-center">Watch and Get Experience</h3>
+              <h3 className="text-xl font-semibold text-[#1b4965] mb-4 text-center">{t.getInTouch.watchExperience}</h3>
               <LazyVideo
                 src="/assets/videos/story.mp4"
                 poster="/assets/images/hero_about_us.png"
                 className="w-full h-auto rounded-xl"
               />
               <p className="text-sm text-gray-600 mt-3 text-center">
-                Discover our journey and commitment to excellence
+                {t.getInTouch.watchDescription}
               </p>
               
               {/* Contact Information - Visible on tablet only */}
@@ -125,10 +128,10 @@ const GetInTouchPortfolio = () => {
               transition={{ duration: 0.8, ease: 'easeOut' }}
               viewport={{ once: true }}
             >
-              <h2 className="text-2xl md:text-3xl font-bold mb-2 bg-clip-text text-transparent bg-[#1b4965]">Get In Touch</h2>
-              <p className="text-gray-600 text-xl md:text-2xl mb-4">Let&apos;s Build Something Great Together!</p>
+              <h2 className="text-2xl md:text-3xl font-bold mb-2 bg-clip-text text-transparent bg-[#1b4965]">{t.getInTouch.title}</h2>
+              <p className="text-gray-600 text-xl md:text-2xl mb-4">{t.getInTouch.subtitle}</p>
               <p className="text-gray-700 text-justify mb-6">
-                In our Contact section, you can easily reach out to us with any inquiries, feedback, or support needs. Whether you have questions about using QuickMatch, need assistance with your account, or want to provide feedback to help us improve, we&apos;re here to help. Fill out the contact form with your details and message, and our dedicated support team will respond promptly. Your satisfaction is our priority, and we strive to provide excellent customer service. Thank you for choosing QuickMatch! We look forward to assisting you.
+                {t.getInTouch.description}
               </p>
               
               {/* Contact Information - Visible on desktop only */}
@@ -162,14 +165,14 @@ const GetInTouchPortfolio = () => {
               viewport={{ once: true }}
               className="relative"
             >
-              <h3 className="text-xl font-semibold text-[#1b4965] mb-4 text-center">Watch and Get Experience</h3>
+              <h3 className="text-xl font-semibold text-[#1b4965] mb-4 text-center">{t.getInTouch.watchExperience}</h3>
               <LazyVideo
                 src="/assets/videos/story.mp4"
                 poster="/assets/images/hero_about_us.png"
                 className="w-full h-auto rounded-xl"
               />
               <p className="text-sm text-gray-600 mt-3 text-center">
-                Discover our journey and commitment to excellence
+                {t.getInTouch.watchDescription}
               </p>
             </motion.div>
           </div>

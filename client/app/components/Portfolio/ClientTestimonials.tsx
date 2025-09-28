@@ -2,7 +2,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import React, { useState } from 'react';
 import { FaQuoteRight } from 'react-icons/fa';
 import Image from 'next/image';
+import { useLanguage } from '../../context/LanguageContext';
 
+// Keep original English testimonial data since it comes from admin and is changeable
 const testimonials = [
   {
     name: 'Tharmathayalan Sankeethan',
@@ -16,7 +18,7 @@ const testimonials = [
     location: 'Anuradapura, Sri Lanka',
     avatar: '/assets/images/user.png',
     feedback:
-      'Working with SAAN Homes was a fantastic experience. Their team was professional, responsive, and committed to delivering high-quality results on time. From planning to completion, every step was handled with care and expertise. We are extremely satisfied with the outcome and highly recommend SAAN Homes for any construction project.QuickMatch made finding a reliable service provider so easy! The booking process was seamless, and the service quality exceeded my expectations. Highly recommend this app for hassle-free service bookings.'
+      'Working with SAAN Homes was a fantastic experience. Their team was professional, responsive, and committed to delivering high-quality results on time. From planning to completion, every step was handled with care and expertise. We are extremely satisfied with the outcome and highly recommend SAAN Homes for any construction project.'
   },
   {
     name: 'Akila Ravithas',
@@ -30,7 +32,7 @@ const testimonials = [
     location: 'Kandy, Sri Lanka',
     avatar: '/assets/images/user.png',
     feedback:
-      'Working with SAAN Homes was a fantastic experience. Their team was professional, responsive, and committed to delivering high-quality results on time. From planning to completion, every step was handled with care and expertise. We are extremely satisfied with the outcome and highly recommend SAAN Homes for any construction project.QuickMatch made finding a reliable service provider so easy! The booking process was seamless, and the service quality exceeded my expectations. Highly recommend this app for hassle-free service bookings.'
+      'Working with SAAN Homes was a fantastic experience. Their team was professional, responsive, and committed to delivering high-quality results on time. From planning to completion, every step was handled with care and expertise. We are extremely satisfied with the outcome and highly recommend SAAN Homes for any construction project.'
   },
   {
     name: 'John Smith',
@@ -44,7 +46,7 @@ const testimonials = [
     location: 'Matara, Sri Lanka',
     avatar: '/assets/images/user.png',
     feedback:
-      'Working with SAAN Homes was a fantastic experience. Their team was professional, responsive, and committed to delivering high-quality results on time. From planning to completion, every step was handled with care and expertise. We are extremely satisfied with the outcome and highly recommend SAAN Homes for any construction project.QuickMatch made finding a reliable service provider so easy! The booking process was seamless, and the service quality exceeded my expectations. Highly recommend this app for hassle-free service bookings.'
+      'Working with SAAN Homes was a fantastic experience. Their team was professional, responsive, and committed to delivering high-quality results on time. From planning to completion, every step was handled with care and expertise. We are extremely satisfied with the outcome and highly recommend SAAN Homes for any construction project.'
   },
 ];
 
@@ -57,23 +59,24 @@ const fadeInUp = {
 
 const ClientTestimonialsPortfolio = () => {
   const [selected, setSelected] = useState(0);
+  const { t } = useLanguage();
 
   return (
-    <section id="testimonials" className="pt-12 py-8 mt-8 md:py-2" style={{ background: 'radial-gradient(ellipse at 20% 40%, #f3f8ff 60%, #f8fafc 100%)' }}>
+    <section id="testimonials" className="pt-12 py-8 mt-0 md:py-2" style={{ background: 'radial-gradient(ellipse at 20% 40%, #f3f8ff 60%, #f8fafc 100%)' }}>
       {/* Heading/Tagline Section */}
       <motion.div className="text-center max-w-3xl mx-auto mb-6 md:mb-2 px-4">
         <motion.h2 
           {...fadeInUp}
-          className="text-2xl md:text-3xl font-bold mb-2 bg-clip-text text-transparent bg-[#1b4965]"
+          className="text-2xl md:text-3xl font-bold mb-2 mt-10  bg-clip-text text-transparent bg-[#1b4965]"
         >
-          Client Testimonials
+          {t.testimonials.title}
         </motion.h2>
         <motion.p
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
           className="text-gray-600 text-xl md:text-2xl"
         >
-          Our satisfied customers !!!
+          {t.testimonials.subtitle}
         </motion.p>
       </motion.div>
       <div className="max-w-3xl mx-auto flex flex-col items-center px-4">

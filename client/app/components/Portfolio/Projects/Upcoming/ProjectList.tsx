@@ -2,6 +2,7 @@ import { motion } from 'framer-motion';
 import Image from 'next/image';
 import Link from 'next/link';
 import { RiCheckLine, RiArrowRightLine } from 'react-icons/ri';
+import { useLanguage } from '../../../../context/LanguageContext';
 
 const upcomingProjects = [
   {
@@ -49,6 +50,7 @@ const upcomingProjects = [
 ];
 
 const ProjectListUpcomingProjectsPortfolio = () => {
+  const { t } = useLanguage();
   return (
     <section className="py-16 bg-[#f1f4f7]">
       <div className="container mx-auto px-4">
@@ -84,7 +86,7 @@ const ProjectListUpcomingProjectsPortfolio = () => {
                     whileHover={{ x: 5 }}
                     className="group flex items-center gap-2 bg-[#003049] text-white font-semibold px-6 py-3 rounded-lg shadow hover:bg-[#01416b] transition-colors"
                   >
-                    View Project Details
+                    {t.projectsPage.projectList.viewProjectDetails}
                     <RiArrowRightLine className="text-xl transition-transform group-hover:translate-x-1" />
                   </motion.button>
                 </Link>

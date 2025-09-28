@@ -176,22 +176,22 @@ export default function Login() {
       <button
         type="button"
         onClick={() => router.push(Routes.LANDING)}
-        className="absolute top-6 left-6 z-20 flex items-center justify-center w-11 h-11 bg-[#1b4965] hover:bg-[#163a52] rounded-full shadow transition-all border-2 border-white focus:outline-none focus:ring-2 focus:ring-[#1b4965]"
+        className="absolute top-4 left-4 sm:top-6 sm:left-6 z-20 flex items-center justify-center w-10 h-10 sm:w-11 sm:h-11 bg-[#1b4965] hover:bg-[#163a52] rounded-full shadow transition-all border-2 border-white focus:outline-none focus:ring-2 focus:ring-[#1b4965]"
         aria-label="Go back"
       >
-        <RiArrowLeftLine className="h-6 w-6 text-white" />
+        <RiArrowLeftLine className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
       </button>
       {/* Background gradient image */}
       <div className="absolute inset-0 w-full h-full bg-[url('/assets/images/bg_login.png')] bg-cover bg-center z-0" />
 
       {/* Left side - Login form */}
-      <div className="w-full md:w-2/3 flex flex-col relative z-10 ml-200 mt-10">
+      <div className="w-full md:w-2/3 flex flex-col relative z-10 ml-0 sm:ml-20 md:ml-200 mt-5 sm:mt-10">
         {/* Form section */}
-        <div className="flex-grow flex items-center justify-end px-10 pb-8 mt-5">
-          <div className="w-full max-w-md mx-auto my-8 p-8 shadow-lg bg-white/60 rounded-xl">
-            <div className="text-center mb-10">
-              <h1 className="text-3xl font-bold text-[#1b4965] mb-2">Welcome back to</h1>
-              <div className="p-0 items-center justify-center ml-30">
+        <div className="flex-grow flex items-center justify-center sm:justify-end px-4 sm:px-10 pb-8 mt-5">
+          <div className="w-full max-w-md mx-auto my-4 sm:my-8 p-6 sm:p-8 shadow-lg bg-white/60 rounded-xl">
+            <div className="text-center mb-6 sm:mb-10">
+              <h1 className="text-2xl sm:text-3xl font-bold text-[#1b4965] mb-2">Welcome back to</h1>
+              <div className="p-0 items-center justify-center ml-0 sm:ml-30">
                 <Link href="/" aria-label="Go to home page">
                   <Image
                     src="/assets/logo.jpg"
@@ -202,10 +202,10 @@ export default function Login() {
                   />
                 </Link>
               </div>
-              <p className="text-gray-600">Sign in to access your account</p>
+              <p className="text-sm sm:text-base text-gray-600">Sign in to access your account</p>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
               <div className="relative">
                 <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">
                   Username
@@ -222,7 +222,7 @@ export default function Login() {
                     placeholder="Enter your username"
                     aria-label="Username"
                     aria-required="true"
-                    className="pl-10 w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1b4965] focus:border-[#1b4965] hover:border-[#1b4965] transition-all hover:shadow-md focus:shadow-md"
+                    className="pl-10 w-full px-4 py-2.5 sm:py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1b4965] focus:border-[#1b4965] hover:border-[#1b4965] transition-all hover:shadow-md focus:shadow-md"
                     value={formData.username}
                     onChange={handleChange}
                   />
@@ -245,7 +245,7 @@ export default function Login() {
                     placeholder="Enter your password"
                     aria-label="Password"
                     aria-required="true"
-                    className="pl-10 w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1b4965] focus:border-[#1b4965] hover:border-[#1b4965] transition-all hover:shadow-md focus:shadow-md pr-10"
+                    className="pl-10 w-full px-4 py-2.5 sm:py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1b4965] focus:border-[#1b4965] hover:border-[#1b4965] transition-all hover:shadow-md focus:shadow-md pr-10"
                     value={formData.password}
                     onChange={handleChange}
                   />
@@ -294,7 +294,7 @@ export default function Login() {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="relative w-full py-3 px-4 border border-transparent rounded-lg shadow-sm text-white bg-[#1b4965] hover:bg-[#163a52] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#1b4965] transition-all disabled:opacity-70 disabled:cursor-not-allowed"
+                className="relative w-full py-2.5 sm:py-3 px-4 border border-transparent rounded-lg shadow-sm text-white bg-[#1b4965] hover:bg-[#163a52] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#1b4965] transition-all disabled:opacity-70 disabled:cursor-not-allowed"
                 aria-label="Sign in"
               >
                 {isLoading ? (
@@ -325,7 +325,7 @@ export default function Login() {
                 <div className="mt-6">
                   <Link
                     href={Routes.REGISTER}
-                    className="w-full flex justify-center py-3 px-4 border border-[#1b4965] rounded-lg shadow-sm bg-white text-[#1b4965] hover:bg-[#f3f8ff] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#1b4965] transition-all"
+                    className="w-full flex justify-center py-2.5 sm:py-3 px-4 border border-[#1b4965] rounded-lg shadow-sm bg-white text-[#1b4965] hover:bg-[#f3f8ff] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#1b4965] transition-all"
                   >
                     Create an account
                   </Link>

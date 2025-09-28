@@ -30,7 +30,7 @@ const HeroPortfolio = () => {
           initial={{ opacity: 0, x: -40 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.8 }}
-          className="text-xl md:text-6xl lg:text-5.8xl font-bold text-gray-800 -mb-[5] leading-tight"
+          className="text-xl md:text-6xl  lg:text-5.8xl font-bold text-gray-800 -mb-[5] leading-tight"
         >
           DREAM. <br /> DESIGN. <br /> DEVELOP. <br />
           <span className="text-[#1b4965]">With Trusted Expertise.</span>
@@ -39,12 +39,12 @@ const HeroPortfolio = () => {
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.2, duration: 0.8 }}
-          className="text-[#175676] text-lg-justify md:text-xl mb-5 max-w-xl"
+          className="text-[#175676] text-sm sm:text-base md:text-xl mb-5 max-w-xl"
         >
           Design and Build Your Dream House At Affordable Prices, But With The Best Quality. Only Available In SAAN HOMES!
         </motion.p>
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 w-full max-w-md mb-10">
+        <div className="hidden lg:grid grid-cols-1 sm:grid-cols-3 gap-6 w-full max-w-md mb-10">
 
                      <div className="flex flex-col items-center justify-center p-6 rounded-2xl bg-white/60 backdrop-blur-sm shadow-[0_8px_32px_0_rgba(27,38,59,0.8)]">
              <div className="text-3xl md:text-4.5xl font-bold text-[#1b4965]">{expCount}<span className="text-[#1b4965]">+</span></div>

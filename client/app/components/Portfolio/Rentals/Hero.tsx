@@ -78,4 +78,4 @@ const HeroRentalsPortfolio = () => {
   );
 };
 
-export default HeroRentalsPortfolio; 
+export default HeroRentalsPortfolio;
