@@ -8,7 +8,7 @@ const HeroAboutUsPortfolio = () => {
 
 
   return (
-    <section className="relative h-[75vh] overflow-hidden">
+    <section className="relative h-[75vh] md:h-[50vh] overflow-hidden">
         <div className="absolute inset-0">
           <Image
             src="/assets/images/hero_about_us.png"
@@ -21,7 +21,7 @@ const HeroAboutUsPortfolio = () => {
           
         </div>
 
-        <div className="container mx-auto px-4 h-full flex items-end-safe justify-right relative z-10">
+        <div className="container mx-auto px-4 h-full flex items-end-safe md:items-center  lg:items-end-safe justify-right relative z-10">
         <motion.div 
               initial={{ opacity: 0, x: -50 }}
               animate={{ opacity: 1, x: 0 }}
@@ -35,7 +35,7 @@ const HeroAboutUsPortfolio = () => {
                 className="h-1 bg-white mb-8"
               />
               
-              <h1 className="text-6xl font-semibold mb-8 w-xl text-white leading-tight">
+              <h1 className="text-4xl md:text-5xl lg:text-6xl font-semibold mb-8 w-xl text-white leading-tight">
                 <span className="relative block mb-4">
                 About
                   <motion.div
@@ -55,7 +55,7 @@ const HeroAboutUsPortfolio = () => {
                   />
                 </span>
               </h1>
-              <p className="text-xl text-white/90 w-130 leading-relaxed mb-12">
+              <p className=" md:w-63 text-xl text-white/90 w-130 leading-relaxed mb-12">
               Decades of Dedication, One Solid Reputation.
               </p>
               

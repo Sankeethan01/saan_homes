@@ -67,7 +67,7 @@ const ClientTestimonialsPortfolio = () => {
       <motion.div className="text-center max-w-3xl mx-auto mb-6 md:mb-2 px-4">
         <motion.h2 
           {...fadeInUp}
-          className="text-2xl md:text-3xl font-bold mb-2 bg-clip-text text-transparent bg-[#1b4965]"
+          className="text-2xl md:text-3xl font-bold mb-2 mt-10  bg-clip-text text-transparent bg-[#1b4965]"
         >
           {t.testimonials.title}
         </motion.h2>

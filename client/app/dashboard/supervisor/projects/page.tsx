@@ -171,7 +171,7 @@ export default function SupervisorProjectsPage() {
   const totalProjects = projects.length;
   const activeProjects = projects.filter(p => (p.status === 'IN_PROGRESS' || p.status === 'PLANNING') && !p.is_completed).length;
   const completedProjects = projects.filter(p => p.is_completed || p.status === 'COMPLETED').length;
-  const upcomingProjects = projects.filter(p => p.status === 'PLANNING' && !p.is_completed && new Date(p.start_date) > new Date()).length;
+  const upcomingProjects = projects.filter(p => p.status === 'PLANNING' && !p.is_completed).length;
 
   // Filtered projects
   const filteredProjects = projects.filter(project => {
@@ -290,7 +290,7 @@ export default function SupervisorProjectsPage() {
               >
                 {/* Thumbnail */}
                 <div className="w-full h-40 bg-gray-100 flex items-center justify-center overflow-hidden border-b border-gray-200">
-                  {project.thumbnail ? (
+                  {toAbsolute(project.thumbnail).trim() ? (
                     <Image
                       src={toAbsolute(project.thumbnail)}
                       alt={project.name}
@@ -299,21 +299,15 @@ export default function SupervisorProjectsPage() {
                       className="object-cover w-full h-full"
                       onError={(e) => {
                         const target = e.target as HTMLImageElement;
-                        // target.style.display = 'none';
                         const fallback = target.parentElement?.querySelector(".fallback");
                         if (fallback) fallback.classList.remove("hidden");
                       }}
                     />
-                  ) : null}
-                  <div className={`absolute inset-0 flex items-center justify-center ${project.thumbnail ? 'hidden' : ''}`}>
-                    <Image
-                      src={toAbsolute(project.thumbnail)}
-                      alt={project.name}
-                      width={400}
-                      height={160}
-                      className="object-cover w-full h-full"
-                    />
-                  </div>
+                  ) : (
+                    <div className="w-full h-40 flex items-center justify-center bg-gray-200 fallback">
+                      <span className="text-gray-400">No image</span>
+                    </div>
+                  )}
                 </div>
                 <div className="relative p-6">
                   <div className="flex items-center justify-between mb-2">
