@@ -1,0 +1,48 @@
+{% extends 'emails/base_email.html' %}
+
+{% block title %}Equipment Booking Update - SAAN HOMES{% endblock %}
+
+{% block content %}
+<h2>❌ Equipment Booking Update</h2>
+
+<p>Dear {{ booking.user.first_name|default:booking.user.username }},</p>
+
+<p>We regret to inform you that your equipment rental request could not be approved at this time.</p>
+
+<div class="highlight">
+    <h3>📋 Booking Details:</h3>
+    <p><strong>Equipment:</strong> {{ booking.equipment.name }}</p>
+    <p><strong>Category:</strong> {{ booking.equipment.category.name }}</p>
+    <p><strong>Rental Period:</strong> {{ booking.start_date|date:"F d, Y" }} - {{ booking.end_date|date:"F d, Y" }}</p>
+    <p><strong>Duration:</strong> {{ booking.duration }} day{{ booking.duration|pluralize }}</p>
+    <p><strong>Status:</strong> <span class="status-badge status-rejected">{{ booking.get_status_display }}</span></p>
+</div>
+
+<div class="info-box">
+    <h3>📞 Why was my booking rejected?</h3>
+    <p>Your booking may have been rejected due to one of the following reasons:</p>
+    <ul>
+        <li>Equipment unavailability during the requested period</li>
+        <li>Equipment is currently under maintenance</li>
+        <li>Missing required documentation or licenses</li>
+        <li>Equipment already booked by another customer</li>
+    </ul>
+</div>
+
+<div class="info-box">
+    <h3>🔄 What can I do next?</h3>
+    <p>We encourage you to:</p>
+    <ul>
+        <li>Contact our rental team for alternative equipment options</li>
+        <li>Check availability for different dates</li>
+        <li>Browse our other equipment categories</li>
+        <li>Speak with our team about your specific requirements</li>
+    </ul>
+</div>
+
+<p>Our team is here to help you find the right equipment for your project. Please don't hesitate to contact us for assistance.</p>
+
+<p>We apologize for any inconvenience and look forward to serving you in the future.</p>
+
+<p><strong>The SAAN HOMES Rental Team</strong></p>
+{% endblock %}

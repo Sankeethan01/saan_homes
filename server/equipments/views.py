@@ -13,6 +13,10 @@ from .serializers import (
 from notifications.models import RentalRequest
 from django.db.models import Q
 import uuid
+from utils.email_utils import (
+    send_equipment_booking_confirmation_email,
+    send_equipment_booking_status_update_email
+)
 
 
 # ──────────────────────────────────────────────
@@ -229,20 +233,28 @@ class BookingViewSet(viewsets.ModelViewSet):
             booking=booking,
             is_handled=False
         )
+        
+        # Send booking confirmation email to user
+        try:
+            send_equipment_booking_confirmation_email(booking)
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Failed to send booking confirmation email: {str(e)}")
 
     def perform_update(self, serializer):
         """Handle status updates and create notifications"""
         old_status = self.get_object().status
         booking = serializer.save()
         
-        # If status changed, create appropriate notifications
+        # If status changed, send email notifications
         if old_status != booking.status:
-            if booking.status == 'APPROVED':
-                # Notify customer that booking is approved
-                pass  # For now, we'll handle this in frontend
-            elif booking.status == 'REJECTED':
-                # Notify customer that booking is rejected
-                pass  # For now, we'll handle this in frontend
+            try:
+                send_equipment_booking_status_update_email(booking, old_status)
+            except Exception as e:
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(f"Failed to send status update email: {str(e)}")
 
     @action(detail=True, methods=['patch'], permission_classes=[permissions.IsAuthenticated])
     def pay(self, request, pk=None):
@@ -266,6 +278,7 @@ class BookingViewSet(viewsets.ModelViewSet):
             
             # TODO: Integrate with actual payment gateway here
             # For now, just update the status
+            old_status = booking.status
             booking.status = Booking.Status.PAID
             booking.save()
             
@@ -281,6 +294,14 @@ class BookingViewSet(viewsets.ModelViewSet):
                     "payment_method": "card"
                 }
             )
+            
+            # Send email notification
+            try:
+                send_equipment_booking_status_update_email(booking, old_status)
+            except Exception as e:
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(f"Failed to send payment confirmation email: {str(e)}")
             
             return Response(
                 {"message": "Payment processed successfully", "status": booking.status},
@@ -342,8 +363,17 @@ class BookingViewSet(viewsets.ModelViewSet):
                 )
             
             # Update status to approved
+            old_status = booking.status
             booking.status = Booking.Status.APPROVED
             booking.save()
+            
+            # Send email notification
+            try:
+                send_equipment_booking_status_update_email(booking, old_status)
+            except Exception as e:
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(f"Failed to send approval email: {str(e)}")
             
             return Response(
                 {"message": "Booking approved successfully", "status": booking.status},
@@ -370,8 +400,17 @@ class BookingViewSet(viewsets.ModelViewSet):
                 )
             
             # Update status to rejected
+            old_status = booking.status
             booking.status = Booking.Status.REJECTED
             booking.save()
+            
+            # Send email notification
+            try:
+                send_equipment_booking_status_update_email(booking, old_status)
+            except Exception as e:
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(f"Failed to send rejection email: {str(e)}")
             
             return Response(
                 {"message": "Booking rejected successfully", "status": booking.status},
@@ -398,8 +437,17 @@ class BookingViewSet(viewsets.ModelViewSet):
                 )
             
             # Update status to rented
+            old_status = booking.status
             booking.status = Booking.Status.RENTED
             booking.save()
+            
+            # Send email notification
+            try:
+                send_equipment_booking_status_update_email(booking, old_status)
+            except Exception as e:
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(f"Failed to send equipment handed over email: {str(e)}")
             
             return Response(
                 {"message": "Booking marked as rented successfully", "status": booking.status},
@@ -426,8 +474,17 @@ class BookingViewSet(viewsets.ModelViewSet):
                 )
             
             # Update status to completed
+            old_status = booking.status
             booking.status = Booking.Status.COMPLETED
             booking.save()
+            
+            # Send email notification
+            try:
+                send_equipment_booking_status_update_email(booking, old_status)
+            except Exception as e:
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(f"Failed to send equipment returned email: {str(e)}")
             
             return Response(
                 {"message": "Booking marked as completed successfully", "status": booking.status},

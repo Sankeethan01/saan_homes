@@ -1,0 +1,52 @@
+{% extends 'emails/base_email.html' %}
+
+{% block title %}Equipment Booking Approved - SAAN HOMES{% endblock %}
+
+{% block content %}
+<h2>✅ Equipment Booking Approved!</h2>
+
+<p>Dear {{ booking.user.first_name|default:booking.user.username }},</p>
+
+<p>Great news! Your equipment rental request has been approved. You can now proceed with payment to secure your booking.</p>
+
+<div class="highlight">
+    <h3>📋 Approved Booking Details:</h3>
+    <p><strong>Equipment:</strong> {{ booking.equipment.name }}</p>
+    <p><strong>Category:</strong> {{ booking.equipment.category.name }}</p>
+    <p><strong>Rental Period:</strong> {{ booking.start_date|date:"F d, Y" }} - {{ booking.end_date|date:"F d, Y" }}</p>
+    <p><strong>Duration:</strong> {{ booking.duration }} day{{ booking.duration|pluralize }}</p>
+    <p><strong>Daily Rate:</strong> ${{ booking.equipment.daily_rate }}</p>
+    <p><strong>Total Amount:</strong> ${{ total_amount }}</p>
+    <p><strong>Status:</strong> <span class="status-badge status-approved">{{ booking.get_status_display }}</span></p>
+</div>
+
+<div class="info-box">
+    <h3>💰 Payment Required:</h3>
+    <p>To complete your booking, please proceed with payment. You can pay online through our secure payment system.</p>
+    <div style="text-align: center; margin: 20px 0;">
+        <a href="{{ payment_url }}" class="button">Complete Payment Now</a>
+    </div>
+    <p><strong>Payment Amount:</strong> ${{ total_amount }}</p>
+    <p><strong>Payment Deadline:</strong> Please complete payment within 48 hours to secure your booking.</p>
+</div>
+
+{% if booking.equipment.delivery_available %}
+<div class="info-box">
+    <h3>🚚 Delivery Information:</h3>
+    <p>Delivery is available for this equipment. After payment confirmation, please contact us to arrange delivery to your location.</p>
+</div>
+{% endif %}
+
+{% if booking.equipment.operator_license_required %}
+<div class="info-box">
+    <h3>⚠️ License Requirement:</h3>
+    <p>This equipment requires a valid operator license. Please ensure you have the necessary documentation ready.</p>
+</div>
+{% endif %}
+
+<p>Once payment is confirmed, you will receive another email with pickup/delivery instructions.</p>
+
+<p>Thank you for choosing SAAN HOMES!</p>
+
+<p><strong>The SAAN HOMES Rental Team</strong></p>
+{% endblock %}
