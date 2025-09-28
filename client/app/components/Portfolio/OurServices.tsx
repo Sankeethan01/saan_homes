@@ -54,7 +54,7 @@ const OurServicesPortfolio = () => {
   const services = getServices(t);
   
   return (
-    <section className="py-8 sm:py-12 md:py-16 lg:py-20" style={{ background: 'radial-gradient(ellipse at 20% 40%, #f3f8ff 60%, #f8fafc 100%)' }}>
+    <section id="services" className="py-8 sm:py-12 md:py-16 lg:py-20" style={{ background: 'radial-gradient(ellipse at 20% 40%, #f3f8ff 60%, #f8fafc 100%)' }}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
         {/* Header Section - Mobile & Tablet */}
         <div className="text-center mb-8 sm:mb-12 lg:hidden">

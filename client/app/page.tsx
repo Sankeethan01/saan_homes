@@ -2,6 +2,7 @@
 
 import { lazy, Suspense } from 'react';
 import NavbarPortfolio from './components/Portfolio/Navbar';
+import LoginButtonPortfolio from './components/Portfolio/LoginButton';
 
 // Lazy load heavy components
 const HeroPortfolio = lazy(() => import('./components/Portfolio/Hero'));
@@ -97,6 +98,9 @@ export default function Home() {
       <Suspense fallback={<div className="h-64 bg-gray-100 animate-pulse"></div>}>
       <Footer />
       </Suspense>
+
+      {/* Floating Login Button - Always visible when conditions are met */}
+      <LoginButtonPortfolio />
     </main>
   );
 }
