@@ -59,6 +59,7 @@ class Equipment(models.Model):
         default=AvailabilityStatus.AVAILABLE
     )
     is_featured = models.BooleanField(default=False)  # For landing page display
+    show_on_landing = models.BooleanField(default=False)  # For landing page visibility
     
     # Technical Specifications
     operating_weight = models.CharField(max_length=50, blank=True)  # "18 tons"

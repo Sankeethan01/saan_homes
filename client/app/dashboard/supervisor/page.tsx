@@ -157,13 +157,13 @@ export default function SupervisorDashboard() {
         const projectsArr = Array.isArray(projectsResponse.data) ? projectsResponse.data : [];
         const totalCount = projectsArr.length;
         const ongoingCount = projectsArr.filter(
-          (p) => p.status === "ACTIVE" && p.completed !== true
+          (p) => p.status === "IN_PROGRESS" && !p.is_completed
         ).length;
         const completedCount = projectsArr.filter(
-          (p) => p.status === "COMPLETED" || p.completed === true
+          (p) => p.is_completed || p.status === "COMPLETED"
         ).length;
         const upcomingCount = projectsArr.filter(
-          (p) => p.status === "PLANNING" && p.completed !== true
+          (p) => p.status === "PLANNING" && !p.is_completed
         ).length;
 
         setProjectStats((prev) => ({
