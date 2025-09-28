@@ -8,6 +8,7 @@ class Service(models.Model):
     title = models.CharField(max_length=150)
     description = models.TextField()
     icon = models.ImageField(upload_to="services/")           # optional
+    show_on_landing = models.BooleanField(default=False)      # for landing page visibility
 
 
 class Testimonial(models.Model):
@@ -15,6 +16,7 @@ class Testimonial(models.Model):
     name = models.CharField(max_length=120)
     text = models.TextField()
     avatar = models.ImageField(upload_to="testimonials/", blank=True)
+    show_on_landing = models.BooleanField(default=False)      # for landing page visibility
 
 
 class FeaturedProject(models.Model):

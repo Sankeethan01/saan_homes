@@ -195,37 +195,37 @@ export default function AdminPortfolioPage() {
           case 'Services':
             setItems(prev => ({
               ...prev,
-              Services: data.map((s: {id: string; title: string; description: string; icon?: string}) => ({
+              Services: data.map((s: {id: string; title: string; description: string; icon?: string; show_on_landing?: boolean}) => ({
                 id: s.id,
                 name: s.title,
                 desc: s.description,
                 icon: s.icon,
-                showOnLanding: false,
+                showOnLanding: s.show_on_landing || false,
               })),
             }));
             break;
           case 'Equipment':
             setItems(prev => ({
               ...prev,
-              Equipment: data.map((e: {id: string; name: string; description: string; category_name?: string; image?: string; daily_rate?: number}) => ({
+              Equipment: data.map((e: {id: string; name: string; description: string; category_name?: string; image?: string; daily_rate?: number; show_on_landing?: boolean}) => ({
                 id: e.id,
                 name: e.name,
                 desc: e.description,
                 category: e.category_name || '',
                 image: e.image,
                 daily_rate: e.daily_rate,
-                showOnLanding: false,
+                showOnLanding: e.show_on_landing || false,
               })),
             }));
             break;
           case 'Projects':
             setItems(prev => ({
               ...prev,
-              Projects: data.map((p: {id: string; name: string; description: string; start_date?: string; estimated_end_date?: string; is_completed: boolean; supervisor: Supervisor}) => ({
+              Projects: data.map((p: {id: string; name: string; description: string; start_date?: string; estimated_end_date?: string; is_completed: boolean; supervisor: Supervisor; show_on_landing?: boolean}) => ({
                 id: p.id,
                 name: p.name,
                 desc: p.description,
-                showOnLanding: false,
+                showOnLanding: p.show_on_landing || false,
                 photos: [],
                 category: '',
                 start_date: p.start_date,
@@ -240,12 +240,12 @@ export default function AdminPortfolioPage() {
           case 'Testimonials':
             setItems(prev => ({
               ...prev,
-              Testimonials: data.map((t: {id: string; name: string; text: string; avatar?: string}) => ({
+              Testimonials: data.map((t: {id: string; name: string; text: string; avatar?: string; show_on_landing?: boolean}) => ({
                 id: t.id,
                 name: t.name,
                 desc: t.text,
                 avatar: t.avatar,
-                showOnLanding: false,
+                showOnLanding: t.show_on_landing || false,
               })),
             }));
             break;
@@ -356,7 +356,9 @@ export default function AdminPortfolioPage() {
   };
 
   // Toggle landing page visibility with limits
-  const handleToggleShowOnLanding = (id: string) => {
+  const handleToggleShowOnLanding = async (id: string) => {
+    if (!token) return;
+    
     const counts = getLandingPageCounts();
     
     if (tab === 'Projects') {
@@ -379,13 +381,60 @@ export default function AdminPortfolioPage() {
         return;
       }
     }
+    // Services and Testimonials have no limits, so they can be toggled freely
     
+    // Optimistically update the UI
     setItems(prev => ({
       ...prev,
       [tab]: prev[tab].map((item: Service | Project | Testimonial | Equipment) =>
         item.id === id ? { ...item, showOnLanding: !item.showOnLanding } : item
       ),
     }));
+
+    // Update backend
+    try {
+      let url = '';
+      switch (tab) {
+        case 'Services':
+          url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/portfolio/services/${id}/`;
+          break;
+        case 'Equipment':
+          url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/equipments/equipment/${id}/`;
+          break;
+        case 'Projects':
+          url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/projects/${id}/`;
+          break;
+        case 'Testimonials':
+          url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/portfolio/testimonials/${id}/`;
+          break;
+      }
+
+      const currentItem = items[tab].find((item: Service | Project | Testimonial | Equipment) => item.id === id);
+      const newShowOnLanding = !currentItem?.showOnLanding;
+
+      const response = await fetch(url, {
+        method: 'PATCH',
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ show_on_landing: newShowOnLanding }),
+      });
+
+      if (!response.ok) {
+        // Revert the optimistic update if the API call failed
+        setItems(prev => ({
+          ...prev,
+          [tab]: prev[tab].map((item: Service | Project | Testimonial | Equipment) =>
+            item.id === id ? { ...item, showOnLanding: !newShowOnLanding } : item
+          ),
+        }));
+        throw new Error('Failed to update landing page visibility');
+      }
+    } catch (error) {
+      console.error('Error updating landing page visibility:', error);
+      alert('Failed to update landing page visibility. Please try again.');
+    }
   };
 
   // Project description editing
@@ -554,7 +603,15 @@ export default function AdminPortfolioPage() {
                           </div>
                         )}
                         <div className="flex-1 min-w-0">
-                          <h3 className="font-semibold text-slate-900 truncate">{service.name}</h3>
+                          <div className="flex items-center gap-2 mb-1">
+                            <h3 className="font-semibold text-slate-900 truncate">{service.name}</h3>
+                            {service.showOnLanding && (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                <RiEyeLine className="w-3 h-3 mr-1" />
+                                Live
+                              </span>
+                            )}
+                          </div>
                           <p className="text-sm text-slate-600 line-clamp-2">{service.desc}</p>
                         </div>
                       </div>
@@ -580,12 +637,7 @@ export default function AdminPortfolioPage() {
                         </div>
                         
                         <button
-                          onClick={() => setItems(prev => ({
-                            ...prev,
-                            Services: prev.Services.map(s =>
-                              s.id === service.id ? { ...s, showOnLanding: !s.showOnLanding } : s
-                            ),
-                          }))}
+                          onClick={() => handleToggleShowOnLanding(service.id)}
                           className={`p-2 rounded-lg transition-colors ${
                             service.showOnLanding
                               ? 'bg-green-100 text-green-600 hover:bg-green-200'

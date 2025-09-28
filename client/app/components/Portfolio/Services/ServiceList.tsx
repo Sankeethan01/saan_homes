@@ -1,133 +1,110 @@
 import { motion } from 'framer-motion';
 import Image from 'next/image';
-import { useState } from 'react';
 import { useLanguage } from '../../../context/LanguageContext';
+import { useState, useEffect } from 'react';
 
-const services = [
-  {
-    id: 1,
-    title: 'Custom Home Construction',
-    subtitle: '2-5 Bedrooms – 1000-3000 sq ft',
-    description: 'Each structure we create is a reflection of our commitment to excellence and forward-thinking. Together, we build for a future that lasts beyond today. Experience interior design that speaks to your individuality and lifestyle. Discover the art of personalized design, where every element is tailored just for you.',
-    images: [
-      '/assets/images/projects/home04.jpg',
-      '/assets/images/projects/home05.jpg',
-      '/assets/images/projects/home06.jpg',
-    ],
-    features: [
-      'Personalized Design Consultation',
-      'Energy-Efficient Solutions',
-      'Premium Materials',
-      'Expert Craftsmanship'
-    ]
-  },
-  {
-    id: 2,
-    title: 'Commercial Construction',
-    subtitle: 'Office Spaces & Retail Buildings',
-    description: 'We specialize in creating modern commercial spaces that combine functionality with aesthetic appeal. Our commercial construction services are designed to meet the unique needs of businesses while ensuring maximum efficiency and sustainability.',
-    images: [
-      '/assets/images/services/com01.png',
-      '/assets/images/services/com02.png',
-      '/assets/images/services/com03.png',
-    ],
-    features: [
-      'Modern Design Solutions',
-      'Sustainable Building Practices',
-      'Project Management',
-      'Safety Compliance'
-    ]
-  },
-  {
-    id: 3,
-    title: 'Renovation & Remodeling',
-    subtitle: 'Transform Your Space',
-    description: 'Give your property a new life with our comprehensive renovation and remodeling services. We combine modern design trends with practical solutions to create spaces that are both beautiful and functional.',
-    images: [
-      '/assets/images/services/ren01.png',
-      '/assets/images/services/ren02.png',
-      '/assets/images/services/ren03.png',
-    ],
-    features: [
-      'Kitchen & Bathroom Remodeling',
-      'Space Optimization',
-      'Modern Upgrades',
-      'Quality Finishes'
-    ]
-  },
-  {
-    id: 4,
-    title: 'Landscape Design',
-    subtitle: 'Outdoor Living Spaces',
-    description: 'Transform your outdoor space into a beautiful, functional landscape that enhances your property value and lifestyle. Our landscape design services create stunning gardens, patios, and outdoor living areas that blend seamlessly with your home.',
-    images: [
-      '/assets/images/services/lan01.png',
-      '/assets/images/services/lan02.png',
-      '/assets/images/services/lan03.png',
-    ],
-    features: [
-      'Garden Design & Installation',
-      'Patio & Hardscaping',
-      'Irrigation Systems',
-      'Seasonal Maintenance'
-    ]
-  },
-  {
-    id: 5,
-    title: 'Interior Design',
-    subtitle: 'Bespoke Interior Solutions',
-    description: 'Our interior design service creates personalized spaces that reflect your style and meet your needs. We focus on creating harmonious environments that combine aesthetics with functionality.',
-    images: [
-      '/assets/images/services/interior01.png',
-      '/assets/images/services/interior02.png',
-      '/assets/images/services/interior03.png',
-    ],
-    features: [
-      'Custom Design Plans',
-      'Material Selection',
-      'Color Consultation',
-      'Furniture Layout'
-    ]
-  },
-  {
-    id: 6,
-    title: 'Architectural Design',
-    subtitle: 'Creative & Functional Design',
-    description: 'Our architectural design services blend creativity with functionality to create stunning spaces that work for you. We focus on innovative solutions that make the most of your space and location.',
-    images: [
-      '/assets/images/projects/home07.png',
-      '/assets/images/projects/home08.png',
-      '/assets/images/projects/home09.png',
-    ],
-    features: [
-      'Custom Design',
-      '3D Visualization',
-      'Site Analysis',
-      'Permit Processing'
-    ]
-  },
-  {
-    id: 7,
-    title: 'Equipment Rental',
-    subtitle: 'Professional Grade Equipment',
-    description: 'Access top-quality construction equipment through our comprehensive rental service. We provide well-maintained equipment and expert guidance to ensure your project runs smoothly.',
-    images: [
-      '/assets/images/equipments/excavator.jpeg',
-      '/assets/images/equipments/concretemixer.png',
-      '/assets/images/equipments/wheelborrow.png',
-    ],
-    features: [
-      'Wide Equipment Selection',
-      'Flexible Rental Terms',
-      'Maintenance Support',
-      'Operator Training'
-    ]
-  },
+// Interface for service data from backend
+interface Service {
+  id: string;
+  title: string;
+  description: string;
+  icon?: string;
+  show_on_landing?: boolean;
+}
+
+// Default fallback images for services
+const defaultServiceImages = [
+  '/assets/images/projects/home04.jpg',
+  '/assets/images/projects/home05.jpg',
+  '/assets/images/projects/home06.jpg',
+];
+
+// Default features for services
+const defaultFeatures = [
+  'Professional Service',
+  'Quality Assurance',
+  'Expert Team',
+  'Customer Satisfaction'
 ];
 
 const ServiceListServicesPortfolio = () => {
   const { t } = useLanguage();
   const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [services, setServices] = useState<Service[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch live services from backend
+  useEffect(() => {
+    const fetchLiveServices = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/portfolio/services/`);
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch services');
+        }
+        
+        const data = await response.json();
+        
+        // Filter only services that are marked as live (show_on_landing: true)
+        const liveServices = data.filter((service: Service) => service.show_on_landing === true);
+        
+        setServices(liveServices);
+      } catch (err) {
+        console.error('Error fetching services:', err);
+        setError('Failed to load services. Please try again later.');
+        setServices([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchLiveServices();
+  }, []);
+
+  // Loading state
+  if (loading) {
+    return (
+      <section className="py-20 bg-white">
+        <div className="container mx-auto px-8">
+          <div className="flex items-center justify-center min-h-[400px]">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#1b4965]"></div>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <section className="py-20 bg-white">
+        <div className="container mx-auto px-8">
+          <div className="text-center">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">Unable to Load Services</h2>
+            <p className="text-gray-600">{error}</p>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  // Empty state - no live services
+  if (services.length === 0) {
+    return (
+      <section className="py-20 bg-white">
+        <div className="container mx-auto px-8">
+          <div className="text-center">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">Our Services</h2>
+            <p className="text-gray-600">No services are currently available. Please check back later.</p>
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
      <section className="py-20 bg-white" >
@@ -155,7 +132,7 @@ const ServiceListServicesPortfolio = () => {
                   transition={{ duration: 0.5 }}
                 >
                   <div className="relative w-full h-full">
-                    {service.images.map((image, imgIndex) => (
+                    {defaultServiceImages.map((image, imgIndex) => (
                       <motion.div
                         key={imgIndex}
                         initial={{ opacity: 0 }}
@@ -180,7 +157,7 @@ const ServiceListServicesPortfolio = () => {
                 </motion.div>
                 {/* Image Navigation */}
                 <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-2 z-20">
-                  {service.images.map((_, imgIndex) => (
+                  {defaultServiceImages.map((_, imgIndex) => (
                     <button
                       key={imgIndex}
                       type="button"
@@ -201,7 +178,7 @@ const ServiceListServicesPortfolio = () => {
                   whileInView={{ opacity: 1, y: 0 }}
                   className="text-[#1b4965] font-medium"
                 >
-                  {service.subtitle}
+                  Professional Service
                 </motion.span>
                 <motion.h2
                   initial={{ opacity: 0, y: 20 }}
@@ -220,7 +197,7 @@ const ServiceListServicesPortfolio = () => {
                   {service.description}
                 </motion.p>
                 <motion.ul className="space-y-4">
-                  {service.features.map((feature, featureIndex) => (
+                  {defaultFeatures.map((feature, featureIndex) => (
                     <motion.li
                       key={featureIndex}
                       initial={{ opacity: 0, x: -20 }}

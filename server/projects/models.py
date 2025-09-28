@@ -73,6 +73,7 @@ class Project(models.Model):
 
     # Status flags
     is_completed = models.BooleanField(default=False)
+    show_on_landing = models.BooleanField(default=False)      # for landing page visibility
     
     # Soft delete fields
     is_deleted = models.BooleanField(default=False)

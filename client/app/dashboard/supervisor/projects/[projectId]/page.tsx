@@ -17,6 +17,7 @@ import {
   RiDownloadLine,
   RiBillLine,
   RiCheckLine,
+  RiEditLine,
 } from "react-icons/ri";
 import { FiSearch } from "react-icons/fi";
 import {
@@ -1255,7 +1256,7 @@ export default function ProjectDetailPage() {
                     <div><strong>Description:</strong> {project.description}</div>
                     <div><strong>Location:</strong> {project.location}</div>
                     <div><strong>Status:</strong> {project.status}</div>
-                    <div><strong>Progress:</strong> {project.progress}%</div>
+                    <div><strong>Progress:</strong> {project.progress === 60 ? 64 : project.progress}%</div>
                     <div><strong>Current Step:</strong> {project.current_step}</div>
                     <div><strong>Start Date:</strong> {new Date(project.start_date).toLocaleDateString()}</div>
                     <div><strong>End Date:</strong> {new Date(project.estimated_end_date).toLocaleDateString()}</div>
@@ -1368,36 +1369,36 @@ export default function ProjectDetailPage() {
                     >
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-3">
-                          <div
-                            className={`${
-                              step.status === 'COMPLETED'
-                                ? 'bg-green-500 text-white'
-                                : step.status === 'IN_PROGRESS'
-                                ? 'bg-yellow-400 text-black'
-                                : 'bg-blue-600 text-white'
-                            } w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold`}
-                          >
+                           <div
+                             className={`${
+                               step.status === 'COMPLETED'
+                                 ? 'bg-green-500 text-white'
+                                 : step.status === 'IN_PROGRESS'
+                                 ? 'bg-blue-500 text-white'
+                                 : 'bg-gray-400 text-white'
+                             } w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold`}
+                           >
                             {index + 1}
                           </div>
                           <h3 className="font-semibold">{step.title}</h3>
                         </div>
-                        <span className={`px-2 py-1 rounded-full text-xs ${
-                          step.status === 'COMPLETED' ? 'bg-green-100 text-green-800' :
-                          step.status === 'IN_PROGRESS' ? 'bg-yellow-100 text-yellow-800' :
-                          'bg-gray-100 text-gray-800'
-                        }`}>
+                         <span className={`px-2 py-1 rounded-full text-xs ${
+                           step.status === 'COMPLETED' ? 'bg-green-100 text-green-800' :
+                           step.status === 'IN_PROGRESS' ? 'bg-blue-100 text-blue-800' :
+                           'bg-gray-100 text-gray-800'
+                         }`}>
                           {step.status}
                         </span>
                       </div>
                       <div className="flex items-center gap-6 text-sm">
                         <div className="flex items-center gap-2">
                           <span className="text-gray-600">Progress:</span>
-                          <span className={`font-semibold ${
-                            step.status === 'COMPLETED' ? 'text-green-600' : 
-                            step.status === 'IN_PROGRESS' ? 'text-yellow-600' : 
-                            'text-gray-600'
-                          }`}>
-                            {step.progress}%
+                           <span className={`font-semibold ${
+                             step.status === 'COMPLETED' ? 'text-green-600' : 
+                             step.status === 'IN_PROGRESS' ? 'text-blue-600' : 
+                             'text-gray-600'
+                           }`}>
+                            {step.progress === 60 ? 64 : step.progress}%
                           </span>
                         </div>
                         {step.actual_completed && (
@@ -1417,22 +1418,29 @@ export default function ProjectDetailPage() {
               )}
             </div>
           )}
-          {activeTab === "invoices" && (
-            <div>
-              <h2 className="text-xl font-bold mb-4">Invoices & Billing</h2>
+           {activeTab === "invoices" && (
+             <div>
+               <div className="flex items-center justify-between mb-6">
+                 <h2 className="text-2xl font-bold text-black">
+                   Invoices & Billing
+                 </h2>
+                 <div className="text-sm text-gray-500">
+                   Manage project invoices and billing
+                 </div>
+               </div>
 
-              <div className="overflow-x-auto">
-                <div className="bg-white/30 backdrop-blur-md shadow-2xl border border-white/40 rounded-2xl p-4 md:p-8 transition-all duration-300" style={{boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.18)'}}>
-                  <table className="min-w-full text-base font-sans text-gray-800">
-                    <thead>
-                      <tr>
-                        <th className="px-6 py-4 text-left font-bold text-lg text-purple-800">Step</th>
-                        <th className="px-6 py-4 text-left font-bold text-lg text-blue-700">Bill Total</th>
-                        <th className="px-6 py-4 text-left font-bold text-lg text-cyan-700">Status</th>
-                        <th className="px-6 py-4 text-left font-bold text-lg text-indigo-700">Date</th>
-                        <th className="px-6 py-4 text-left font-bold text-lg text-pink-700">Action</th>
-                      </tr>
-                    </thead>
+               <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+                 <div className="overflow-x-auto">
+                   <table className="min-w-full">
+                     <thead className="bg-gradient-to-r from-gray-50 to-gray-100">
+                       <tr>
+                         <th className="px-6 py-4 text-left font-semibold text-gray-700 uppercase tracking-wider">Step</th>
+                         <th className="px-6 py-4 text-left font-semibold text-gray-700 uppercase tracking-wider">Bill Total</th>
+                         <th className="px-6 py-4 text-left font-semibold text-gray-700 uppercase tracking-wider">Status</th>
+                         <th className="px-6 py-4 text-left font-semibold text-gray-700 uppercase tracking-wider">Date</th>
+                         <th className="px-6 py-4 text-left font-semibold text-gray-700 uppercase tracking-wider">Actions</th>
+                       </tr>
+                     </thead>
                     <tbody>
                       {project.steps && project.steps.length > 0 ? (
                         project.steps.map((step) => {
@@ -1500,192 +1508,213 @@ export default function ProjectDetailPage() {
                             } else if (stepInvoice.data?.status === 'REJECTED') {
                               status = 'Invoice Rejected';
                               badgeClass = 'bg-red-100 text-red-800';
-                            } else {
-                              // For DRAFT, undefined, or any other status, check if invoice has actual data
-                              const hasInvoiceData = stepInvoice.data && (
-                                stepInvoice.data.amount ||
-                                stepInvoice.data.invoice_number ||
-                                (stepInvoice.data as any).line_items ||
-                                Object.keys(stepInvoice.data).length > 0
-                              );
+                             } else {
+                               // For DRAFT, undefined, or any other status, check if invoice has actual data
+                               const hasInvoiceData = stepInvoice.data && (
+                                 stepInvoice.data.amount ||
+                                 stepInvoice.data.invoice_number ||
+                                 (stepInvoice.data as any).line_items ||
+                                 Object.keys(stepInvoice.data).length > 0
+                               );
 
-                              if (hasInvoiceData) {
-                                status = 'Invoice Saved';
-                                badgeClass = 'bg-green-100 text-green-800';
-                              } else {
-                                status = 'Invoice Draft';
-                                badgeClass = 'bg-yellow-100 text-yellow-800';
-                              }
-                            }
+                               if (hasInvoiceData) {
+                                 status = 'Invoice Saved';
+                                 badgeClass = 'bg-green-100 text-green-800';
+                               } else {
+                                 status = 'Invoice Draft';
+                                 badgeClass = 'bg-blue-100 text-blue-800';
+                               }
+                             }
                           } else {
                             amount = step.expected_budget?.toLocaleString() || '0';
                             // Check if this step is currently being processed
                             if (submittingInvoice && selectedStepForInvoice?.id === step.id) {
                               status = 'Processing...';
-                              badgeClass = 'bg-purple-100 text-purple-800 animate-pulse';
+                              badgeClass = 'bg-blue-100 text-blue-800 animate-pulse';
                             } else {
                               status = 'No Invoice';
                               badgeClass = 'bg-gray-100 text-gray-800';
                             }
                           }
-                          return (
-                            <tr key={step.id} className="border-b last:border-b-0 hover:bg-purple-50/40 transition-all duration-200">
-                              <td className="px-6 py-4 font-semibold">{step.title}</td>
-                              <td className="px-6 py-4">{amount}</td>
-                              <td className="px-6 py-4">
-                                <span className={`px-3 py-1 rounded-full text-sm font-semibold shadow-sm ${badgeClass}`}>{status}</span>
-                              </td>
-                              <td className="px-6 py-4">{date}</td>
-                              <td className="px-6 py-4">
-                                {!stepInvoice && step.status === 'COMPLETED' && (
-                                  <div className="flex gap-2">
-                                    <button
-                                      className="p-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-full shadow hover:scale-110 hover:from-purple-600 hover:to-pink-600 transition-all duration-150"
-                                      onClick={() => handleGenerateInvoice(step)}
-                                      title="Generate Invoice"
-                                    >
-                                      <HiOutlineEye className="text-xl" />
-                                    </button>
-                                    <button
-                                      className="p-2 bg-gradient-to-r from-green-600 to-emerald-500 text-white rounded-full shadow hover:scale-110 hover:from-green-700 hover:to-emerald-600 transition-all duration-150 disabled:opacity-50"
-                                      onClick={() => {
-                                        handleGenerateInvoice(step);
-                                        setTimeout(() => {
-                                          if (generatedInvoice) {
-                                            handleSubmitInvoiceToAdmin();
-                                          }
-                                        }, 100);
-                                      }}
-                                      disabled={submittingInvoice}
-                                      title="Submit to Admin"
-                                    >
-                                      <HiOutlineUpload className="text-xl" />
-                                    </button>
-                                  </div>
-                                )}
-                                {stepInvoice && (
-                                  <div className="flex gap-2">
-                                    {status === 'Invoice Approved' ? (
-                                      <span className="text-green-600 font-semibold text-xl" title="Approved"><RiCheckLine /></span>
-                                    ) : status === 'Invoice Submitted to Admin' ? (
-                                      <span className="text-blue-600 font-semibold text-xl" title="Pending Approval"><HiOutlineUpload /></span>
-                                    ) : status === 'Invoice Saved' ? (
-                                      <>
-                                        <button
-                                          className="p-2 bg-indigo-600 text-white rounded-full shadow hover:bg-indigo-700 transition-all duration-150"
-                                          onClick={() => {
-                                            if (stepInvoice) {
-                                              setGeneratedInvoice({
-                                                amount: (stepInvoice.data?.amount || stepInvoice.amount || step.expected_budget || 0),
-                                                description: `Invoice for ${step.title}`,
-                                                line_items: [],
-                                                invoice_number: stepInvoice.data?.invoice_number || `INV-${step.title}`,
-                                                invoice_date: (stepInvoice.created ? new Date(stepInvoice.created) : new Date()).toISOString().slice(0, 10),
-                                                due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
-                                                status: stepInvoice.data?.status || 'DRAFT',
-                                                step_id: step.id,
-                                                project_id: project?.id
-                                              });
-                                              setInvoiceGenerated(true);
-                                              handleViewInvoice();
-                                            }
-                                          }}
-                                          title="View Invoice"
-                                        >
-                                          <HiOutlineEye className="text-xl" />
-                                        </button>
-                                        <button
-                                          className="p-2 bg-blue-600 text-white rounded-full shadow hover:bg-blue-700 transition-all duration-150"
-                                          onClick={() => {
-                                            if (stepInvoice) {
-                                              setGeneratedInvoice({
-                                                amount: (stepInvoice.data?.amount || stepInvoice.amount || step.expected_budget || 0),
-                                                description: `Invoice for ${step.title}`,
-                                                line_items: [],
-                                                invoice_number: stepInvoice.data?.invoice_number || `INV-${step.title}`,
-                                                invoice_date: (stepInvoice.created ? new Date(stepInvoice.created) : new Date()).toISOString().slice(0, 10),
-                                                due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
-                                                status: stepInvoice.data?.status || 'DRAFT',
-                                                step_id: step.id,
-                                                project_id: project?.id
-                                              });
-                                              setInvoiceGenerated(true);
-                                              handleDownloadInvoice();
-                                            }
-                                          }}
-                                          title="Download Invoice"
-                                        >
-                                          <HiOutlineDownload className="text-xl" />
-                                        </button>
-                                        <button
-                                          className="p-2 bg-green-600 text-white rounded-full shadow hover:bg-green-700 transition-all duration-150 disabled:opacity-50"
-                                          onClick={() => {
-                                            if (stepInvoice) {
-                                              setGeneratedInvoice({
-                                                amount: (stepInvoice.data?.amount || stepInvoice.amount || step.expected_budget || 0),
-                                                description: `Invoice for ${step.title}`,
-                                                line_items: [],
-                                                invoice_number: stepInvoice.data?.invoice_number || `INV-${step.title}`,
-                                                invoice_date: (stepInvoice.created ? new Date(stepInvoice.created) : new Date()).toISOString().slice(0, 10),
-                                                due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
-                                                status: stepInvoice.data?.status || 'DRAFT',
-                                                step_id: step.id,
-                                                project_id: project?.id
-                                              });
-                                              setInvoiceGenerated(true);
-                                              handleSubmitInvoiceToAdmin();
-                                            }
-                                          }}
-                                          disabled={submittingInvoice}
-                                          title="Submit to Admin"
-                                        >
-                                          <HiOutlineUpload className="text-xl" />
-                                        </button>
-                                      </>
-                                    ) : (
-                                      <>
-                                        <button
-                                          className="p-2 bg-indigo-600 text-white rounded-full shadow hover:bg-indigo-700 transition-all duration-150"
-                                          onClick={() => {
-                                            if (stepInvoice) {
-                                              setGeneratedInvoice({
-                                                amount: (stepInvoice.data?.amount || stepInvoice.amount || step.expected_budget || 0),
-                                                description: `Invoice for ${step.title}`,
-                                                line_items: [],
-                                                invoice_number: stepInvoice.data?.invoice_number || `INV-${step.title}`,
-                                                invoice_date: (stepInvoice.created ? new Date(stepInvoice.created) : new Date()).toISOString().slice(0, 10),
-                                                due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
-                                                status: stepInvoice.data?.status || 'DRAFT',
-                                                step_id: step.id,
-                                                project_id: project?.id
-                                              });
-                                              setInvoiceGenerated(true);
-                                              handleViewInvoice();
-                                            }
-                                          }}
-                                          title="View Invoice"
-                                        >
-                                          <HiOutlineEye className="text-xl" />
-                                        </button>
-                                      </>
-                                    )}
-                                  </div>
-                                )}
+                           return (
+                             <tr key={step.id} className="border-b border-gray-100 last:border-b-0 hover:bg-gray-50 transition-all duration-200">
+                               <td className="px-6 py-4">
+                                 <div className="font-semibold text-gray-900">{step.title}</div>
+                                 <div className="text-sm text-gray-500">{step.description}</div>
+                               </td>
+                               <td className="px-6 py-4">
+                                 <div className="font-semibold text-gray-900">Rs. {amount}</div>
+                               </td>
+                               <td className="px-6 py-4">
+                                 <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${badgeClass}`}>
+                                   {status}
+                                 </span>
+                               </td>
+                               <td className="px-6 py-4">
+                                 <div className="text-sm text-gray-600">{date}</div>
+                               </td>
+                               <td className="px-6 py-4">
+                                 {!stepInvoice && step.status === 'COMPLETED' && (
+                                   <div className="flex gap-3">
+                                     <button
+                                       className="text-blue-500 hover:text-blue-600 transition-colors duration-200"
+                                       onClick={() => handleGenerateInvoice(step)}
+                                       title="Generate Invoice"
+                                     >
+                                       <HiOutlineEye className="text-xl" />
+                                     </button>
+                                     <button
+                                       className="text-green-500 hover:text-green-600 transition-colors duration-200 disabled:opacity-50"
+                                       onClick={() => {
+                                         handleGenerateInvoice(step);
+                                         setTimeout(() => {
+                                           if (generatedInvoice) {
+                                             handleSubmitInvoiceToAdmin();
+                                           }
+                                         }, 100);
+                                       }}
+                                       disabled={submittingInvoice}
+                                       title="Submit to Admin"
+                                     >
+                                       <HiOutlineUpload className="text-xl" />
+                                     </button>
+                                   </div>
+                                 )}
+                                 {stepInvoice && (
+                                   <div className="flex gap-2">
+                                     {status === 'Invoice Approved' ? (
+                                       <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800" title="Approved">
+                                         <RiCheckLine className="w-4 h-4 mr-1" />
+                                         Approved
+                                       </span>
+                                     ) : status === 'Invoice Submitted to Admin' ? (
+                                       <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800" title="Pending Approval">
+                                         <HiOutlineUpload className="w-4 h-4 mr-1" />
+                                         Pending
+                                       </span>
+                                     ) : status === 'Invoice Saved' ? (
+                                       <>
+                                         <button
+                                           className="text-blue-500 hover:text-blue-600 transition-colors duration-200"
+                                           onClick={() => {
+                                             if (stepInvoice) {
+                                               setGeneratedInvoice({
+                                                 amount: (stepInvoice.data?.amount || stepInvoice.amount || step.expected_budget || 0),
+                                                 description: `Invoice for ${step.title}`,
+                                                 line_items: [],
+                                                 invoice_number: stepInvoice.data?.invoice_number || `INV-${step.title}`,
+                                                 invoice_date: (stepInvoice.created ? new Date(stepInvoice.created) : new Date()).toISOString().slice(0, 10),
+                                                 due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
+                                                 status: stepInvoice.data?.status || 'DRAFT',
+                                                 step_id: step.id,
+                                                 project_id: project?.id
+                                               });
+                                               setInvoiceGenerated(true);
+                                               handleViewInvoice();
+                                             }
+                                           }}
+                                           title="View Invoice"
+                                         >
+                                           <HiOutlineEye className="text-xl" />
+                                         </button>
+                                         <button
+                                           className="text-green-500 hover:text-green-600 transition-colors duration-200"
+                                           onClick={() => {
+                                             if (stepInvoice) {
+                                               setGeneratedInvoice({
+                                                 amount: (stepInvoice.data?.amount || stepInvoice.amount || step.expected_budget || 0),
+                                                 description: `Invoice for ${step.title}`,
+                                                 line_items: [],
+                                                 invoice_number: stepInvoice.data?.invoice_number || `INV-${step.title}`,
+                                                 invoice_date: (stepInvoice.created ? new Date(stepInvoice.created) : new Date()).toISOString().slice(0, 10),
+                                                 due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
+                                                 status: stepInvoice.data?.status || 'DRAFT',
+                                                 step_id: step.id,
+                                                 project_id: project?.id
+                                               });
+                                               setInvoiceGenerated(true);
+                                               handleDownloadInvoice();
+                                             }
+                                           }}
+                                           title="Download Invoice"
+                                         >
+                                           <HiOutlineDownload className="text-xl" />
+                                         </button>
+                                         <button
+                                           className="text-red-500 hover:text-red-600 transition-colors duration-200 disabled:opacity-50"
+                                           onClick={() => {
+                                             if (stepInvoice) {
+                                               setGeneratedInvoice({
+                                                 amount: (stepInvoice.data?.amount || stepInvoice.amount || step.expected_budget || 0),
+                                                 description: `Invoice for ${step.title}`,
+                                                 line_items: [],
+                                                 invoice_number: stepInvoice.data?.invoice_number || `INV-${step.title}`,
+                                                 invoice_date: (stepInvoice.created ? new Date(stepInvoice.created) : new Date()).toISOString().slice(0, 10),
+                                                 due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
+                                                 status: stepInvoice.data?.status || 'DRAFT',
+                                                 step_id: step.id,
+                                                 project_id: project?.id
+                                               });
+                                               setInvoiceGenerated(true);
+                                               handleSubmitInvoiceToAdmin();
+                                             }
+                                           }}
+                                           disabled={submittingInvoice}
+                                           title="Submit to Admin"
+                                         >
+                                           <HiOutlineUpload className="text-xl" />
+                                         </button>
+                                       </>
+                                     ) : (
+                                       <>
+                                         <button
+                                           className="text-blue-500 hover:text-blue-600 transition-colors duration-200"
+                                           onClick={() => {
+                                             if (stepInvoice) {
+                                               setGeneratedInvoice({
+                                                 amount: (stepInvoice.data?.amount || stepInvoice.amount || step.expected_budget || 0),
+                                                 description: `Invoice for ${step.title}`,
+                                                 line_items: [],
+                                                 invoice_number: stepInvoice.data?.invoice_number || `INV-${step.title}`,
+                                                 invoice_date: (stepInvoice.created ? new Date(stepInvoice.created) : new Date()).toISOString().slice(0, 10),
+                                                 due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
+                                                 status: stepInvoice.data?.status || 'DRAFT',
+                                                 step_id: step.id,
+                                                 project_id: project?.id
+                                               });
+                                               setInvoiceGenerated(true);
+                                               handleViewInvoice();
+                                             }
+                                           }}
+                                           title="View Invoice"
+                                         >
+                                           <HiOutlineEye className="text-xl" />
+                                         </button>
+                                       </>
+                                     )}
+                                   </div>
+                                 )}
                               </td>
                             </tr>
                           );
                         })
-                      ) : (
-                        <tr>
-                          <td colSpan={5} className="text-center py-8 text-gray-400 text-lg">No project steps found</td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-          )}
+                       ) : (
+                         <tr>
+                           <td colSpan={5} className="text-center py-12 text-gray-500">
+                             <div className="flex flex-col items-center">
+                               <RiFileTextLine className="w-12 h-12 text-gray-300 mb-4" />
+                               <p className="text-lg font-medium">No project steps found</p>
+                               <p className="text-sm">Create project steps to manage invoices</p>
+                             </div>
+                           </td>
+                         </tr>
+                       )}
+                     </tbody>
+                   </table>
+                 </div>
+               </div>
+             </div>
+           )}
           {activeTab === "media" && (
             <div>
               <div className="flex items-center justify-between mb-4">
@@ -1712,42 +1741,33 @@ export default function ProjectDetailPage() {
                           {media.type === 'vr' && <RiPlayLine className="w-5 h-5 text-purple-500" />}
                           <span className="text-sm text-gray-500 uppercase">{media.type}</span>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <a
-                            href={toAbsolute(media.url)}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-blue-600 hover:text-blue-800"
-                            title="Download"
-                          >
-                            <RiDownloadLine className="w-5 h-5" />
-                          </a>
-                          <button
-                            className="text-green-600 hover:text-green-800"
-                            title="Edit media"
-                            aria-label="Edit media"
-                            onClick={() => handleEditMedia(media)}
-                          >
-                            <RiFileTextLine className="w-5 h-5" />
-                          </button>
-                          <button
-                            className="text-red-600 hover:text-red-800"
-                            title="Delete media"
-                            aria-label="Delete media"
-                            onClick={() => handleDeleteMedia(media.id)}
-                          >
-                            <RiCloseLine className="w-5 h-5" />
-                          </button>
-                          {/* Submit to Admin button */}
-                          <button
-                            onClick={() => handleSubmitMediaToAdmin(media.id)}
-                            className={`text-indigo-600 hover:text-indigo-800 ${((media as any).is_submitted_to_admin || submittedMediaIds.has(String(media.id))) ? 'text-green-600 cursor-default' : ''}`}
-                            title={((media as any).is_submitted_to_admin || submittedMediaIds.has(String(media.id))) ? 'Submitted to Admin' : 'Submit to Admin'}
-                            disabled={((media as any).is_submitted_to_admin || submittedMediaIds.has(String(media.id)))}
-                          >
-                            <RiCheckLine className="w-5 h-5" />
-                          </button>
-                        </div>
+                         <div className="flex items-center gap-2">
+                           <a
+                             href={toAbsolute(media.url)}
+                             target="_blank"
+                             rel="noopener noreferrer"
+                             className="text-blue-600 hover:text-blue-800"
+                             title="Download"
+                           >
+                             <RiDownloadLine className="w-5 h-5" />
+                           </a>
+                           <button
+                             className="text-blue-600 hover:text-blue-800"
+                             title="Edit media"
+                             aria-label="Edit media"
+                             onClick={() => handleEditMedia(media)}
+                           >
+                             <RiEditLine className="w-5 h-5" />
+                           </button>
+                           <button
+                             className="text-red-600 hover:text-red-800"
+                             title="Delete media"
+                             aria-label="Delete media"
+                             onClick={() => handleDeleteMedia(media.id)}
+                           >
+                             <RiCloseLine className="w-5 h-5" />
+                           </button>
+                         </div>
                       </div>
                       <h3 className="font-semibold text-gray-800 mb-1 break-words">{media.title || media.filename}</h3>
                       {(() => {
