@@ -248,17 +248,6 @@ class Bill(models.Model):
         return super().delete()
 
 
-class Invoice(models.Model):
-    """
-    Editable draft invoice generated after a step; approved by admin.
-    """
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    step = models.OneToOneField(Step, related_name="invoice", on_delete=models.CASCADE)
-    data = models.JSONField(default=dict)               # flexible line-items
-    is_approved = models.BooleanField(default=False)
-    created = models.DateTimeField(auto_now_add=True)
-
-
 class VRVideo(models.Model):
     """
     360° walkthrough attached to a project.
@@ -283,3 +272,89 @@ class SupervisorNote(models.Model):
 
     def __str__(self):
         return f"Note by {self.supervisor} on {self.project}"
+
+
+class Invoice(models.Model):
+    # Status Choices
+    class Status(models.TextChoices):
+        PROCESSING = "PROCESSING", "Processing"
+        EDITING = "EDITING", "Editing"
+        VERIFIED = "VERIFIED", "Verified"
+        SENT = "SENT", "Sent to Admin"
+        APPROVED = "APPROVED", "Approved by Admin"
+        REJECTED = "REJECTED", "Rejected by Admin"
+
+    # Basic Information
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    bill = models.ForeignKey(Bill, on_delete=models.CASCADE, related_name='invoices')
+    project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='invoices')
+    step = models.ForeignKey(Step, on_delete=models.CASCADE, related_name='invoices')
+    
+    # Invoice Details
+    invoice_number = models.CharField(max_length=100)
+    date = models.DateField()
+    vendor = models.CharField(max_length=255)
+    client = models.CharField(max_length=255)
+    
+    # Financial Data
+    subtotal = models.DecimalField(max_digits=12, decimal_places=2)
+    tax = models.DecimalField(max_digits=12, decimal_places=2)
+    total = models.DecimalField(max_digits=12, decimal_places=2)
+    
+    # OCR Data
+    ocr_confidence = models.FloatField(help_text="OCR confidence percentage")
+    ocr_text = models.TextField(help_text="Raw OCR extracted text")
+    
+    # Status and Tracking
+    status = models.CharField(
+        max_length=20,
+        choices=Status.choices,
+        default=Status.PROCESSING
+    )
+    
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    sent_to_admin_at = models.DateTimeField(null=True, blank=True)
+    approved_by_admin_at = models.DateTimeField(null=True, blank=True)
+    
+    # Users
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='created_invoices')
+    approved_by = models.ForeignKey(
+        User, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True, 
+        related_name='approved_invoices'
+    )
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=['status']),
+            models.Index(fields=['created_at']),
+            models.Index(fields=['project', 'status']),
+        ]
+
+    def __str__(self):
+        return f"Invoice {self.invoice_number} - {self.project.name}"
+
+
+class InvoiceItem(models.Model):
+    """Individual line items for invoices"""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE, related_name='items')
+    description = models.CharField(max_length=500)
+    quantity = models.DecimalField(max_digits=10, decimal_places=2)
+    rate = models.DecimalField(max_digits=12, decimal_places=2)
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["created_at"]
+
+    def __str__(self):
+        return f"{self.description} - {self.quantity} x {self.rate}"

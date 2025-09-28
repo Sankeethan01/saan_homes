@@ -5,6 +5,7 @@ from rest_framework.response import Response
 from rest_framework.filters import OrderingFilter, SearchFilter
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from django.http import FileResponse
+from django.db import models
 import json
 import os
 import pandas as pd
@@ -24,6 +25,7 @@ from .models import (
     ProgressLog,
     Bill,
     Invoice,
+    InvoiceItem,
     VRVideo,
     SupervisorNote,
     ProgressLogMedia,
@@ -33,9 +35,9 @@ from .serializers import (
     ProjectSerializer,
     ProjectListSerializer,
     StepSerializer,
+    InvoiceSerializer,
     ProgressLogSerializer,
     BillSerializer,
-    InvoiceSerializer,
     VRVideoSerializer,
     SupervisorNoteSerializer,
     ProgressLogMediaSerializer,
@@ -653,7 +655,7 @@ class ProjectViewSet(viewsets.ModelViewSet):
     queryset = Project.objects.select_related('supervisor').prefetch_related(
         'steps', 
         'steps__logs', 
-        'steps__invoice'
+        'steps__invoices'
     ).all()  # Optimize with prefetch_related
     serializer_class = ProjectSerializer
     permission_classes = [IsAdminOrSupervisorOrReadOnly]
@@ -734,7 +736,7 @@ class ProjectViewSet(viewsets.ModelViewSet):
         return Project.objects.select_related('supervisor').prefetch_related(
             'steps', 
             'steps__logs', 
-            'steps__invoice'
+            'steps__invoices'
         ).filter(is_deleted=False)
     
     @action(detail=False, methods=['get'], url_path='recycle-bin')
@@ -1126,7 +1128,7 @@ class ProjectViewSet(viewsets.ModelViewSet):
         projects = Project.objects.select_related('supervisor').prefetch_related(
             'steps', 
             'steps__logs', 
-            'steps__invoice'
+            'steps__invoices'
         ).filter(supervisor=request.user, is_deleted=False)
         
         serializer = self.get_serializer(projects, many=True)
@@ -1699,27 +1701,15 @@ class BillViewSet(viewsets.ModelViewSet):
                     'amount': total_val,
                 })
             
-            Invoice.objects.create(
-                step=bill.step,
-                data={
-                    'amount': bill.ocr_data.get('total', 0) if bill.ocr_data else 0,
-                    'description': f'Invoice for {bill.step.title}',
-                    'bill_id': str(bill.id),
-                    'line_items': line_items,
-                    'invoice_number': f"INV-{bill.step.project.name[:3].upper()}-{bill.step.order:03d}-{timezone.now().strftime('%Y%m%d')}",
-                    'invoice_date': timezone.now().date(),
-                    'due_date': (timezone.now() + timezone.timedelta(days=30)).date(),
-                    'status': 'DRAFT'
-                },
-                is_approved=False
-            )
+            # Note: With the new Invoice model, invoices are created through the 
+            # invoice generation workflow, not automatically when bills are uploaded.
+            # This ensures proper OCR processing and data validation.
+            pass
         else:
             # Update existing invoice with new bill data
-            invoice = bill.step.invoice
-            if bill.ocr_data and 'total' in bill.ocr_data:
-                invoice.data['amount'] = bill.ocr_data['total']
-                invoice.data['bill_id'] = str(bill.id)
-                invoice.save()
+            # Note: With the new Invoice model, we don't automatically update invoices
+            # Invoices are now created through the invoice generation workflow
+            pass
 
     @action(detail=True, methods=['post'])
     def submit_to_admin(self, request, pk=None):
@@ -1728,10 +1718,9 @@ class BillViewSet(viewsets.ModelViewSet):
         bill.save()
 
         # Update invoice status if it exists
-        if hasattr(bill.step, 'invoice'):
-            invoice = bill.step.invoice
-            invoice.data['status'] = 'SUBMITTED'
-            invoice.save()
+        # Note: With the new Invoice model, invoice status is managed separately
+        # through the invoice generation workflow
+        pass
 
         # (Optional: notification code here)
         return Response({'status': 'submitted'})
@@ -1933,12 +1922,7 @@ class BillViewSet(viewsets.ModelViewSet):
             )
 
 
-class InvoiceViewSet(viewsets.ModelViewSet):
-    queryset = Invoice.objects.select_related("step", "step__project").prefetch_related("step__bills").all()
-    serializer_class = InvoiceSerializer
-    permission_classes = [IsAdminOrSupervisorOrReadOnly]
-    filter_backends = [OrderingFilter]
-    ordering = ["-created"]
+# Old InvoiceViewSet removed - using new InvoiceViewSet below
 
     def get_queryset(self):
         """Filter invoices based on user role"""
@@ -2017,7 +2001,8 @@ class InvoiceViewSet(viewsets.ModelViewSet):
     def submit_to_admin(self, request, pk=None):
         """Submit invoice to admin for approval"""
         invoice = self.get_object()
-        invoice.data['status'] = 'SUBMITTED'
+        invoice.status = 'SENT'
+        invoice.sent_to_admin_at = timezone.now()
         invoice.save()
         return Response({'status': 'submitted'})
 
@@ -2031,8 +2016,9 @@ class InvoiceViewSet(viewsets.ModelViewSet):
             )
         
         invoice = self.get_object()
-        invoice.data['status'] = 'APPROVED'
-        invoice.is_approved = True
+        invoice.status = 'APPROVED'
+        invoice.approved_by = request.user
+        invoice.approved_by_admin_at = timezone.now()
         invoice.save()
         return Response({'status': 'approved'})
 
@@ -2046,8 +2032,8 @@ class InvoiceViewSet(viewsets.ModelViewSet):
             )
         
         invoice = self.get_object()
-        invoice.data['status'] = 'REJECTED'
-        invoice.is_approved = False
+        invoice.status = 'REJECTED'
+        invoice.approved_by = request.user
         invoice.save()
         return Response({'status': 'rejected'})
 
@@ -2116,3 +2102,127 @@ class SupervisorNoteViewSet(viewsets.ModelViewSet):
 
     def perform_update(self, serializer):
         serializer.save(supervisor=self.request.user)
+
+
+class InvoiceViewSet(viewsets.ModelViewSet):
+    queryset = Invoice.objects.select_related('project', 'step', 'bill', 'created_by', 'approved_by').all()
+    serializer_class = InvoiceSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    filter_backends = [SearchFilter, OrderingFilter]
+    search_fields = ['invoice_number', 'vendor', 'client', 'project__name', 'step__title']
+    ordering_fields = ['created_at', 'total', 'status', 'ocr_confidence']
+    ordering = ['-created_at']
+
+    def get_queryset(self):
+        user = self.request.user
+        queryset = super().get_queryset()
+        
+        # Filter by user role
+        if user.role == 'SUPERVISOR':
+            # Supervisors can only see invoices they created
+            queryset = queryset.filter(created_by=user)
+        elif user.role == 'ADMIN':
+            # Admins can see all invoices
+            pass
+        else:
+            # Public users cannot see invoices
+            queryset = queryset.none()
+        
+        # Filter by project if specified
+        project_id = self.request.query_params.get('project')
+        if project_id:
+            queryset = queryset.filter(project_id=project_id)
+        
+        # Filter by status if specified
+        status_filter = self.request.query_params.get('status')
+        if status_filter:
+            queryset = queryset.filter(status=status_filter)
+        
+        return queryset
+
+    def perform_create(self, serializer):
+        # Extract items data from request
+        items_data = self.request.data.get('items', [])
+        
+        # Set created_by to current user
+        serializer.save(
+            created_by=self.request.user,
+            context={'items_data': items_data}
+        )
+
+    def perform_update(self, serializer):
+        # Extract items data from request
+        items_data = self.request.data.get('items', [])
+        
+        # Update the invoice
+        serializer.save(
+            context={'items_data': items_data}
+        )
+
+    @action(detail=True, methods=['post'])
+    def approve(self, request, pk=None):
+        """Approve an invoice (Admin only)"""
+        if request.user.role != 'ADMIN':
+            return Response(
+                {'error': 'Only admins can approve invoices'}, 
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        invoice = self.get_object()
+        if invoice.status != Invoice.Status.SENT:
+            return Response(
+                {'error': 'Only sent invoices can be approved'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        invoice.status = Invoice.Status.APPROVED
+        invoice.approved_by = request.user
+        invoice.approved_by_admin_at = timezone.now()
+        invoice.save()
+        
+        serializer = self.get_serializer(invoice)
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['post'])
+    def reject(self, request, pk=None):
+        """Reject an invoice (Admin only)"""
+        if request.user.role != 'ADMIN':
+            return Response(
+                {'error': 'Only admins can reject invoices'}, 
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        invoice = self.get_object()
+        if invoice.status != Invoice.Status.SENT:
+            return Response(
+                {'error': 'Only sent invoices can be rejected'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        invoice.status = Invoice.Status.REJECTED
+        invoice.approved_by = request.user
+        invoice.save()
+        
+        serializer = self.get_serializer(invoice)
+        return Response(serializer.data)
+
+    @action(detail=False, methods=['get'])
+    def statistics(self, request):
+        """Get invoice statistics"""
+        user = request.user
+        queryset = self.get_queryset()
+        
+        stats = {
+            'total_invoices': queryset.count(),
+            'pending_approval': queryset.filter(status=Invoice.Status.SENT).count(),
+            'approved': queryset.filter(status=Invoice.Status.APPROVED).count(),
+            'rejected': queryset.filter(status=Invoice.Status.REJECTED).count(),
+            'total_amount': queryset.aggregate(
+                total=models.Sum('total')
+            )['total'] or 0,
+            'average_confidence': queryset.aggregate(
+                avg_confidence=models.Avg('ocr_confidence')
+            )['avg_confidence'] or 0,
+        }
+        
+        return Response(stats)

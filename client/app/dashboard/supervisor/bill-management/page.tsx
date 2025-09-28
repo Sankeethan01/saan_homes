@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
+import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/app/stores/useAuthStore";
 import { fetchWithAuth } from "@/app/utils/auth";
 import {
@@ -81,6 +82,7 @@ export default function BillManagement() {
 
   const token = useAuthStore((s) => s.token);
   const user = useAuthStore((s) => s.user);
+  const router = useRouter();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -638,9 +640,14 @@ export default function BillManagement() {
                         </button>
                         {!bill.is_submitted_to_admin && (
                           <button 
-                            onClick={() => handleSubmitToAdmin(bill.id)}
+                            onClick={() => {
+                              const step = steps.find(s => s.id === bill.step);
+                              if (step) {
+                                router.push(`/dashboard/supervisor/bill-management/invoice-generation?billId=${bill.id}&projectId=${step.project}&stepId=${bill.step}`);
+                              }
+                            }}
                             className="text-purple-600 hover:text-purple-800 transition-colors"
-                            title="Submit to Admin"
+                            title="Generate Invoice & Send to Admin"
                           >
                             <RiUploadLine className="text-lg" />
                           </button>
