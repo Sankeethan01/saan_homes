@@ -1,0 +1,57 @@
+{% extends 'emails/base_email.html' %}
+
+{% block title %}Payment Confirmed - Equipment Ready - SAAN HOMES{% endblock %}
+
+{% block content %}
+<h2>💰 Payment Confirmed - Equipment Ready!</h2>
+
+<p>Dear {{ booking.user.first_name|default:booking.user.username }},</p>
+
+<p>Excellent! Your payment has been successfully processed and your equipment is now reserved and ready for pickup.</p>
+
+<div class="highlight">
+    <h3>📋 Booking Details:</h3>
+    <p><strong>Equipment:</strong> {{ booking.equipment.name }}</p>
+    <p><strong>Category:</strong> {{ booking.equipment.category.name }}</p>
+    <p><strong>Rental Period:</strong> {{ booking.start_date|date:"F d, Y" }} - {{ booking.end_date|date:"F d, Y" }}</p>
+    <p><strong>Duration:</strong> {{ booking.duration }} day{{ booking.duration|pluralize }}</p>
+    <p><strong>Total Amount Paid:</strong> ${{ total_amount }}</p>
+    <p><strong>Status:</strong> <span class="status-badge status-paid">{{ booking.get_status_display }}</span></p>
+</div>
+
+<div class="info-box">
+    <h3>🚚 Pickup/Delivery Instructions:</h3>
+    {% if booking.equipment.delivery_available %}
+        <p><strong>Delivery Available:</strong> Yes</p>
+        <p>Please contact our team to arrange delivery to your location. Our delivery team will contact you within 24 hours to schedule the delivery.</p>
+    {% else %}
+        <p><strong>Pickup Required:</strong> Please collect the equipment from our location.</p>
+        <p><strong>Pickup Address:</strong> [Your business address]</p>
+        <p><strong>Pickup Hours:</strong> Monday - Friday: 8:00 AM - 6:00 PM, Saturday: 9:00 AM - 4:00 PM</p>
+    {% endif %}
+</div>
+
+{% if booking.equipment.operator_license_required %}
+<div class="info-box">
+    <h3>⚠️ Important Reminders:</h3>
+    <ul>
+        <li>Please bring a valid operator license for this equipment</li>
+        <li>Ensure you have proper insurance coverage</li>
+        <li>Review the equipment operation manual before use</li>
+    </ul>
+</div>
+{% endif %}
+
+<div class="info-box">
+    <h3>📞 Contact Information:</h3>
+    <p>If you have any questions or need to make changes to your booking, please contact us:</p>
+    <p><strong>Phone:</strong> [Your phone number]</p>
+    <p><strong>Email:</strong> rentals@saanhomes.com</p>
+</div>
+
+<p>You will receive another email notification when the equipment is handed over to you.</p>
+
+<p>Thank you for choosing SAAN HOMES!</p>
+
+<p><strong>The SAAN HOMES Rental Team</strong></p>
+{% endblock %}

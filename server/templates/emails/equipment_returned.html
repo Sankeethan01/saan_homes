@@ -1,0 +1,61 @@
+{% extends 'emails/base_email.html' %}
+
+{% block title %}Equipment Returned Successfully - SAAN HOMES{% endblock %}
+
+{% block content %}
+<h2>✅ Equipment Returned Successfully!</h2>
+
+<p>Dear {{ booking.user.first_name|default:booking.user.username }},</p>
+
+<p>Thank you for returning the equipment on time! We hope you had a great experience with SAAN HOMES and that your project was successful.</p>
+
+<div class="highlight">
+    <h3>📋 Rental Summary:</h3>
+    <p><strong>Equipment:</strong> {{ booking.equipment.name }}</p>
+    <p><strong>Category:</strong> {{ booking.equipment.category.name }}</p>
+    <p><strong>Rental Period:</strong> {{ booking.start_date|date:"F d, Y" }} - {{ booking.end_date|date:"F d, Y" }}</p>
+    <p><strong>Duration:</strong> {{ booking.duration }} day{{ booking.duration|pluralize }}</p>
+    <p><strong>Total Amount:</strong> ${{ total_amount }}</p>
+    <p><strong>Status:</strong> <span class="status-badge status-completed">{{ booking.get_status_display }}</span></p>
+</div>
+
+<div class="info-box">
+    <h3>🎉 Thank You!</h3>
+    <p>We appreciate your business and hope the equipment served your project well. Your rental has been completed successfully.</p>
+</div>
+
+<div class="info-box">
+    <h3>⭐ We Value Your Feedback:</h3>
+    <p>Your experience matters to us! We'd love to hear about your rental experience:</p>
+    <ul>
+        <li>How was the equipment condition?</li>
+        <li>Was our service helpful and professional?</li>
+        <li>Would you recommend SAAN HOMES to others?</li>
+        <li>Any suggestions for improvement?</li>
+    </ul>
+    <p>Please take a moment to share your feedback with us.</p>
+</div>
+
+<div class="info-box">
+    <h3>🔄 Future Rentals:</h3>
+    <p>Need equipment for your next project? We're here to help!</p>
+    <ul>
+        <li>Browse our full equipment catalog</li>
+        <li>Get personalized recommendations</li>
+        <li>Enjoy priority booking for returning customers</li>
+        <li>Access to special offers and discounts</li>
+    </ul>
+</div>
+
+<div class="info-box">
+    <h3>📞 Stay Connected:</h3>
+    <p>Follow us for updates, tips, and special offers:</p>
+    <p><strong>Website:</strong> www.saanhomes.com</p>
+    <p><strong>Email:</strong> info@saanhomes.com</p>
+    <p><strong>Phone:</strong> [Your phone number]</p>
+</div>
+
+<p>Thank you for choosing SAAN HOMES for your equipment rental needs. We look forward to serving you again in the future!</p>
+
+<p><strong>The SAAN HOMES Team</strong></p>
+{% endblock %}

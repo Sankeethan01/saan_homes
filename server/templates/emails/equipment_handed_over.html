@@ -1,0 +1,64 @@
+{% extends 'emails/base_email.html' %}
+
+{% block title %}Equipment Handed Over - SAAN HOMES{% endblock %}
+
+{% block content %}
+<h2>🚚 Equipment Successfully Handed Over!</h2>
+
+<p>Dear {{ booking.user.first_name|default:booking.user.username }},</p>
+
+<p>Your equipment has been successfully handed over and is now in your possession. Please ensure proper care and return it on the specified date.</p>
+
+<div class="highlight">
+    <h3>📋 Equipment Details:</h3>
+    <p><strong>Equipment:</strong> {{ booking.equipment.name }}</p>
+    <p><strong>Category:</strong> {{ booking.equipment.category.name }}</p>
+    <p><strong>Rental Period:</strong> {{ booking.start_date|date:"F d, Y" }} - {{ booking.end_date|date:"F d, Y" }}</p>
+    <p><strong>Duration:</strong> {{ booking.duration }} day{{ booking.duration|pluralize }}</p>
+    <p><strong>Status:</strong> <span class="status-badge status-rented">{{ booking.get_status_display }}</span></p>
+</div>
+
+<div class="info-box">
+    <h3>📅 Important Dates:</h3>
+    <p><strong>Start Date:</strong> {{ booking.start_date|date:"F d, Y" }}</p>
+    <p><strong>Return Date:</strong> {{ booking.end_date|date:"F d, Y" }}</p>
+    <p><strong>Days Remaining:</strong> {{ days_remaining }} day{{ days_remaining|pluralize }}</p>
+</div>
+
+<div class="info-box">
+    <h3>⚠️ Important Instructions:</h3>
+    <ul>
+        <li>Please return the equipment in the same condition as received</li>
+        <li>Report any damages or issues immediately</li>
+        <li>Follow all safety guidelines provided</li>
+        <li>Keep the equipment secure and protected from weather</li>
+        <li>Contact us immediately if you need assistance</li>
+    </ul>
+</div>
+
+{% if booking.equipment.operator_license_required %}
+<div class="info-box">
+    <h3>🔧 Operation Guidelines:</h3>
+    <ul>
+        <li>Only operate the equipment if you have a valid license</li>
+        <li>Follow the operation manual provided</li>
+        <li>Wear appropriate safety equipment</li>
+        <li>Do not exceed the equipment's capacity limits</li>
+    </ul>
+</div>
+{% endif %}
+
+<div class="info-box">
+    <h3>📞 Emergency Contact:</h3>
+    <p>In case of any issues or emergencies:</p>
+    <p><strong>Emergency Hotline:</strong> [Emergency phone number]</p>
+    <p><strong>Regular Support:</strong> [Support phone number]</p>
+    <p><strong>Email:</strong> support@saanhomes.com</p>
+</div>
+
+<p>You will receive a reminder email before the return date and another notification when the equipment is successfully returned.</p>
+
+<p>Thank you for choosing SAAN HOMES. We hope you have a successful project!</p>
+
+<p><strong>The SAAN HOMES Rental Team</strong></p>
+{% endblock %}

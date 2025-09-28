@@ -1,0 +1,48 @@
+{% extends 'emails/base_email.html' %}
+
+{% block title %}Equipment Booking Confirmation - SAAN HOMES{% endblock %}
+
+{% block content %}
+<h2>🔧 Equipment Booking Confirmation</h2>
+
+<p>Dear {{ booking.user.first_name|default:booking.user.username }},</p>
+
+<p>Thank you for choosing SAAN HOMES for your equipment rental needs! Your booking request has been received and is being processed.</p>
+
+<div class="highlight">
+    <h3>📋 Booking Details:</h3>
+    <p><strong>Equipment:</strong> {{ booking.equipment.name }}</p>
+    <p><strong>Category:</strong> {{ booking.equipment.category.name }}</p>
+    <p><strong>Rental Period:</strong> {{ booking.start_date|date:"F d, Y" }} - {{ booking.end_date|date:"F d, Y" }}</p>
+    <p><strong>Duration:</strong> {{ booking.duration }} day{{ booking.duration|pluralize }}</p>
+    <p><strong>Daily Rate:</strong> ${{ booking.equipment.daily_rate }}</p>
+    <p><strong>Total Amount:</strong> ${{ total_amount }}</p>
+    <p><strong>Status:</strong> <span class="status-badge status-pending">{{ booking.get_status_display }}</span></p>
+</div>
+
+<div class="info-box">
+    <h3>📞 Next Steps:</h3>
+    <p>Your booking request is currently under review. Our team will contact you within 24 hours to confirm availability and finalize the booking.</p>
+    <p>You will receive another email notification once your booking status is updated.</p>
+</div>
+
+{% if booking.equipment.delivery_available %}
+<div class="info-box">
+    <h3>🚚 Delivery Information:</h3>
+    <p>Delivery is available for this equipment. Please contact us to arrange delivery to your location.</p>
+</div>
+{% endif %}
+
+{% if booking.equipment.operator_license_required %}
+<div class="info-box">
+    <h3>⚠️ License Requirement:</h3>
+    <p>This equipment requires a valid operator license. Please ensure you have the necessary documentation.</p>
+</div>
+{% endif %}
+
+<p>If you have any questions about your booking or need to make changes, please contact our rental team immediately.</p>
+
+<p>Thank you for choosing SAAN HOMES!</p>
+
+<p><strong>The SAAN HOMES Rental Team</strong></p>
+{% endblock %}
