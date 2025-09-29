@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useRouter, useSearchParams } from "next/navigation";
 import { parseBillData, validateOCRResult } from "@/app/utils/ocrUtils";
 import { fetchWithAuth } from "@/app/utils/auth";
@@ -15,6 +15,7 @@ import {
   RiArrowLeftLine,
   RiEyeLine,
   RiDownloadLine,
+  RiCloseLine,
 } from "react-icons/ri";
 
 interface OCRResult {
@@ -86,6 +87,7 @@ export default function InvoiceGenerationPage() {
   const [parsedData, setParsedData] = useState<ParsedBillData | null>(null);
   const [invoiceData, setInvoiceData] = useState<InvoiceData | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [showToast, setShowToast] = useState(false);
 
   const [status, setStatus] = useState({
     currentPage: 0,
@@ -127,66 +129,34 @@ export default function InvoiceGenerationPage() {
       setStatus(prev => ({ ...prev, currentStep: "Processing PDF with OCR...", progress: 20 }));
       
       // Create a File object from the bill's PDF URL
-      const pdfResponse = await fetch(billData.bill_file);
+      const pdfResponse = await fetch(billData.pdf);
       const pdfBlob = await pdfResponse.blob();
       const pdfFile = new File([pdfBlob], 'bill.pdf', { type: 'application/pdf' });
 
       // Process with OCR using our utility functions
-      const { convertPDFToImages, processImageWithOCR } = await import("@/app/utils/ocrUtils");
+      const { extractTextFromPDF, parseBillData } = await import("@/app/utils/ocrUtils");
       
-      setStatus(prev => ({ ...prev, currentStep: "Converting PDF to images...", progress: 30 }));
-      const images = await convertPDFToImages(pdfFile, 2.0, (progress) => {
-        setStatus(prev => ({
-          ...prev,
-          currentStep: progress.currentStep,
-          currentPage: progress.currentPage,
-          totalPages: progress.totalPages,
-          progress: 30 + (progress.progress * 0.4), // 30-70% for PDF conversion
-        }));
+      setStatus(prev => ({ ...prev, currentStep: "Processing PDF with OCR...", progress: 30 }));
+      
+      // Use the complete OCR extraction function
+      const ocrResult = await extractTextFromPDF(pdfFile, {
+        language: "eng",
+        scale: 2.0,
+        onProgress: (progress) => {
+          setStatus(prev => ({
+            ...prev,
+            currentStep: progress.currentStep,
+            currentPage: progress.currentPage,
+            totalPages: progress.totalPages,
+            progress: 30 + (progress.progress * 0.6), // 30-90% for OCR processing
+          }));
+        }
       });
-
-      setStatus(prev => ({ ...prev, currentStep: "Processing images with OCR...", progress: 70 }));
-      const pageResults = [];
-      let totalConfidence = 0;
-
-      for (let i = 0; i < images.length; i++) {
-        setStatus(prev => ({
-          ...prev,
-          currentStep: `Processing page ${i + 1} of ${images.length} with OCR...`,
-          currentPage: i + 1,
-          progress: 70 + ((i + 1) / images.length) * 20, // 70-90% for OCR
-        }));
-
-        const result = await processImageWithOCR(images[i], i + 1);
-        pageResults.push({
-          pageNumber: i + 1,
-          text: result.text,
-          confidence: result.confidence,
-        });
-        totalConfidence += result.confidence;
-      }
 
       // Step 3: Parse the OCR text
       setStatus(prev => ({ ...prev, currentStep: "Parsing invoice data...", progress: 90 }));
-      const combinedText = pageResults.map(page => 
-        `--- Page ${page.pageNumber} ---\n${page.text}\n`
-      ).join("\n");
-
-      const parsed = parseBillData(combinedText);
+      const parsed = parseBillData(ocrResult.text);
       setParsedData(parsed);
-
-      const processingTime = (Date.now() - Date.now()) / 1000; // This would be calculated properly
-      const averageConfidence = totalConfidence / pageResults.length;
-
-      const ocrResult: OCRResult = {
-        text: combinedText,
-        confidence: Math.round(averageConfidence * 100) / 100,
-        processingTime: processingTime,
-        wordCount: combinedText.split(/\s+/).filter(word => word.length > 0).length,
-        pageCount: images.length,
-        pages: pageResults,
-      };
-
       setOcrResult(ocrResult);
 
       // Step 4: Create initial invoice data
@@ -195,7 +165,7 @@ export default function InvoiceGenerationPage() {
         projectId: projectId!,
         stepId: stepId!,
         invoiceNumber: parsed.invoiceNumber || `INV-${Date.now()}`,
-        date: parsed.date || new Date().toLocaleDateString(),
+        date: parsed.date || new Date().toISOString().split('T')[0],
         vendor: parsed.vendor || "SAAN Excellence Engineering PVT LTD",
         client: parsed.client || "Client Name",
         project: parsed.project || "Project Name",
@@ -204,7 +174,7 @@ export default function InvoiceGenerationPage() {
         subtotal: parsed.subtotal,
         tax: parsed.tax,
         total: parsed.total,
-        ocrConfidence: ocrResult.confidence,
+        ocrConfidence: Math.round(ocrResult.confidence * 100) / 100,
         ocrText: ocrResult.text,
         status: 'editing'
       };
@@ -300,27 +270,54 @@ export default function InvoiceGenerationPage() {
     if (!invoiceData) return;
 
     setIsSaving(true);
+    
     try {
-      const response = await fetchWithAuth('/projects/invoices/', {
-        method: 'POST',
+      // Create bill record with OCR data
+      const billData = {
+        step: invoiceData.stepId,
+        ocr_data: {
+          items: invoiceData.items,
+          total: invoiceData.total,
+          subtotal: invoiceData.subtotal,
+          tax: invoiceData.tax,
+          invoice_number: invoiceData.invoiceNumber,
+          date: invoiceData.date,
+          vendor: invoiceData.vendor,
+          client: invoiceData.client,
+          project: invoiceData.project,
+          step: invoiceData.step,
+          confidence: invoiceData.ocrConfidence,
+          raw_text: invoiceData.ocrText
+        },
+        is_submitted_to_admin: true,
+        verified: true
+      };
+
+      // Update the bill with OCR data and mark as submitted
+      const response = await fetchWithAuth(`/projects/bills/${invoiceData.billId}/`, {
+        method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          ...invoiceData,
-          status: 'sent'
-        }),
+        body: JSON.stringify(billData),
       });
 
       if (!response.ok) {
-        throw new Error("Failed to send invoice to admin");
+        throw new Error('Failed to update bill record');
       }
 
-      // Redirect back to bill management
-      router.push('/dashboard/supervisor/bill-management?success=invoice_sent');
-    } catch (err) {
-      console.error("Error sending invoice:", err);
-      setError(err instanceof Error ? err.message : "Failed to send invoice to admin");
+      // Show success toast
+      setShowToast(true);
+      
+      // Auto-hide toast and redirect after 3 seconds
+      setTimeout(() => {
+        setShowToast(false);
+        router.push('/dashboard/supervisor/bill-management?success=invoice_sent');
+      }, 3000);
+
+    } catch (error) {
+      console.error('Error sending to admin:', error);
+      setError('Failed to send invoice to admin. Please try again.');
     } finally {
       setIsSaving(false);
     }
@@ -526,7 +523,7 @@ export default function InvoiceGenerationPage() {
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
                     <input
-                      type="text"
+                      type="date"
                       value={invoiceData.date}
                       onChange={(e) => updateInvoiceData('date', e.target.value)}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1b4965] focus:border-transparent"
@@ -694,6 +691,46 @@ export default function InvoiceGenerationPage() {
             </div>
           </motion.div>
         )}
+
+        {/* Success Toast */}
+        <AnimatePresence>
+          {showToast && (
+            <motion.div
+              initial={{ opacity: 0, y: 50, scale: 0.9 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 50, scale: 0.9 }}
+              className="fixed bottom-6 right-6 z-50"
+            >
+              <div className="bg-gradient-to-r from-green-500 to-green-600 text-white px-6 py-4 rounded-xl shadow-2xl border border-green-400 max-w-sm">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-green-400 rounded-lg">
+                    <RiCheckLine className="text-xl" />
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="font-semibold text-lg">Success!</h4>
+                    <p className="text-green-100 text-sm">
+                      Invoice sent successfully! You will be notified soon.
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setShowToast(false)}
+                    className="p-1 hover:bg-green-400 rounded-lg transition-colors"
+                  >
+                    <RiCloseLine className="text-lg" />
+                  </button>
+                </div>
+                <div className="mt-3 bg-green-400 rounded-full h-1">
+                  <motion.div
+                    className="bg-white h-1 rounded-full"
+                    initial={{ width: "100%" }}
+                    animate={{ width: "0%" }}
+                    transition={{ duration: 3, ease: "linear" }}
+                  />
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );
