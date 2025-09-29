@@ -406,8 +406,16 @@ class InvoiceSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Invoice
-        fields = "__all__"
-        read_only_fields = ("id", "created", "is_approved")
+        fields = [
+            'id', 'bill', 'project', 'step',
+            'invoice_number', 'date', 'vendor', 'client',
+            'subtotal', 'tax', 'total',
+            'ocr_confidence', 'ocr_text',
+            'status', 'created_at', 'updated_at',
+            'sent_to_admin_at', 'approved_by_admin_at',
+            'created_by', 'approved_by'
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at', 'approved_by_admin_at', 'approved_by']
 
     def get_related_bills(self, obj):
         """Get related bills for this invoice using prefetched relation when available"""

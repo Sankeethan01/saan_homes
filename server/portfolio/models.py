@@ -22,6 +22,6 @@ class Testimonial(models.Model):
 class FeaturedProject(models.Model):
     PROJECT_CHOICES = [("upcoming", "Upcoming"), ("ongoing", "Ongoing"), ("completed", "Completed")]
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    project = models.ForeignKey("projects.Project", on_delete=models.CASCADE)
+    project = models.ForeignKey("projects.Project", on_delete=models.CASCADE, null=True)
     category = models.CharField(max_length=20, choices=PROJECT_CHOICES)
     teaser_image = models.ImageField(upload_to="featured_projects/")

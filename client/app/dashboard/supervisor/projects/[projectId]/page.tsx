@@ -143,7 +143,7 @@ interface Invoice {
     description?: string;
   };
   is_approved: boolean;
-  created?: string;
+  created_at?: string;
   amount?: number;
   description?: string;
 }

@@ -661,7 +661,7 @@ class ProjectViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAdminOrSupervisorOrReadOnly]
     filter_backends = [SearchFilter, OrderingFilter]
     search_fields = ["name", "description"]
-    ordering_fields = ["start_date", "estimated_end_date", "created"]
+    ordering_fields = ["start_date", "estimated_end_date", "created_at"]
     ordering = ["-created"]
     parser_classes = (MultiPartParser, FormParser, JSONParser)
     
@@ -2067,7 +2067,7 @@ class BillViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        invoices = Invoice.objects.filter(step__project_id=project_id).order_by('-created')
+        invoices = Invoice.objects.filter(step__project_id=project_id).order_by('-created_at')
         serializer = self.get_serializer(invoices, many=True)
         return Response(serializer.data)
 
