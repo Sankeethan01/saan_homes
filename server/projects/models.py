@@ -291,19 +291,19 @@ class Invoice(models.Model):
     step = models.ForeignKey(Step, on_delete=models.CASCADE, related_name='invoices')
     
     # Invoice Details
-    invoice_number = models.CharField(max_length=100)
-    date = models.DateField()
-    vendor = models.CharField(max_length=255)
-    client = models.CharField(max_length=255)
+    invoice_number = models.CharField(max_length=100, blank=True, null=True)
+    date = models.DateField(null=True, blank=True)
+    vendor = models.CharField(max_length=255, blank=True, null=True)
+    client = models.CharField(max_length=255, blank=True, null=True)
     
     # Financial Data
-    subtotal = models.DecimalField(max_digits=12, decimal_places=2)
-    tax = models.DecimalField(max_digits=12, decimal_places=2)
-    total = models.DecimalField(max_digits=12, decimal_places=2)
+    subtotal = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    tax = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    total = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
     
     # OCR Data
-    ocr_confidence = models.FloatField(help_text="OCR confidence percentage")
-    ocr_text = models.TextField(help_text="Raw OCR extracted text")
+    ocr_confidence = models.FloatField(help_text="OCR confidence percentage", null=True, blank=True)
+    ocr_text = models.TextField(help_text="Raw OCR extracted text", blank=True, null=True)
     
     # Status and Tracking
     status = models.CharField(

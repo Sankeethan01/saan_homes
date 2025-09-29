@@ -688,7 +688,7 @@ export default function InvoiceGenerationModal({
           id: savedInvoice.id,
           project: savedInvoice.project,
           data: savedInvoice.data,
-          created: savedInvoice.created,
+          created_at: savedInvoice.created_at,
           is_approved: savedInvoice.is_approved
         });
         showToast("Invoice saved successfully!", "success");

@@ -30,7 +30,7 @@ class ProjectAlert(models.Model):
     E.g. 'Step 3 awaiting approval', 'Invoice mismatch', etc.
     """
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    project = models.ForeignKey("projects.Project", on_delete=models.CASCADE)
+    project = models.ForeignKey("projects.Project", on_delete=models.CASCADE, null=True)
     text = models.CharField(max_length=255)
     type = models.CharField(max_length=20, choices=ALERT_TYPES, default="info")
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="pending")
