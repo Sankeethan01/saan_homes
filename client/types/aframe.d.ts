@@ -1,16 +1,89 @@
 // A-Frame TypeScript declarations
-declare global {
-  namespace JSX {
-    interface IntrinsicElements {
-      'a-scene': any;
-      'a-videosphere': any;
-      'a-entity': any;
-      'a-camera': any;
-      'a-assets': any;
-      'a-video': any;
-      'a-text': any;
-    }
+declare namespace JSX {
+  interface IntrinsicElements {
+    'a-scene': any;
+    'a-videosphere': any;
+    'a-entity': any;
+    'a-assets': any;
+    'a-text': any;
+    'a-camera': any;
+    'a-light': any;
+    'a-box': any;
+    'a-sphere': any;
+    'a-plane': any;
+    'a-cylinder': any;
+    'a-cone': any;
+    'a-torus': any;
+    'a-octahedron': any;
+    'a-tetrahedron': any;
+    'a-icosahedron': any;
+    'a-dodecahedron': any;
+    'a-ring': any;
+    'a-torus-knot': any;
+    'a-sky': any;
+    'a-video': any;
+    'a-image': any;
+    'a-sound': any;
+    'a-animation': any;
+    'a-mixin': any;
+    'a-asset-item': any;
+    'a-cursor': any;
+    'a-raycaster': any;
+    'a-link': any;
+    'a-gltf-model': any;
+    'a-obj-model': any;
+    'a-collada-model': any;
+    'a-fbx-model': any;
+    'a-3d-model': any;
+    'a-marker': any;
+    'a-marker-camera': any;
+    'a-camera': any;
+    'a-look-controls': any;
+    'a-wasd-controls': any;
+    'a-tracked-controls': any;
+    'a-hand-controls': any;
+    'a-laser-controls': any;
+    'a-line': any;
+    'a-curve': any;
+    'a-tube': any;
+    'a-extrude': any;
+    'a-lathe': any;
+    'a-parametric': any;
+    'a-torus-knot': any;
+    'a-octahedron': any;
+    'a-tetrahedron': any;
+    'a-icosahedron': any;
+    'a-dodecahedron': any;
+    'a-ring': any;
+    'a-torus-knot': any;
+    'a-sky': any;
+    'a-video': any;
+    'a-image': any;
+    'a-sound': any;
+    'a-animation': any;
+    'a-mixin': any;
+    'a-asset-item': any;
+    'a-cursor': any;
+    'a-raycaster': any;
+    'a-link': any;
+    'a-gltf-model': any;
+    'a-obj-model': any;
+    'a-collada-model': any;
+    'a-fbx-model': any;
+    'a-3d-model': any;
+    'a-marker': any;
+    'a-marker-camera': any;
+    'a-camera': any;
+    'a-look-controls': any;
+    'a-wasd-controls': any;
+    'a-tracked-controls': any;
+    'a-hand-controls': any;
+    'a-laser-controls': any;
+    'a-line': any;
+    'a-curve': any;
+    'a-tube': any;
+    'a-extrude': any;
+    'a-lathe': any;
+    'a-parametric': any;
   }
 }
-
-export {};

@@ -1,6 +1,6 @@
 'use client'; 
 
-import React, { Suspense, useState, useEffect, useRef } from 'react';
+import React, { Suspense, useState, useEffect, useRef, memo, useCallback } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, useGLTF, Environment, PresentationControls } from '@react-three/drei';
 
@@ -11,20 +11,23 @@ interface ModelProps {
   rotation?: [number, number, number];
 }
 
-const Model: React.FC<ModelProps> = ({ url, scale = 1, position = [0, 0, 0], rotation = [0, 0, 0] }) => {
+// Memoized Model component to prevent unnecessary re-renders
+const Model = memo<ModelProps>(({ url, scale = 1, position = [0, 0, 0], rotation = [0, 0, 0] }) => {
   const { scene } = useGLTF(url);
   
-  // Enable shadows for all meshes in the scene
-  scene.traverse((child) => {
-    if ('isMesh' in child && child.isMesh) {
-      const mesh = child as { castShadow: boolean; receiveShadow: boolean };
-      mesh.castShadow = true;
-      mesh.receiveShadow = true;
-    }
-  });
+  // Enable shadows for all meshes in the scene (only once)
+  React.useEffect(() => {
+    scene.traverse((child) => {
+      if ('isMesh' in child && child.isMesh) {
+        const mesh = child as { castShadow: boolean; receiveShadow: boolean };
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+      }
+    });
+  }, [scene]);
   
   return <primitive object={scene} scale={scale} position={position} rotation={rotation} />;
-};
+});
 
 // Loading fallback component
 const ModelLoader = () => (
@@ -38,27 +41,30 @@ const ModelLoader = () => (
   </div>
 );
 
-// Optimized 3D Canvas Component
-const ThreeDCanvas: React.FC = () => (
-      <Canvas 
-        camera={{ position: [8, 5, 8], fov: 45 }}
-        shadows
+// Memoized 3D Canvas Component
+const ThreeDCanvas = memo(() => (
+  <Canvas 
+    camera={{ position: [8, 5, 8], fov: 45 }}
+    shadows
     gl={{ 
       antialias: true, 
       alpha: true,
       powerPreference: "high-performance", 
       stencil: false, // Disable stencil buffer for better performance
-      depth: true
+      depth: true,
+      preserveDrawingBuffer: false, // Better performance
+      failIfMajorPerformanceCaveat: false,
     }}
     dpr={[1, 2]} // Limit device pixel ratio for better performance
     performance={{ min: 0.5 }} // Adaptive performance
-      >
+    frameloop="demand" // Only render when needed
+  >
     {/* Lighting - Simplified for better performance */}
     <ambientLight intensity={0.6} />
-        <directionalLight 
-          position={[10, 10, 5]} 
+    <directionalLight 
+      position={[10, 10, 5]} 
       intensity={1.2} 
-          castShadow
+      castShadow
       shadow-mapSize-width={1024} // Reduced shadow map size for performance
       shadow-mapSize-height={1024}
       shadow-camera-far={50}
@@ -70,60 +76,59 @@ const ThreeDCanvas: React.FC = () => (
         
     {/* Environment - Lazy loaded */}
     <Suspense fallback={null}>
-        <Environment preset="sunset" />
+      <Environment preset="sunset" />
     </Suspense>
         
     {/* House Model - Lazy loaded */}
-        <Suspense fallback={null}>
-          <Model 
-            url="/model/house.glb" 
-            scale={2.5} 
-            position={[0, -1, 0]}
-            rotation={[0, Math.PI / 4, 0]}
-          />
-        </Suspense>
+    <Suspense fallback={null}>
+      <Model 
+        url="/model/house.glb" 
+        scale={2.5} 
+        position={[0, -1, 0]}
+        rotation={[0, Math.PI / 4, 0]}
+      />
+    </Suspense>
         
     {/* Controls - Optimized */}
-        <PresentationControls
-          global
-          rotation={[0, -Math.PI / 4, 0]}
-          polar={[-Math.PI / 4, Math.PI / 4]}
-          azimuth={[-Math.PI / 4, Math.PI / 4]}
-
-        >
-          <OrbitControls 
-            enableZoom={false}
-            enablePan={false}
-            minPolarAngle={Math.PI / 6}
-            maxPolarAngle={Math.PI / 2}
-            autoRotate
+    <PresentationControls
+      global
+      rotation={[0, -Math.PI / 4, 0]}
+      polar={[-Math.PI / 4, Math.PI / 4]}
+      azimuth={[-Math.PI / 4, Math.PI / 4]}
+    >
+      <OrbitControls 
+        enableZoom={false}
+        enablePan={false}
+        minPolarAngle={Math.PI / 6}
+        maxPolarAngle={Math.PI / 2}
+        autoRotate
         autoRotateSpeed={0.3} // Reduced speed for better performance
         enableDamping
         dampingFactor={0.05}
-          />
-        </PresentationControls>
-      </Canvas>
-);
+      />
+    </PresentationControls>
+  </Canvas>
+));
 
-const ThreeDViewer: React.FC = () => {
+// Memoized ThreeDViewer component
+const ThreeDViewer = memo(() => {
   const [isVisible, setIsVisible] = useState(false);
   const [shouldRender, setShouldRender] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
+  const handleIntersection = useCallback(([entry]: IntersectionObserverEntry[]) => {
+    if (entry.isIntersecting) {
+      setIsVisible(true);
+      // Delay the actual 3D rendering slightly to improve perceived performance
+      setTimeout(() => setShouldRender(true), 100);
+    }
+  }, []);
+
   useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setIsVisible(true);
-          // Delay the actual 3D rendering slightly to improve perceived performance
-          setTimeout(() => setShouldRender(true), 100);
-        }
-      },
-      {
-        threshold: 0.1, // Trigger when 10% of the component is visible
-        rootMargin: '50px' // Start loading slightly before it's visible
-      }
-    );
+    const observer = new IntersectionObserver(handleIntersection, {
+      threshold: 0.1, // Trigger when 10% of the component is visible
+      rootMargin: '50px' // Start loading slightly before it's visible
+    });
 
     const currentRef = containerRef.current;
     if (currentRef) {
@@ -135,7 +140,7 @@ const ThreeDViewer: React.FC = () => {
         observer.unobserve(currentRef);
       }
     };
-  }, []);
+  }, [handleIntersection]);
 
   return (
     <div 
@@ -161,7 +166,7 @@ const ThreeDViewer: React.FC = () => {
       )}
     </div>
   );
-};
+});
 
 // Preload the GLTF model for better performance
 useGLTF.preload('/model/house.glb');

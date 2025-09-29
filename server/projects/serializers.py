@@ -18,13 +18,15 @@ class ProgressLogMediaSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'uploaded_at', 'filename', 'file_size']
     
     def get_url(self, obj):
-        if not obj.file:
+        if not obj.file or not obj.file.name:
             return None
         request = self.context.get('request')
         try:
-            return request.build_absolute_uri(obj.file.url) if request else obj.file.url
-        except Exception:
-            return obj.file.url
+            url = obj.file.url
+            return request.build_absolute_uri(url) if request else url
+        except Exception as e:
+            print(f"Error getting file URL for progress log media {obj.id}: {str(e)}")
+            return None
     
     def get_type(self, obj):
         return obj.media_type.lower()
@@ -53,13 +55,15 @@ class ProjectMediaSerializer(serializers.ModelSerializer):
         ]
 
     def get_url(self, obj):
-        if not obj.file:
+        if not obj.file or not obj.file.name:
             return None
         request = self.context.get('request')
         try:
-            return request.build_absolute_uri(obj.file.url) if request else obj.file.url
-        except Exception:
-            return obj.file.url
+            url = obj.file.url
+            return request.build_absolute_uri(url) if request else url
+        except Exception as e:
+            print(f"Error getting file URL for project media {obj.id}: {str(e)}")
+            return None
 
     def get_type(self, obj):
         return obj.media_type.lower()
@@ -124,13 +128,23 @@ class ProgressLogSerializer(serializers.ModelSerializer):
             })
         
         # Add legacy media for backward compatibility
-        if obj.media:
-            media_files.append({
-                "id": str(obj.id),
-                "url": obj.media.url,
-                "type": obj.media_type.lower() if obj.media_type else "image",
-                "filename": obj.media.name.split('/')[-1]
-            })
+        if obj.media and obj.media.name:
+            try:
+                media_files.append({
+                    "id": str(obj.id),
+                    "url": obj.media.url,
+                    "type": obj.media_type.lower() if obj.media_type else "image",
+                    "filename": obj.media.name.split('/')[-1]
+                })
+            except Exception as e:
+                print(f"Error processing legacy media for {obj.id}: {str(e)}")
+                # Add with safe filename
+                media_files.append({
+                    "id": str(obj.id),
+                    "url": None,
+                    "type": obj.media_type.lower() if obj.media_type else "image",
+                    "filename": "unknown_file"
+                })
         
         return media_files
     
@@ -168,14 +182,24 @@ class BillSerializer(serializers.ModelSerializer):
         read_only_fields = ("id", "uploaded_at", "verified", "uploaded_by")
 
     def get_file_size(self, obj):
-        if obj.pdf and hasattr(obj.pdf, 'size'):
+        if obj.pdf and hasattr(obj.pdf, 'name') and obj.pdf.name:
             try:
-                return obj.pdf.size
-            except Exception as e:
+                # Check if file exists before trying to get size
+                import os
+                from django.conf import settings
+                
+                file_path = os.path.join(settings.MEDIA_ROOT, obj.pdf.name)
+                if os.path.exists(file_path):
+                    return obj.pdf.size
+                else:
+                    # File doesn't exist, return 0 or None
+                    print(f"Warning: File not found for bill {obj.id}: {obj.pdf.name}")
+                    return 0
+            except (FileNotFoundError, OSError, Exception) as e:
                 # Handle any errors when accessing file
-                print(f"Error getting file size for {obj.id}: {str(e)}")
-                return None
-        return None
+                print(f"Error getting file size for bill {obj.id}: {str(e)}")
+                return 0
+        return 0
 
     def get_uploaded_by_name(self, obj):
         if obj.uploaded_by:
@@ -185,8 +209,12 @@ class BillSerializer(serializers.ModelSerializer):
 
     # Example: human-friendly filename
     def validate_pdf(self, file):
-        if file.size > 10 * 1024 * 1024:          # 10 MB guard
-            raise serializers.ValidationError("PDF is too large.")
+        try:
+            if file and hasattr(file, 'size') and file.size > 10 * 1024 * 1024:  # 10 MB guard
+                raise serializers.ValidationError("PDF is too large.")
+        except Exception as e:
+            print(f"Error validating PDF file: {str(e)}")
+            # Don't raise validation error for file access issues
         return file
 
 
@@ -433,7 +461,7 @@ class InvoiceSerializer(serializers.ModelSerializer):
         return [
             {
                 'id': str(bill.id),
-                'pdf': bill.pdf.url if bill.pdf else None,
+                'pdf': bill.pdf.url if bill.pdf and bill.pdf.name else None,
                 'uploaded_at': bill.uploaded_at,
                 'uploaded_by': bill.uploaded_by.get_full_name() if bill.uploaded_by else "Unknown",
                 'is_submitted_to_admin': bill.is_submitted_to_admin,
