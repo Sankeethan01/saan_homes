@@ -329,6 +329,7 @@ export default function EditSupervisorPage() {
       // Only include password if changing
       if (changePassword && formData.password) {
         formDataToSend.append('password', formData.password);
+        formDataToSend.append('password2', formData.confirmPassword);
       }
       
       if (formData.phone.trim()) {

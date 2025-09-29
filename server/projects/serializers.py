@@ -3,7 +3,7 @@ from rest_framework import serializers
 from .models import SupervisorNote
 from django.contrib.auth.password_validation import validate_password
 from django.contrib.auth import get_user_model
-from .models import Project, Step, ProgressLog, Bill, Invoice, VRVideo, SupervisorNote, ProgressLogMedia, ProjectMedia
+from .models import Project, Step, ProgressLog, Bill, Invoice, InvoiceItem, VRVideo, SupervisorNote, ProgressLogMedia, ProjectMedia
 
 User = get_user_model()
 
@@ -194,26 +194,28 @@ class StepSerializer(serializers.ModelSerializer):
     logs = ProgressLogSerializer(many=True, read_only=True)
     status = serializers.SerializerMethodField()
     bills = BillSerializer(many=True, read_only=True)
-    invoice = serializers.SerializerMethodField()
+    invoices = serializers.SerializerMethodField()
     
     class Meta:
         model = Step
         fields = "__all__"
         read_only_fields = ("id",)
     
-    def get_invoice(self, obj):
+    def get_invoices(self, obj):
         """Get invoice data for this step if it exists"""
         try:
-            if hasattr(obj, 'invoice') and obj.invoice:
-                return {
-                    'id': obj.invoice.id,
-                    'data': obj.invoice.data,
-                    'is_approved': obj.invoice.is_approved,
-                    'created': obj.invoice.created
-                }
+            if hasattr(obj, 'invoices'):
+                invoices = obj.invoices.all()
+                return [{
+                    'id': invoice.id,
+                    'invoice_number': invoice.invoice_number,
+                    'status': invoice.status,
+                    'total': invoice.total,
+                    'created_at': invoice.created_at
+                } for invoice in invoices]
         except Exception:
             pass
-        return None
+        return []
     
     def get_status(self, obj):
         """Get step status"""
@@ -508,3 +510,69 @@ class SupervisorNoteSerializer(serializers.ModelSerializer):
         model = SupervisorNote
         fields = '__all__'
         read_only_fields = ['supervisor']
+
+
+class InvoiceItemSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = InvoiceItem
+        fields = ['id', 'description', 'quantity', 'rate', 'amount']
+        read_only_fields = ['id']
+
+
+class InvoiceSerializer(serializers.ModelSerializer):
+    items = InvoiceItemSerializer(many=True, read_only=True)
+    project_name = serializers.CharField(source='project.name', read_only=True)
+    step_title = serializers.CharField(source='step.title', read_only=True)
+    bill_id = serializers.CharField(source='bill.id', read_only=True)
+    created_by_name = serializers.CharField(source='created_by.get_full_name', read_only=True)
+    approved_by_name = serializers.CharField(source='approved_by.get_full_name', read_only=True)
+    
+    class Meta:
+        model = Invoice
+        fields = [
+            'id', 'bill_id', 'project', 'step', 'project_name', 'step_title',
+            'invoice_number', 'date', 'vendor', 'client',
+            'subtotal', 'tax', 'total',
+            'ocr_confidence', 'ocr_text',
+            'status', 'created_at', 'updated_at',
+            'sent_to_admin_at', 'approved_by_admin_at',
+            'created_by', 'created_by_name', 'approved_by', 'approved_by_name',
+            'items'
+        ]
+        read_only_fields = [
+            'id', 'created_at', 'updated_at', 'sent_to_admin_at', 
+            'approved_by_admin_at', 'created_by', 'approved_by'
+        ]
+
+    def create(self, validated_data):
+        # Extract items data
+        items_data = self.context.get('items_data', [])
+        
+        # Create invoice
+        invoice = Invoice.objects.create(**validated_data)
+        
+        # Create invoice items
+        for item_data in items_data:
+            InvoiceItem.objects.create(invoice=invoice, **item_data)
+        
+        return invoice
+
+    def update(self, instance, validated_data):
+        # Extract items data
+        items_data = self.context.get('items_data', [])
+        
+        # Update invoice
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+        
+        # Update items if provided
+        if items_data:
+            # Delete existing items
+            instance.items.all().delete()
+            
+            # Create new items
+            for item_data in items_data:
+                InvoiceItem.objects.create(invoice=instance, **item_data)
+        
+        return instance
