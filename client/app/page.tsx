@@ -1,18 +1,57 @@
 'use client';
 
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, memo } from 'react';
 import NavbarPortfolio from './components/Portfolio/Navbar';
 import LoginButtonPortfolio from './components/Portfolio/LoginButton';
 
-// Lazy load heavy components
-const HeroPortfolio = lazy(() => import('./components/Portfolio/Hero'));
-const OurServicesPortfolio = lazy(() => import('./components/Portfolio/OurServices'));
-const FeaturedProjectsPortfolio = lazy(() => import('./components/Portfolio/FeaturedProjects'));
-const EquipmentRentalsPortfolio = lazy(() => import('./components/Portfolio/EquipmentRentals'));
-const ClientTestimonialsPortfolio = lazy(() => import('./components/Portfolio/ClientTestimonials'));
-const GetInTouchPortfolio = lazy(() => import('./components/Portfolio/GetInTouch'));
-const ContactPortfolio = lazy(() => import('./components/Portfolio/Contact'));
-const Footer = lazy(() => import('./components/Portfolio/Footer'));
+// Lazy load heavy components with better chunking
+const HeroPortfolio = lazy(() => 
+  import('./components/Portfolio/Hero').then(module => ({ 
+    default: module.default 
+  }))
+);
+
+const OurServicesPortfolio = lazy(() => 
+  import('./components/Portfolio/OurServices').then(module => ({ 
+    default: module.default 
+  }))
+);
+
+const FeaturedProjectsPortfolio = lazy(() => 
+  import('./components/Portfolio/FeaturedProjects').then(module => ({ 
+    default: module.default 
+  }))
+);
+
+const EquipmentRentalsPortfolio = lazy(() => 
+  import('./components/Portfolio/EquipmentRentals').then(module => ({ 
+    default: module.default 
+  }))
+);
+
+const ClientTestimonialsPortfolio = lazy(() => 
+  import('./components/Portfolio/ClientTestimonials').then(module => ({ 
+    default: module.default 
+  }))
+);
+
+const GetInTouchPortfolio = lazy(() => 
+  import('./components/Portfolio/GetInTouch').then(module => ({ 
+    default: module.default 
+  }))
+);
+
+const ContactPortfolio = lazy(() => 
+  import('./components/Portfolio/Contact').then(module => ({ 
+    default: module.default 
+  }))
+);
+
+const Footer = lazy(() => 
+  import('./components/Portfolio/Footer').then(module => ({ 
+    default: module.default 
+  }))
+);
 
 // Loading components for better UX
 const HeroSkeleton = () => (
@@ -53,7 +92,8 @@ const SectionSkeleton = () => (
   </div>
 );
 
-export default function Home() {
+// Memoized Home component to prevent unnecessary re-renders
+const Home = memo(function Home() {
   return (
     <main className="overflow-hidden">
       {/* Navbar loads immediately - it's lightweight */}
@@ -61,46 +101,48 @@ export default function Home() {
 
       {/* Hero Section - Critical, but lazy loaded with skeleton */}
       <Suspense fallback={<HeroSkeleton />}>
-      <HeroPortfolio />
+        <HeroPortfolio />
       </Suspense>
 
       {/* Services Section - Lazy loaded */}
       <Suspense fallback={<SectionSkeleton />}>
-      <OurServicesPortfolio />
+        <OurServicesPortfolio />
       </Suspense>
 
       {/* Projects Section - Lazy loaded */}
       <Suspense fallback={<SectionSkeleton />}>
-      <FeaturedProjectsPortfolio />
+        <FeaturedProjectsPortfolio />
       </Suspense>
 
       {/* Equipment Rentals Section - Lazy loaded */}
       <Suspense fallback={<SectionSkeleton />}>
-      <EquipmentRentalsPortfolio />
+        <EquipmentRentalsPortfolio />
       </Suspense>
 
       {/* Testimonials Section - Lazy loaded */}
       <Suspense fallback={<SectionSkeleton />}>
-      <ClientTestimonialsPortfolio />
+        <ClientTestimonialsPortfolio />
       </Suspense>
 
       {/* Contact Section - Lazy loaded */}
       <Suspense fallback={<SectionSkeleton />}>
-      <GetInTouchPortfolio />
+        <GetInTouchPortfolio />
       </Suspense>
 
       {/* Contact Form - Lazy loaded */}
       <Suspense fallback={<SectionSkeleton />}>
-      <ContactPortfolio />
+        <ContactPortfolio />
       </Suspense>
 
       {/* Footer - Lazy loaded */}
       <Suspense fallback={<div className="h-64 bg-gray-100 animate-pulse"></div>}>
-      <Footer />
+        <Footer />
       </Suspense>
 
       {/* Floating Login Button - Always visible when conditions are met */}
       <LoginButtonPortfolio />
     </main>
   );
-}
+});
+
+export default Home;

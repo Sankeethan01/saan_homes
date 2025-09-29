@@ -1036,9 +1036,6 @@ The remaining amount will be due after admin approval. Would you like to proceed
             {/* Footer */}
             <div className="p-3 bg-white border-t border-slate-200">
               <div className="text-center">
-                <p className="text-xs text-slate-500">
-                  Step {Object.values(CONVERSATION_STEPS).indexOf(chatState.step) + 1}/9 • Powered by AI
-                </p>
               </div>
             </div>
           </motion.div>

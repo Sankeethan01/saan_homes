@@ -6,7 +6,16 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "lint:fix": "next lint --fix",
+    "type-check": "tsc --noEmit",
+    "analyze": "ANALYZE=true next build",
+    "build:analyze": "npm run build && npx @next/bundle-analyzer",
+    "perf": "npm run build && npm run start",
+    "clean": "rm -rf .next out node_modules/.cache",
+    "dev:profile": "next dev --turbopack --profile",
+    "cleanup:logs": "node scripts/remove-console-logs.js",
+    "prebuild": "npm run cleanup:logs"
   },
   "dependencies": {
     "@googlemaps/js-api-loader": "^1.16.10",

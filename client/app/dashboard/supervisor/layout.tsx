@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, ReactNode } from 'react';
+import { useState, useEffect, ReactNode, memo, useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -28,6 +28,7 @@ interface NavItem {
   subItems?: { title: string; path: string }[];
 }
 
+// Memoize nav items to prevent re-creation on every render
 const navItems: NavItem[] = [
   {
     title: 'Dashboard',
@@ -40,12 +41,12 @@ const navItems: NavItem[] = [
     icon: <RiBuildingLine className="text-xl" />,
     
   },
-  {
-    title: 'Bills',
-    path: '/dashboard/supervisor/bills',
-    icon: <RiFileTextLine className="text-xl" />,
+  // {
+  //   title: 'Bills',
+  //   path: '/dashboard/supervisor/bills',
+  //   icon: <RiFileTextLine className="text-xl" />,
     
-  },
+  // },
   {
     title: 'Bill Management',
     path: '/dashboard/supervisor/bill-management',
@@ -78,6 +79,126 @@ interface User {
     role: "ADMIN" | "SUPERVISOR" | "PUBLIC";
 }
 
+// Memoized navigation item component
+const NavItem = memo(({ item, isActive, isSidebarOpen, expandedItem, onExpand }: {
+  item: NavItem;
+  isActive: boolean;
+  isSidebarOpen: boolean;
+  expandedItem: string | null;
+  onExpand: (title: string) => void;
+}) => (
+  <div>
+    <Link
+      href={item.path}
+      className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
+        isActive
+          ? 'bg-[#1b4965]/10 text-[#1b4965] font-semibold'
+          : 'text-gray-600 hover:bg-[#1b4965]/10 hover:text-[#1b4965]'
+      }`}
+      onClick={() => {
+        if (item.subItems) {
+          onExpand(expandedItem === item.title ? '' : item.title);
+        }
+      }}
+    >
+      {item.icon}
+      {isSidebarOpen && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="flex-1 flex items-center justify-between"
+        >
+          <span>{item.title}</span>
+          {item.subItems && (
+            <RiArrowDownSLine
+              className={`text-lg transition-transform ${
+                expandedItem === item.title ? 'rotate-180' : ''
+              } text-[#1b4965]`}
+            />
+          )}
+        </motion.div>
+      )}
+    </Link>
+
+    {/* Sub Items */}
+    {isSidebarOpen && item.subItems && (
+      <AnimatePresence>
+        {expandedItem === item.title && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="overflow-hidden ml-9 mt-1 space-y-1"
+          >
+            {item.subItems.map((subItem) => (
+              <Link
+                key={subItem.path}
+                href={subItem.path}
+                className={`block px-3 py-2 rounded-lg text-sm transition-colors ${
+                  isActive
+                    ? 'bg-[#1b4965]/10 text-[#1b4965] font-semibold'
+                    : 'text-gray-600 hover:bg-[#1b4965]/10 hover:text-[#1b4965]'
+                }`}
+              >
+                {subItem.title}
+              </Link>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    )}
+  </div>
+));
+
+NavItem.displayName = 'NavItem';
+
+// Memoized user profile component
+const UserProfile = memo(({ user, isSidebarOpen }: { user: User; isSidebarOpen: boolean }) => (
+  <div className="border-t border-[#1b4965] p-4 bg-white">
+    {isSidebarOpen && (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="flex items-center gap-3 mb-4"
+      >
+        {user?.profile_image ? (
+          <div className="relative w-10 h-10">
+            <Image
+              src={`${process.env.NEXT_PUBLIC_API_BASE_URL}${user.profile_image}`}
+              alt="Profile"
+              fill
+              sizes="40px"
+              className="rounded-full object-cover border-2 border-[#1b4965] shadow-sm"
+            />
+          </div>
+        ) : (
+          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white font-semibold text-sm">
+            {user?.first_name?.charAt(0)?.toUpperCase() || 'U'}
+          </div>
+        )}
+        <div className="flex-1">
+          <h3 className="text-sm font-medium text-gray-800">
+            {user?.first_name} {user?.last_name}
+          </h3>
+          <p className="text-xs text-gray-500">Supervisor</p>
+        </div>
+      </motion.div>
+    )}
+    <Link href="/dashboard/logout" className="w-full">
+      <div
+        className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors text-red-600 hover:bg-red-50 ${
+          !isSidebarOpen && 'justify-center'
+        }`}
+      >
+        <RiLogoutBoxRLine className="text-xl" />
+        {isSidebarOpen && <span>Logout</span>}
+      </div>
+    </Link>
+  </div>
+));
+
+UserProfile.displayName = 'UserProfile';
+
 export default function SupervisorLayout({
   children
 }: {
@@ -90,9 +211,20 @@ export default function SupervisorLayout({
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const token = useAuthStore((s) => s.token);
-  
 
+  // Memoize expensive computations
+  const isActive = useCallback((path: string) => pathname === path, [pathname]);
+  
+  const handleExpand = useCallback((title: string) => {
+    setExpandedItem(expandedItem === title ? null : title);
+  }, [expandedItem]);
+
+  const toggleSidebar = useCallback(() => setIsSidebarOpen(!isSidebarOpen), [isSidebarOpen]);
+
+  // Optimize authentication check with proper dependencies
   useEffect(() => {
+    let isMounted = true;
+    
     const checkAuth = async () => {
       try {
         setLoading(true);
@@ -111,18 +243,18 @@ export default function SupervisorLayout({
         const role = getUserRole();
         
         if (!accessToken || !role) {
-          router.push('/dashboard/login');
+          if (isMounted) router.push('/dashboard/login');
           return;
         }
         
         // Verify user is a supervisor
         if (role !== 'SUPERVISOR') {
           if (role === 'ADMIN') {
-            router.push('/dashboard/admin');
+            if (isMounted) router.push('/dashboard/admin');
           } else if (role === 'PUBLIC') {
-            router.push('/dashboard/me');
+            if (isMounted) router.push('/dashboard/me');
           } else {
-            router.push('/dashboard/login');
+            if (isMounted) router.push('/dashboard/login');
           }
           return;
         }
@@ -135,30 +267,32 @@ export default function SupervisorLayout({
           
           if (!profileRes.ok) {
             useAuthStore.getState().clear();
-            router.replace("/dashboard/login");
+            if (isMounted) router.replace("/dashboard/login");
             return;
           }
           
           const data = await profileRes.json();
-          setUser(data);
-          
-          // Re-sync cookies to ensure they're set properly
-          setAuthCookies(accessToken, data.role, true);
+          if (isMounted) {
+            setUser(data);
+            // Re-sync cookies to ensure they're set properly
+            setAuthCookies(accessToken, data.role, true);
+          }
         } catch (error) {
           console.error('Failed to verify authentication:', error);
-          router.replace("/dashboard/login");
+          if (isMounted) router.replace("/dashboard/login");
         }
       } finally {
-        setLoading(false);
+        if (isMounted) setLoading(false);
       }
     };
     
     checkAuth();
+    
+    return () => {
+      isMounted = false;
+    };
   }, [token, router]);
 
-  const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
-
-  const isActive = (path: string) => pathname === path;
 
   if (loading) {
     return (
@@ -210,113 +344,20 @@ export default function SupervisorLayout({
           {/* Navigation */}
           <nav className="flex-1 py-6 px-4 space-y-1 overflow-y-auto">
             {navItems.map((item) => (
-              <div key={item.path}>
-                <Link
-                  href={item.path}
-                  className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
-                    isActive(item.path)
-                      ? 'bg-[#1b4965]/10 text-[#1b4965] font-semibold'
-                      : 'text-gray-600 hover:bg-[#1b4965]/10 hover:text-[#1b4965]'
-                  }`}
-                  onClick={() => {
-                    if (item.subItems) {
-                      setExpandedItem(expandedItem === item.title ? null : item.title);
-                    }
-                  }}
-                >
-                  {item.icon}
-                  {isSidebarOpen && (
-                    <motion.div
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      className="flex-1 flex items-center justify-between"
-                    >
-                      <span>{item.title}</span>
-                      {item.subItems && (
-                        <RiArrowDownSLine
-                          className={`text-lg transition-transform ${
-                            expandedItem === item.title ? 'rotate-180' : ''
-                          } text-[#1b4965]`}
-                        />
-                      )}
-                    </motion.div>
-                  )}
-                </Link>
-
-                {/* Sub Items */}
-                {isSidebarOpen && item.subItems && (
-                  <AnimatePresence>
-                    {expandedItem === item.title && (
-                      <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: 'auto', opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        className="overflow-hidden ml-9 mt-1 space-y-1"
-                      >
-                        {item.subItems.map((subItem) => (
-                          <Link
-                            key={subItem.path}
-                            href={subItem.path}
-                            className={`block px-3 py-2 rounded-lg text-sm transition-colors ${
-                              isActive(subItem.path)
-                                ? 'bg-[#1b4965]/10 text-[#1b4965] font-semibold'
-                                : 'text-gray-600 hover:bg-[#1b4965]/10 hover:text-[#1b4965]'
-                            }`}
-                          >
-                            {subItem.title}
-                          </Link>
-                        ))}
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                )}
-              </div>
+              <NavItem
+                key={item.path}
+                item={item}
+                isActive={isActive(item.path)}
+                isSidebarOpen={isSidebarOpen}
+                expandedItem={expandedItem}
+                onExpand={handleExpand}
+              />
             ))}
           </nav>
           </div>
           
           {/* User Profile Preview & Logout */}
-<div className="border-t border-[#1b4965] p-4 bg-white">
-  {isSidebarOpen && (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      className="flex items-center gap-3 mb-4"
-    >
-      {user?.profile_image ? (
-        <div className="relative w-10 h-10">
-          <Image
-            src={`${process.env.NEXT_PUBLIC_API_BASE_URL}${user.profile_image}`}
-            alt="Profile"
-            fill
-            sizes="40px"
-            className="rounded-full object-cover border-2 border-[#1b4965] shadow-sm"
-          />
-        </div>
-      ) : (
-        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white font-semibold text-sm">
-          {user?.first_name?.charAt(0)?.toUpperCase() || 'U'}
-        </div>
-      )}
-      <div className="flex-1">
-        <h3 className="text-sm font-medium text-gray-800">
-          {user?.first_name} {user?.last_name}
-        </h3>
-        <p className="text-xs text-gray-500">Supervisor</p>
-      </div>
-    </motion.div>
-  )}
-  <Link href="/dashboard/logout" className="w-full">
-    <div
-      className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors text-red-600 hover:bg-red-50 ${
-        !isSidebarOpen && 'justify-center'
-      }`}
-    >
-      <RiLogoutBoxRLine className="text-xl" />
-      {isSidebarOpen && <span>Logout</span>}
-    </div>
-  </Link>
-</div>
+          {user && <UserProfile user={user} isSidebarOpen={isSidebarOpen} />}
 
         </motion.aside>
 

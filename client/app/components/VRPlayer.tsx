@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, memo, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { FaPlay, FaPause, FaArrowLeft, FaVrCardboard, FaExpand, FaVolumeUp, FaVolumeMute } from 'react-icons/fa';
 import { getVRVideoUrl, getOptimalVRSettings, isVRSupported, formatDuration } from '@/app/utils/vrUtils';
@@ -11,7 +11,8 @@ interface VRPlayerProps {
   onClose: () => void;
 }
 
-export default function VRPlayer({ videoSrc, projectTitle, onClose }: VRPlayerProps) {
+// Memoized VR Player component
+const VRPlayer = memo(function VRPlayer({ videoSrc, projectTitle, onClose }: VRPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const sceneRef = useRef<HTMLDivElement>(null);
   const [isAFrameLoaded, setIsAFrameLoaded] = useState(false);
@@ -92,7 +93,7 @@ export default function VRPlayer({ videoSrc, projectTitle, onClose }: VRPlayerPr
     }
   };
 
-  const togglePlayPause = () => {
+  const togglePlayPause = useCallback(() => {
     const video = document.querySelector('#vrvideo') as HTMLVideoElement;
     if (video) {
       if (video.paused) {
@@ -101,17 +102,17 @@ export default function VRPlayer({ videoSrc, projectTitle, onClose }: VRPlayerPr
         video.pause();
       }
     }
-  };
+  }, []);
 
-  const toggleMute = () => {
+  const toggleMute = useCallback(() => {
     const video = document.querySelector('#vrvideo') as HTMLVideoElement;
     if (video) {
       video.volume = isMuted ? vrSettings.defaultVolume : 0;
       setIsMuted(!isMuted);
     }
-  };
+  }, [isMuted, vrSettings.defaultVolume]);
 
-  const toggleFullscreen = () => {
+  const toggleFullscreen = useCallback(() => {
     if (!document.fullscreenElement) {
       sceneRef.current?.requestFullscreen();
       setIsFullscreen(true);
@@ -119,11 +120,11 @@ export default function VRPlayer({ videoSrc, projectTitle, onClose }: VRPlayerPr
       document.exitFullscreen();
       setIsFullscreen(false);
     }
-  };
+  }, []);
 
-  const toggleVRMode = () => {
+  const toggleVRMode = useCallback(() => {
     setIsVRMode(!isVRMode);
-  };
+  }, [isVRMode]);
 
   // Keyboard controls
   useEffect(() => {
@@ -145,7 +146,7 @@ export default function VRPlayer({ videoSrc, projectTitle, onClose }: VRPlayerPr
 
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [isFullscreen, isMuted]);
+  }, [isFullscreen, togglePlayPause, toggleMute, onClose]);
 
   if (error) {
     return (
@@ -230,61 +231,67 @@ export default function VRPlayer({ videoSrc, projectTitle, onClose }: VRPlayerPr
         }}
       >
         {isAFrameLoaded ? (
-            <a-scene
-              vr-mode-ui={isVRMode ? 'enabled: true' : 'enabled: false'}
-              embedded
-              style={{ width: '100%', height: '100vh' }}
-              renderer="antialias: true; colorManagement: true; physicallyCorrectLights: true"
-            >
-            {/* 360° video sphere */}
-            <a-videosphere 
-              src="#vrvideo"
-              rotation="0 -130 0"
-            ></a-videosphere>
+          <div
+            dangerouslySetInnerHTML={{
+              __html: `
+                <a-scene
+                  vr-mode-ui="${isVRMode ? 'enabled: true' : 'enabled: false'}"
+                  embedded
+                  style="width: 100%; height: 100vh;"
+                  renderer="antialias: true; colorManagement: true; physicallyCorrectLights: true"
+                >
+                  <!-- 360° video sphere -->
+                  <a-videosphere 
+                    src="#vrvideo"
+                    rotation="0 -130 0"
+                  ></a-videosphere>
 
-            {/* Camera for mouse + gyroscope */}
-            <a-entity 
-              camera 
-              look-controls="magicWindowTrackingEnabled: true; touchEnabled: true; mouseEnabled: true; pointerLockEnabled: true" 
-              position="0 1.6 0"
-              cursor="rayOrigin: mouse"
-            ></a-entity>
+                  <!-- Camera for mouse + gyroscope -->
+                  <a-entity 
+                    camera 
+                    look-controls="magicWindowTrackingEnabled: true; touchEnabled: true; mouseEnabled: true; pointerLockEnabled: true" 
+                    position="0 1.6 0"
+                    cursor="rayOrigin: mouse"
+                  ></a-entity>
 
-            {/* Video asset */}
-            <a-assets>
-              <video 
-                id="vrvideo" 
-                loop 
-                muted={isMuted}
-                playsInline 
-                webkit-playsinline="true"
-                crossOrigin="anonymous"
-                preload="metadata"
-              >
-                <source src={videoUrl} type="video/mp4" />
-              </video>
-            </a-assets>
+                  <!-- Video asset -->
+                  <a-assets>
+                    <video 
+                      id="vrvideo" 
+                      loop 
+                      muted="${isMuted}"
+                      playsinline 
+                      webkit-playsinline="true"
+                      crossorigin="anonymous"
+                      preload="metadata"
+                    >
+                      <source src="${videoUrl}" type="video/mp4" />
+                    </video>
+                  </a-assets>
 
-            {/* VR UI Elements */}
-            {isVRMode && (
-              <a-entity position="0 0 -3">
-                <a-text 
-                  value="VR Mode Active" 
-                  position="0 1 0" 
-                  color="white" 
-                  align="center"
-                  width="6"
-                ></a-text>
-                <a-text 
-                  value="Use your VR headset or mobile device" 
-                  position="0 0.5 0" 
-                  color="white" 
-                  align="center"
-                  width="8"
-                ></a-text>
-              </a-entity>
-            )}
-          </a-scene>
+                  <!-- VR UI Elements -->
+                  ${isVRMode ? `
+                    <a-entity position="0 0 -3">
+                      <a-text 
+                        value="VR Mode Active" 
+                        position="0 1 0" 
+                        color="white" 
+                        align="center"
+                        width="6"
+                      ></a-text>
+                      <a-text 
+                        value="Use your VR headset or mobile device" 
+                        position="0 0.5 0" 
+                        color="white" 
+                        align="center"
+                        width="8"
+                      ></a-text>
+                    </a-entity>
+                  ` : ''}
+                </a-scene>
+              `
+            }}
+          />
         ) : (
           <div className="w-full h-full flex items-center justify-center">
             <div className="text-center text-white">
@@ -348,4 +355,6 @@ export default function VRPlayer({ videoSrc, projectTitle, onClose }: VRPlayerPr
       )}
     </div>
   );
-}
+});
+
+export default VRPlayer;
