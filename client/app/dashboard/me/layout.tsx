@@ -122,7 +122,6 @@ export default function DashboardLayout({
     const sidebarItems = [
         { id: 'dashboard', label: 'Dashboard', icon: RiTruckLine, href: '/dashboard/me' },
         { id: 'equipments', label: 'Equipments', icon: RiToolsLine, href: '/equipments' },
-        { id: 'notifications', label: 'Notifications', icon: RiNotification3Line, href: '/dashboard/me/notifications' },
         { id: 'history', label: 'Rental History', icon: RiHistoryLine, href: '/dashboard/me/rentals' },
         { id: 'conditions', label: 'Rental Conditions', icon: RiFileList2Line, href: '/dashboard/me/conditions' },
         { id: 'feedback', label: 'Feedback', icon: RiMessage2Line, href: '/dashboard/me/feedbacks' },
@@ -224,13 +223,7 @@ export default function DashboardLayout({
                                     <button onClick={handleThemeToggle} className="p-2 rounded-full hover:bg-[var(--background-color)]" title="Toggle Theme">
                                         {theme === 'light' ? <RiMoonLine className="text-xl" /> : <RiSunLine className="text-xl" />}
                                     </button>
-                                    <button className="relative p-2 rounded-full hover:bg-[var(--background-color)]" title="Notifications">
-                                        <RiNotification3Line className="text-xl" />
-                                        <span className="absolute top-1 right-1 flex h-3 w-3">
-                                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                                            <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
-                                        </span>
-                                    </button>
+
                                     <div className="relative">
                                         <Image
                                             src="/assets/logo.jpg"
