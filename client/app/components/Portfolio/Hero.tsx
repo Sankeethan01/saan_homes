@@ -9,7 +9,7 @@ const HeroPortfolio = () => {
 
   useEffect(() => {
     let exp = 0, proj = 0, award = 0;
-    const expTarget = 10, projTarget = 500, awardTarget = 50;
+    const expTarget = 10, projTarget = 15, awardTarget = 20;
     const interval = setInterval(() => {
       if (exp < expTarget) exp++;
       if (proj < projTarget) proj += 10;
